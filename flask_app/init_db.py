@@ -40,12 +40,41 @@ def create_tables():
         except Exception as e:
             db.session.rollback()
             print(f"Error creating tables: {e}")
+            
+def register_bot():
+    """
+    Registers the bot in the database by creating a new User object
+    with the bot's Telegram ID and a hashed password.
+    """
+    app = create_app()
+    with app.app_context():
+
+        try:
+            from models import User
+            bot_user = {
+                "email": app.config["BOT_ACCOUNT_EMAIL"],
+                "first_name": "Botothy",
+                "last_name": "Bottinson",
+                "institution": "Bot University",
+            }
+            user = User(**bot_user)
+            user.set_password(app.config["BOT_ACCOUNT_PASSWORD"])
+            db.session.add(user)
+            db.session.commit()
+            print("Bot registered successfully!")
+        except Exception as e:
+            db.session.rollback()
+            print(f"Error registering bot: {e}")
+            raise e
+            
 
 if __name__ == '__main__':
     # print("Dropping all tables...")
     # drop_tables()
     print("Creating all tables...")
     create_tables()
+    print("Registering bot account...")
+    register_bot()
     
 
 '''

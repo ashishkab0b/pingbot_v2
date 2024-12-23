@@ -1,4 +1,0 @@
-intro: > 
-  Hi, I am PingBot! If you would like to enroll in a study, 
-  please first set your timezone using /timezone and then use /enroll to enroll in a study using a study code. 
-  \n\nHere are the available commands:\n\n{command_list}

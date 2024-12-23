@@ -6,8 +6,9 @@ from utils import generate_non_confusable_code
 from models import Study, Enrollment, Ping, PingTemplate, User
 from app import db
 from random import randint
-from datetime import timedelta, datetime
+from datetime import timedelta, datetime, timezone
 import pytz
+import secrets
 
 
 enrollments_bp = Blueprint('enrollments', __name__)
@@ -112,21 +113,30 @@ def study_signup():
     if not study:
         return jsonify({"error": "Invalid signup code"}), 404
     
+    # Generate a unique code for the participant to link their telegram ID
+    telegram_link_code = None
+    while True:
+        telegram_link_code = generate_non_confusable_code(length=6)
+        if not Enrollment.query.filter_by(telegram_link_code=telegram_link_code).first():
+            break
+        
     # Create a new enrollment
     try:
         enrollment = Enrollment(study_id=study.id, 
                                 tz=tz,
                                 enrolled=True, 
                                 study_pid=study_pid,
-                                start_date=datetime.now(),
+                                start_date=datetime.now().date(),
                                 pr_completed=0.0,
+                                telegram_link_code=telegram_link_code,
+                                telegram_link_code_expire_ts=datetime.now(timezone.utc) + timedelta(days=current_app.config["TELEGRAM_LINK_CODE_EXPIRY_DAYS"])
                                 )
         db.session.add(enrollment)
         db.session.commit()
         
     except Exception as e:
         db.session.rollback()
-        current_app.logger.error(f"Error with enrollment {enrollment.id} in study {study.id}")
+        current_app.logger.error(f"Error with enrollment in study {study.id} using signup code {signup_code} for study pid {study_pid}")
         current_app.logger.exception(e)
         return jsonify({"error": "Internal server error"}), 500
     
@@ -140,9 +150,25 @@ def study_signup():
     
     return jsonify({
         "message": "Participant enrolled successfully",
+        "telegram_link_code": telegram_link_code,
         "participant_id": enrollment.id,
         "study_id": study.id,
         "study_pid": study_pid,
         "tz": enrollment.tz
     }), 200
+    
 
+
+@enrollments_bp.route('/enrollment/login', methods=['POST'])
+def participant_login():
+    '''
+    This endpoint is used to generate a one-time login link for a participant.
+    '''
+    
+    data = request.get_json()
+    telegram_id = data.get('telegram_id')
+    
+    # Create a new OTP
+    otp = secrets.token_urlsafe(16)
+    expiry = datetime.now() + timedelta(minutes=current_app.config["ENROLLMENT_DASHBOARD_OTP_EXPIRY_MINS"])
+    
