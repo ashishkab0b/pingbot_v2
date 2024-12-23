@@ -9,6 +9,7 @@ from datetime import timedelta, datetime, timezone
 import pytz
 import secrets
 from functools import wraps
+from telegram_messenger import TelegramMessenger
 
 
 
@@ -132,37 +133,83 @@ def unenroll():
     return jsonify({"message": "Participant unenrolled successfully."}), 200
 
 
-@bot_bp.route('/get_pings_for_date', methods=['GET'])
+@bot_bp.route('/get_pings_in_time_interval', methods=['GET'])
 @bot_auth_required
-def get_pings_for_date():
-    ''' Query the database and return the pings for today '''
-    # Log the start of the request
-    current_app.logger.info("Received request to get today's pings.")
+def get_pings_in_time_interval():
+    ''' Query the database and return the pings in a given time interval '''
     
     # Get request data
     data = request.get_json()
-    date = data.get('date')
+    start_ts = data.get('start_ts')
+    end_ts = data.get('end_ts')
+    
+    # Log the start of the request
+    current_app.logger.info("Received request to get pings in interval {start_ts} - {end_ts}.")
     
     # Check if required parameters are present
-    if not date:
-        current_app.logger.error("Missing date parameter.")
-        return jsonify({"error": "Missing date parameter."}), 400
+    if not start_ts or not end_ts:
+        current_app.logger.error("Missing start_ts or end_ts parameter.")
+        return jsonify({"error": "Missing start_ts or end_ts parameter."}), 400
     
-    # Log the received data (excluding sensitive information)
-    current_app.logger.debug(f"Request data received: date={date}")
+    # Convert to datetime objects
+    try:
+        start_dt = datetime.fromisoformat(start_ts)
+        end_dt = datetime.fromisoformat(end_ts)
+    except ValueError:
+        current_app.logger.error("Invalid datetime format.")
+        return jsonify({"error": "Invalid datetime format."}), 400
     
     # Get pings for the date
     try:
-        current_app.logger.info(f"Attempting to get pings for date {date}.")
-        pings = Ping.query.filter_by(date=date).all()
+        current_app.logger.info(f"Attempting to get pings for interval {start_ts}-{end_ts}.")
+        pings = Ping.query.filter(Ping.scheduled_ts >= start_dt, Ping.scheduled_ts <= end_dt).all()
         if not pings:
-            current_app.logger.warning(f"No pings found for date {date}.")
-        current_app.logger.info(f"Successfully retrieved {len(pings)} pings for date {date}.")
+            current_app.logger.warning(f"No pings found.")
+        current_app.logger.info(f"Successfully retrieved {len(pings)} pings.")
     except Exception as e:
-        current_app.logger.error(f"Error getting pings for date {date}.")
+        current_app.logger.error(f"Error getting pings.")
         current_app.logger.exception(e)
         return jsonify({"error": "Internal server error."}), 500
     
-    return jsonify({"pings": [ping.to_dict() for ping in pings]}), 200
+    return jsonify([ping.to_dict() for ping in pings]), 200
     
+
+@bot_bp.route('/send_ping', methods=['POST'])
+@bot_auth_required
+def send_ping():
+    ''' Send a ping to a participant '''
+    
+    # Get request data
+    data = request.get_json()
+    ping_id = data.get('ping_id')
+    
+    # Log the start of the request
+    current_app.logger.info(f"Received request to send ping={ping_id}.")
+    
+    # Check if required parameters are present
+    if not ping_id:
+        current_app.logger.error("Missing ping_id parameter.")
+        return jsonify({"error": "Missing ping_id parameter."}), 400
+    
+    # Get ping
+    try:
+        ping = Ping.query.get(ping_id)
+        if not ping:
+            current_app.logger.error(f"Ping {ping_id} not found.")
+            return jsonify({"error": "Ping not found."}), 404
+    except Exception as e:
+        current_app.logger.error(f"Error getting ping {ping_id}.")
+        current_app.logger.exception(e)
+        return jsonify({"error": "Internal server error."}), 500
+
+    # Send ping
+    messenger = TelegramMessenger(
+        bot_token=current_app.config['TELEGRAM_BOT_TOKEN'], 
+        ping=ping)
+    messenger.send_ping()
+    
+    # Log the end of the request
+    current_app.logger.info(f"Successfully sent ping={ping_id}.")
+    
+    return jsonify({"message": "ping_id={ping.id} sent successfully."}), 200
     

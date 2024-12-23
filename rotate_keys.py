@@ -43,11 +43,7 @@ if __name__ == "__main__":
     
     directories_to_search = ["./bot", "./flask_app"]
 
-    rotate_key_names_str = os.getenv("ROTATE_KEY_NAMES")
-    rotate_key_names = rotate_key_names_str.split(",") if rotate_key_names_str else []
-    
-    if not rotate_key_names:
-        print("No keys to rotate.")
+    rotate_key_names = ['BOT_SECRET_KEY', 'JWT_SECRET_KEY']
     
     for key in rotate_key_names:
         rotate_key(root_dirs=directories_to_search, 
