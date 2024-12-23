@@ -26,7 +26,6 @@ function PingTemplateDashboard() {
   const [url, setUrl] = useState('');
   const [reminderLatency, setReminderLatency] = useState('');
   const [expireLatency, setExpireLatency] = useState('');
-  const [startDayNum, setStartDayNum] = useState('');
   const [schedule, setSchedule] = useState('');
 
   // Toggle for "Create Ping Template" form
@@ -82,7 +81,6 @@ function PingTemplateDashboard() {
         url,
         reminder_latency: reminderLatency,
         expire_latency: expireLatency,
-        start_day_num: startDayNum ? parseInt(startDayNum) : null,
         schedule: scheduleParsed,
       });
 
@@ -92,7 +90,6 @@ function PingTemplateDashboard() {
       setUrl('');
       setReminderLatency('');
       setExpireLatency('');
-      setStartDayNum('');
       setSchedule('');
 
       // Hide the form
@@ -206,17 +203,6 @@ function PingTemplateDashboard() {
             </div>
 
             <div style={{ marginBottom: '1rem' }}>
-              <label htmlFor="startDayNum">Start Day Number</label>
-              <br />
-              <input
-                id="startDayNum"
-                type="number"
-                value={startDayNum}
-                onChange={(e) => setStartDayNum(e.target.value)}
-              />
-            </div>
-
-            <div style={{ marginBottom: '1rem' }}>
               <label htmlFor="schedule">Schedule (JSON)</label>
               <br />
               <textarea
@@ -256,7 +242,6 @@ function PingTemplateDashboard() {
                     <th>URL</th>
                     <th>Reminder Latency</th>
                     <th>Expire Latency</th>
-                    <th>Start Day</th>
                     <th>Schedule</th>
                   </tr>
                 </thead>
@@ -269,7 +254,6 @@ function PingTemplateDashboard() {
                       <td>{pt.url}</td>
                       <td>{pt.reminder_latency}</td>
                       <td>{pt.expire_latency}</td>
-                      <td>{pt.start_day_num}</td>
                       <td>{JSON.stringify(pt.schedule)}</td>
                     </tr>
                   ))}

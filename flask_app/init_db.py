@@ -46,3 +46,10 @@ if __name__ == '__main__':
     # drop_tables()
     print("Creating all tables...")
     create_tables()
+    
+
+'''
+DROP SCHEMA public CASCADE;
+CREATE SCHEMA public;
+GRANT ALL ON SCHEMA public TO ashish;
+'''

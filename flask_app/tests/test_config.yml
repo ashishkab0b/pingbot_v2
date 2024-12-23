@@ -1,0 +1,7 @@
+flask_app_url: http://localhost:8000
+
+email: ashm@stanford.edu
+password: password
+first_name: Ashish
+last_name: Mehta
+institution: Stanford University

@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app import db
-from models import User, Study
+from models import User, Study, UserStudy
 from utils import generate_non_confusable_code
 
 studies_bp = Blueprint('studies', __name__)
@@ -24,8 +24,8 @@ def user_owns_study(user, study_id):
     """
     study = (
         db.session.query(Study)
-        .join(Study.users)
-        .filter(Study.id == study_id, User.id == user.id)
+        .join(UserStudy)
+        .filter(UserStudy.study_id == study_id, UserStudy.user_id == user.id)
         .first()
     )
     if not study:
@@ -46,8 +46,8 @@ def get_studies():
 
     query = (
         db.session.query(Study)
-        .join(Study.users)
-        .filter(User.id == user.id)
+        .join(UserStudy)
+        .filter(UserStudy.user_id == user.id)
         .order_by(Study.id.asc())
     )
 
@@ -79,6 +79,7 @@ def create_study():
     data = request.get_json()
     public_name = data.get('public_name')
     internal_name = data.get('internal_name')
+    role = "owner"
 
     if not public_name or not internal_name:
         current_app.logger.error("Missing required fields: public_name or internal_name.")
@@ -91,11 +92,27 @@ def create_study():
         if not Study.query.filter_by(code=code).first():
             study_code = code
 
-    # Create the new study
-    new_study = Study(public_name=public_name, internal_name=internal_name, code=study_code)
-    new_study.users.append(user)
-    db.session.add(new_study)
-    db.session.commit()
+    # Create the new study 
+    try:
+        new_study = Study(public_name=public_name, internal_name=internal_name, code=study_code)
+        db.session.add(new_study)
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error creating study")
+        current_app.logger.exception(e)
+        return jsonify({"error": "Internal server error"}), 500
+    
+    # Add the user as the owner of the study
+    try:
+        user_study = UserStudy(user_id=user.id, study_id=new_study.id, role=role)
+        db.session.add(user_study)
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error adding user {user.id} as owner of study {new_study.id}")
+        current_app.logger.exception(e)
+        return jsonify({"error": "Internal server error"}), 500
 
     current_app.logger.info(f"User {user.email} created a new study with ID {new_study.id}.")
 
@@ -117,7 +134,12 @@ def get_single_study(study_id):
         return jsonify({"error": f"Study {study_id} not found or no access"}), 404
 
     current_app.logger.info(f"User {user.email} accessed study {study_id}.")
-    return jsonify({"id": study.id, "public_name": study.public_name, "internal_name": study.internal_name}), 200
+    return jsonify({
+        "id": study.id, 
+        "public_name": study.public_name, 
+        "internal_name": study.internal_name,
+        "code": study.code
+        }), 200
 
 @studies_bp.route('/studies/<int:study_id>', methods=['PUT'])
 @jwt_required()

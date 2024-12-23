@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app import db
-from models import User, Study, PingTemplate
+from models import User, Study, PingTemplate, UserStudy
 
 ping_templates_bp = Blueprint('ping_templates', __name__)
 
@@ -23,14 +23,13 @@ def user_owns_study(user, study_id):
     """
     study = (
         db.session.query(Study)
-        .join(Study.users)
-        .filter(Study.id == study_id, User.id == user.id)
+        .join(UserStudy)
+        .filter(UserStudy.study_id == study_id, UserStudy.user_id == user.id)
         .first()
     )
     if not study:
         current_app.logger.info(f"User {user.id} does not own study {study_id}.")
     return study
-
 
 @ping_templates_bp.route('/studies/<int:study_id>/ping_templates', methods=['GET'])
 @jwt_required()
@@ -62,7 +61,6 @@ def get_ping_templates(study_id):
             "url": pt.url,
             "reminder_latency": str(pt.reminder_latency) if pt.reminder_latency else None,
             "expire_latency": str(pt.expire_latency) if pt.expire_latency else None,
-            "start_day_num": pt.start_day_num,
             "schedule": pt.schedule  # This is JSON; can directly pass if you want
         })
 
@@ -97,26 +95,33 @@ def create_ping_template(study_id):
     url = data.get('url')
     reminder_latency = data.get('reminder_latency')  # e.g. "1 hour"
     expire_latency = data.get('expire_latency')      # e.g. "24 hours"
-    start_day_num = data.get('start_day_num')
     schedule = data.get('schedule')                  # JSON object/array
+    
+    # TODO: Validate the schedule JSON object and other fields
+    # 
 
     if not name or not message:
         return jsonify({"error": "Missing required fields: name, message"}), 400
 
-    # Construct the PingTemplate
-    pt = PingTemplate(
-        study_id=study.id,
-        name=name,
-        message=message,
-        url=url,
-        reminder_latency=reminder_latency,  # rely on SQLAlchemy Interval or parse manually
-        expire_latency=expire_latency,
-        start_day_num=start_day_num,
-        schedule=schedule
-    )
+    try:
+        # Construct the PingTemplate
+        pt = PingTemplate(
+            study_id=study.id,
+            name=name,
+            message=message,
+            url=url,
+            reminder_latency=reminder_latency,
+            expire_latency=expire_latency,
+            schedule=schedule
+        )
 
-    db.session.add(pt)
-    db.session.commit()
+        db.session.add(pt)
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error creating PingTemplate in study {study_id}")
+        current_app.logger.exception(e)
+        return jsonify({"error": "Error creating PingTemplate"}), 500
 
     current_app.logger.info(f"User {user.email} created a ping template ID {pt.id} in study {study_id}.")
 
@@ -129,7 +134,6 @@ def create_ping_template(study_id):
             "url": pt.url,
             "reminder_latency": str(pt.reminder_latency) if pt.reminder_latency else None,
             "expire_latency": str(pt.expire_latency) if pt.expire_latency else None,
-            "start_day_num": pt.start_day_num,
             "schedule": pt.schedule
         }
     }), 201
@@ -160,7 +164,6 @@ def get_single_ping_template(study_id, template_id):
         "url": pt.url,
         "reminder_latency": str(pt.reminder_latency) if pt.reminder_latency else None,
         "expire_latency": str(pt.expire_latency) if pt.expire_latency else None,
-        "start_day_num": pt.start_day_num,
         "schedule": pt.schedule
     }), 200
 
@@ -179,27 +182,31 @@ def update_ping_template(study_id, template_id):
     if not study:
         return jsonify({"error": f"Study {study_id} not found or no access"}), 404
 
-    pt = PingTemplate.query.filter_by(id=template_id, study_id=study.id).first()
-    if not pt:
-        return jsonify({"error": f"PingTemplate {template_id} not found or no access"}), 404
+    try:
+        pt = PingTemplate.query.filter_by(id=template_id, study_id=study.id).first()
+        if not pt:
+            return jsonify({"error": f"PingTemplate {template_id} not found or no access"}), 404
 
-    data = request.get_json()
-    if 'name' in data:
-        pt.name = data['name']
-    if 'message' in data:
-        pt.message = data['message']
-    if 'url' in data:
-        pt.url = data['url']
-    if 'reminder_latency' in data:
-        pt.reminder_latency = data['reminder_latency']
-    if 'expire_latency' in data:
-        pt.expire_latency = data['expire_latency']
-    if 'start_day_num' in data:
-        pt.start_day_num = data['start_day_num']
-    if 'schedule' in data:
-        pt.schedule = data['schedule']
+        data = request.get_json()
+        if 'name' in data:
+            pt.name = data['name']
+        if 'message' in data:
+            pt.message = data['message']
+        if 'url' in data:
+            pt.url = data['url']
+        if 'reminder_latency' in data:
+            pt.reminder_latency = data['reminder_latency']
+        if 'expire_latency' in data:
+            pt.expire_latency = data['expire_latency']
+        if 'schedule' in data:
+            pt.schedule = data['schedule']
 
-    db.session.commit()
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error updating PingTemplate {template_id} in study {study_id}")
+        current_app.logger.exception(e)
+        return jsonify({"error": "Error updating PingTemplate"}), 500
 
     current_app.logger.info(f"User {user.email} updated ping template {template_id} in study {study_id}.")
 
@@ -212,7 +219,6 @@ def update_ping_template(study_id, template_id):
             "url": pt.url,
             "reminder_latency": str(pt.reminder_latency) if pt.reminder_latency else None,
             "expire_latency": str(pt.expire_latency) if pt.expire_latency else None,
-            "start_day_num": pt.start_day_num,
             "schedule": pt.schedule
         }
     }), 200
@@ -232,13 +238,19 @@ def delete_ping_template(study_id, template_id):
     if not study:
         return jsonify({"error": f"Study {study_id} not found or no access"}), 404
 
-    pt = PingTemplate.query.filter_by(id=template_id, study_id=study.id).first()
-    if not pt:
-        return jsonify({"error": f"PingTemplate {template_id} not found or no access"}), 404
-
-    db.session.delete(pt)
-    db.session.commit()
-
+    try:
+        pt = PingTemplate.query.filter_by(id=template_id, study_id=study.id).first()
+        if not pt:
+            return jsonify({"error": f"PingTemplate {template_id} not found or no access"}), 404
+        db.session.delete(pt)
+        db.session.commit()
+        
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error deleting PingTemplate {template_id} in study {study_id}")
+        current_app.logger.exception(e)
+        return jsonify({"error": "Error deleting PingTemplate"}), 500
+    
     current_app.logger.info(f"User {user.email} deleted ping template {template_id} in study {study_id}.")
 
     return jsonify({"message": f"Ping Template {template_id} deleted successfully."}), 200

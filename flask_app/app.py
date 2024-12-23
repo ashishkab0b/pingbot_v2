@@ -62,16 +62,20 @@ def create_app(config='config.Config'):
     from blueprints.auth import auth_bp
     from blueprints.studies import studies_bp
     from blueprints.ping_templates import ping_templates_bp
+    # from blueprints.participants import participants_bp
+    from blueprints.enrollments import enrollments_bp
+    from blueprints.pings import pings_bp
     # from blueprints.users import users_bp
     # from blueprints.bot import bot_bp
-    # from blueprints.participants import participants_bp
     
     # app.register_blueprint(admin_bp, url_prefix='/admin')
     app.register_blueprint(auth_bp, url_prefix='/api')
     app.register_blueprint(studies_bp, url_prefix='/api')
     app.register_blueprint(ping_templates_bp, url_prefix='/api')
+    # app.register_blueprint(participants_bp, url_prefix='/api')
+    app.register_blueprint(enrollments_bp, url_prefix='/api')
+    app.register_blueprint(pings_bp, url_prefix='/api')
     # app.register_blueprint(bot_bp, url_prefix='/bot')
-    # app.register_blueprint(participants_bp, url_prefix='/participants')
     # app.register_blueprint(users_bp, url_prefix='/')
     
     # @app.before_request
