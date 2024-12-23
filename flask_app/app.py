@@ -44,39 +44,22 @@ def create_app(config='config.Config'):
     jwt.init_app(app)
     db.init_app(app)
     
-    # # JWT callbacks
-    # @jwt.user_identity_loader
-    # def user_identity_lookup(user):
-    #     """Converts user object to JSON serializable format for JWT."""
-    #     return user.id
-
-    # @jwt.user_lookup_loader
-    # def user_lookup_callback(_jwt_header, jwt_data):
-    #     """Loads user object from the database based on JWT identity."""
-    #     from models import User
-    #     identity = jwt_data["sub"]
-    #     return User.query.filter_by(id=identity).one_or_none()
-    
     # Blueprints
     # from blueprints.admin import admin_bp
+    from blueprints.bot import bot_bp
     from blueprints.auth import auth_bp
     from blueprints.studies import studies_bp
     from blueprints.ping_templates import ping_templates_bp
-    # from blueprints.participants import participants_bp
     from blueprints.enrollments import enrollments_bp
     from blueprints.pings import pings_bp
-    # from blueprints.users import users_bp
-    # from blueprints.bot import bot_bp
     
     # app.register_blueprint(admin_bp, url_prefix='/admin')
+    app.register_blueprint(bot_bp, url_prefix='/api/bot')
     app.register_blueprint(auth_bp, url_prefix='/api')
     app.register_blueprint(studies_bp, url_prefix='/api')
     app.register_blueprint(ping_templates_bp, url_prefix='/api')
-    # app.register_blueprint(participants_bp, url_prefix='/api')
     app.register_blueprint(enrollments_bp, url_prefix='/api')
     app.register_blueprint(pings_bp, url_prefix='/api')
-    # app.register_blueprint(bot_bp, url_prefix='/bot')
-    # app.register_blueprint(users_bp, url_prefix='/')
     
     # @app.before_request
     # def log_request():
