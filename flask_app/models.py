@@ -11,7 +11,7 @@ from app import db, create_app
 load_dotenv()
 
 # ------------------------------------------------
-# Enrollments Table (Participants ↔ Studies with attributes)
+# Enrollments Table
 # ------------------------------------------------
 class Enrollment(db.Model):
     __tablename__ = 'enrollments'
@@ -19,13 +19,21 @@ class Enrollment(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     
     telegram_id = db.Column(db.String(100), nullable=True, unique=False)
+    telegram_link_code = db.Column(db.String(255), nullable=True)
+    telegram_link_code_expire_ts = db.Column(db.DateTime(timezone=True), nullable=True)
+    telegram_link_code_used = db.Column(db.Boolean, default=False, nullable=False)
+    
     tz = db.Column(db.String(50), nullable=False)
-    # participant_id = db.Column(db.Integer, db.ForeignKey('participants.id'), nullable=False)
     study_id = db.Column(db.Integer, db.ForeignKey('studies.id'), nullable=False)
     study_pid = db.Column(db.String(255), nullable=False)  # Participant ID in the study assigned by researcher
     enrolled = db.Column(db.Boolean, default=True, nullable=False)
     start_date = db.Column(db.DateTime(timezone=True), nullable=False)
     pr_completed = db.Column(db.Float, default=0.0)
+    
+    dashboard_otp = db.Column(db.String(255), nullable=True)
+    dashboard_otp_expire_ts = db.Column(db.DateTime(timezone=True), nullable=True)
+    dashboard_otp_used = db.Column(db.Boolean, default=False, nullable=False)
+    
     created_at = db.Column(db.DateTime(timezone=True), default=datetime.now(timezone.utc), nullable=False)
     updated_at = db.Column(db.DateTime(timezone=True), onupdate=datetime.now(timezone.utc))
 
@@ -106,22 +114,7 @@ class Study(db.Model):
         "UserStudy",
         back_populates="study"
     ) 
-# ------------------------------------------------
-# Participants Table
-# ------------------------------------------------
-# class Participant(db.Model):
-#     __tablename__ = 'participants'
-
-#     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-#     telegram_id = db.Column(db.String(100), nullable=True, unique=True)
-#     tz = db.Column(db.String(50), nullable=False)
-#     created_at = db.Column(db.DateTime(timezone=True), default=datetime.now(timezone.utc), nullable=False)
-#     updated_at = db.Column(db.DateTime(timezone=True), onupdate=datetime.now(timezone.utc))
-
-#     # Relationships
-#     pings = db.relationship("Ping", back_populates="participant")
-#     enrollments = db.relationship("Enrollment", back_populates="participant")
-
+    
 # ------------------------------------------------
 # PingTemplates Table
 # ------------------------------------------------
