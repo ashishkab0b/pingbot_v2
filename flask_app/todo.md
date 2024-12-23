@@ -1,3 +1,3 @@
-add study pid to pings
-handle timezones
-handle starting day
+
+- handle timezones
+- setup automatic secrets rotation for telegram key
