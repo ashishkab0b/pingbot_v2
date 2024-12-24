@@ -10,6 +10,7 @@ from flask_cors import CORS
 import hashlib
 from dotenv import load_dotenv
 from flask import Response
+from flasgger import Swagger
 
 
 
@@ -29,6 +30,7 @@ def create_app(config='config.Config'):
     
     app = Flask(__name__)
     CORS(app)
+    Swagger(app)
 
     # Attach logger to app
     app.logger = logger
@@ -52,7 +54,7 @@ def create_app(config='config.Config'):
     from blueprints.ping_templates import ping_templates_bp
     from blueprints.enrollments import enrollments_bp
     from blueprints.pings import pings_bp
-    from blueprints.ping_forwarder import ping_router_bp
+    from blueprints.participant_facing import particpant_facing_bp
     
     # app.register_blueprint(admin_bp, url_prefix='/admin')
     app.register_blueprint(bot_bp, url_prefix='/api/bot')
@@ -61,7 +63,7 @@ def create_app(config='config.Config'):
     app.register_blueprint(ping_templates_bp, url_prefix='/api')
     app.register_blueprint(enrollments_bp, url_prefix='/api')
     app.register_blueprint(pings_bp, url_prefix='/api')
-    app.register_blueprint(ping_router_bp, url_prefix='/')
+    app.register_blueprint(particpant_facing_bp, url_prefix='/')
     
     # @app.before_request
     # def log_request():

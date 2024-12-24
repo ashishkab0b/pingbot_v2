@@ -48,12 +48,6 @@ function ViewStudy() {
         <p><strong>Signup Code:</strong> {study.code}</p>
       </section>
 
-      {/* 
-        In the future, you can add more sections or sub-routes:
-          /studies/:studyId/participants
-          /studies/:studyId/reports
-        etc.
-      */}
     </div>
   );
 }

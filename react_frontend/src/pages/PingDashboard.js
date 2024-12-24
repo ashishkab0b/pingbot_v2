@@ -1,7 +1,13 @@
 import React, { useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
+import StudyNav from '../components/StudyNav';
 import axios from '../api/axios';
+import { useStudy } from '../context/StudyContext';
 
 function PingDashboard() {
+  const { studyId } = useParams();
+  const study = useStudy();
+
   // -----------------------------------------
   // State
   // -----------------------------------------
@@ -14,350 +20,201 @@ function PingDashboard() {
   const [perPage] = useState(5);
   const [totalPages, setTotalPages] = useState(1);
 
-  // Advanced Search Fields
-  const [searchStudyId, setSearchStudyId] = useState('');
-  const [searchDayNum, setSearchDayNum] = useState('');
-  const [searchMessage, setSearchMessage] = useState('');
-  const [searchEnrollmentId, setSearchEnrollmentId] = useState('');
-
-  // Create/Update form fields
-  const [editMode, setEditMode] = useState(false); // false = create, true = update
-  const [selectedPingId, setSelectedPingId] = useState(null);
-
-  const [studyId, setStudyId] = useState('');
-  const [pingTemplateId, setPingTemplateId] = useState('');
+  // Form fields for creating a new Ping
+  // Minimal required fields: enrollment_id, scheduled_ts, day_num
   const [enrollmentId, setEnrollmentId] = useState('');
   const [scheduledTs, setScheduledTs] = useState('');
-  const [expireTs, setExpireTs] = useState('');
-  const [reminderTs, setReminderTs] = useState('');
   const [dayNum, setDayNum] = useState('');
+  // Optional fields
+  const [pingTemplateId, setPingTemplateId] = useState('');
   const [message, setMessage] = useState('');
   const [url, setUrl] = useState('');
 
-  // -----------------------------------------
-  // Fetch pings on component mount or when page changes or advanced search changes
-  // -----------------------------------------
-  useEffect(() => {
-    fetchPings();
-    // eslint-disable-next-line
-  }, [page]);
+  const [showCreateForm, setShowCreateForm] = useState(false);
 
   // -----------------------------------------
-  // API call to GET /pings with optional query params
+  // Fetch pings whenever page or studyId changes
   // -----------------------------------------
-  const fetchPings = async () => {
+  useEffect(() => {
+    if (studyId) {
+      fetchPings(studyId, page, perPage);
+    }
+    // eslint-disable-next-line
+  }, [studyId, page]);
+
+  const fetchPings = async (studyId, currentPage, itemsPerPage) => {
     setLoading(true);
     setError(null);
 
     try {
-      // Build the query string for advanced search
-      const queryParams = new URLSearchParams();
-      queryParams.append('page', page);
-      queryParams.append('per_page', perPage);
-
-      if (searchStudyId) queryParams.append('study_id', searchStudyId);
-      if (searchDayNum) queryParams.append('day_num', searchDayNum);
-      if (searchMessage) queryParams.append('message', searchMessage);
-      if (searchEnrollmentId) queryParams.append('enrollment_id', searchEnrollmentId);
-
-      const response = await axios.get(`/pings?${queryParams.toString()}`);
+      // GET /studies/<study_id>/pings?page=...
+      const response = await axios.get(
+        `/studies/${studyId}/pings?page=${currentPage}&per_page=${itemsPerPage}`
+      );
       const { data, meta } = response.data;
+
       setPings(data);
       setPage(meta.page);
       setTotalPages(meta.pages);
     } catch (err) {
       console.error(err);
-      setError('Error fetching pings');
+      setError('Error fetching pings.');
     } finally {
       setLoading(false);
     }
   };
 
   // -----------------------------------------
-  // Handle "Search" button click
+  // Create a new ping
   // -----------------------------------------
-  const handleSearch = (e) => {
+  const handleCreatePing = async (e) => {
     e.preventDefault();
-    setPage(1); // Reset to first page after searching
-    fetchPings();
-  };
-
-  // -----------------------------------------
-  // Handle create or update submission
-  // -----------------------------------------
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    // Gather form data
-    const pingData = {
-      study_id: studyId,
-      ping_template_id: pingTemplateId,
-      enrollment_id: enrollmentId,
-      scheduled_ts: scheduledTs,
-      expire_ts: expireTs,
-      reminder_ts: reminderTs,
-      day_num: dayNum,
-      message: message,
-      url: url
-    };
+    if (!studyId) {
+      setError('No studyId found in URL.');
+      return;
+    }
 
     try {
-      if (!editMode) {
-        // CREATE
-        await axios.post('/pings', pingData);
-      } else {
-        // UPDATE
-        await axios.put(`/pings/${selectedPingId}`, pingData);
-      }
+      await axios.post(`/studies/${studyId}/pings`, {
+        enrollment_id: enrollmentId,
+        scheduled_ts: scheduledTs,
+        day_num: dayNum,
+        ping_template_id: pingTemplateId || null,
+        message: message || null,
+        url: url || null,
+      });
 
-      // Reset the form
-      resetForm();
-      // Refresh the list
-      fetchPings();
+      // Reset form
+      setEnrollmentId('');
+      setScheduledTs('');
+      setDayNum('');
+      setPingTemplateId('');
+      setMessage('');
+      setUrl('');
+      setShowCreateForm(false);
+
+      // Refresh the table
+      fetchPings(studyId, page, perPage);
     } catch (err) {
       console.error(err);
-      setError('Error creating/updating ping');
+      setError('Error creating ping.');
     }
   };
 
   // -----------------------------------------
-  // Handle click on "Edit" button
-  // -----------------------------------------
-  const handleEditClick = (ping) => {
-    setEditMode(true);
-    setSelectedPingId(ping.id);
-
-    // Populate form fields
-    setStudyId(ping.study_id);
-    setPingTemplateId(ping.ping_template_id || '');
-    setEnrollmentId(ping.enrollment_id);
-    setScheduledTs(ping.scheduled_ts || '');
-    setExpireTs(ping.expire_ts || '');
-    setReminderTs(ping.reminder_ts || '');
-    setDayNum(ping.day_num);
-    setMessage(ping.message || '');
-    setUrl(ping.url || '');
-  };
-
-  // -----------------------------------------
-  // Handle "Delete" button click
-  // -----------------------------------------
-  const handleDelete = async (pingId) => {
-    if (!window.confirm('Are you sure you want to delete this ping?')) return;
-
-    try {
-      await axios.delete(`/pings/${pingId}`);
-      fetchPings();
-    } catch (err) {
-      console.error(err);
-      setError('Error deleting ping');
-    }
-  };
-
-  // -----------------------------------------
-  // Reset form fields
-  // -----------------------------------------
-  const resetForm = () => {
-    setEditMode(false);
-    setSelectedPingId(null);
-    setStudyId('');
-    setPingTemplateId('');
-    setEnrollmentId('');
-    setScheduledTs('');
-    setExpireTs('');
-    setReminderTs('');
-    setDayNum('');
-    setMessage('');
-    setUrl('');
-  };
-
-  // -----------------------------------------
-  // Simple pagination handlers
+  // Pagination
   // -----------------------------------------
   const handlePreviousPage = () => {
-    if (page > 1) {
-      setPage((prev) => prev - 1);
-    }
+    if (page > 1) setPage((prev) => prev - 1);
   };
 
   const handleNextPage = () => {
-    if (page < totalPages) {
-      setPage((prev) => prev + 1);
-    }
+    if (page < totalPages) setPage((prev) => prev + 1);
   };
+
+  if (!studyId) {
+    return <div>Error: Missing studyId in the URL.</div>;
+  }
 
   // -----------------------------------------
   // Render
   // -----------------------------------------
   return (
     <div style={{ margin: '2rem' }}>
-      <h1>Pings Dashboard</h1>
+      <StudyNav />
+      <h1>Pings for {study?.internal_name || 'Loading...'}</h1>
 
-      {/* Advanced Search Section */}
-      <section style={{ marginBottom: '2rem' }}>
-        <h2>Advanced Search</h2>
-        <form onSubmit={handleSearch} style={{ display: 'flex', gap: '1rem' }}>
-          <div>
-            <label>Study ID: </label>
-            <input
-              type="number"
-              value={searchStudyId}
-              onChange={(e) => setSearchStudyId(e.target.value)}
-              placeholder="Study ID"
-            />
-          </div>
-          <div>
-            <label>Day Num: </label>
-            <input
-              type="number"
-              value={searchDayNum}
-              onChange={(e) => setSearchDayNum(e.target.value)}
-              placeholder="Day Num"
-            />
-          </div>
-          <div>
-            <label>Message Contains: </label>
-            <input
-              type="text"
-              value={searchMessage}
-              onChange={(e) => setSearchMessage(e.target.value)}
-              placeholder="Message..."
-            />
-          </div>
-          <div>
-            <label>Enrollment ID: </label>
-            <input
-              type="number"
-              value={searchEnrollmentId}
-              onChange={(e) => setSearchEnrollmentId(e.target.value)}
-              placeholder="Enrollment ID"
-            />
-          </div>
-          <button type="submit">Search</button>
-          <button type="button" onClick={() => {
-            // Reset search fields
-            setSearchStudyId('');
-            setSearchDayNum('');
-            setSearchMessage('');
-            setSearchEnrollmentId('');
-            setPage(1);
-            fetchPings();
-          }}>
-            Clear
-          </button>
-        </form>
-      </section>
+      <button
+        style={{ marginBottom: '1rem' }}
+        onClick={() => setShowCreateForm(!showCreateForm)}
+      >
+        {showCreateForm ? 'Cancel' : 'Create New Ping'}
+      </button>
 
-      {/* Create/Update Ping Section */}
-      <section style={{ marginBottom: '2rem' }}>
-        <h2>{editMode ? 'Update' : 'Create'} Ping</h2>
-        <form onSubmit={handleSubmit} style={{ maxWidth: '600px' }}>
-          <div style={{ marginBottom: '0.5rem' }}>
-            <label htmlFor="studyId">Study ID</label><br />
-            <input
-              id="studyId"
-              type="number"
-              value={studyId}
-              onChange={(e) => setStudyId(e.target.value)}
-              required
-            />
-          </div>
+      {showCreateForm && (
+        <section style={{ marginBottom: '2rem' }}>
+          <h2>Create a New Ping</h2>
+          <form onSubmit={handleCreatePing} style={{ maxWidth: '400px' }}>
+            <div style={{ marginBottom: '1rem' }}>
+              <label htmlFor="enrollmentId">Participant (Enrollment) ID</label>
+              <br />
+              <input
+                id="enrollmentId"
+                type="text"
+                value={enrollmentId}
+                onChange={(e) => setEnrollmentId(e.target.value)}
+                placeholder="1"
+                required
+              />
+            </div>
 
-          <div style={{ marginBottom: '0.5rem' }}>
-            <label htmlFor="pingTemplateId">Ping Template ID (optional)</label><br />
-            <input
-              id="pingTemplateId"
-              type="number"
-              value={pingTemplateId}
-              onChange={(e) => setPingTemplateId(e.target.value)}
-            />
-          </div>
+            <div style={{ marginBottom: '1rem' }}>
+              <label htmlFor="scheduledTs">Scheduled Timestamp (UTC)</label>
+              <br />
+              <input
+                id="scheduledTs"
+                type="datetime-local"
+                value={scheduledTs}
+                onChange={(e) => setScheduledTs(e.target.value)}
+                required
+              />
+              {/* Example format might need to be "YYYY-MM-DDTHH:MM" */}
+            </div>
 
-          <div style={{ marginBottom: '0.5rem' }}>
-            <label htmlFor="enrollmentId">Enrollment ID</label><br />
-            <input
-              id="enrollmentId"
-              type="number"
-              value={enrollmentId}
-              onChange={(e) => setEnrollmentId(e.target.value)}
-              required
-            />
-          </div>
+            <div style={{ marginBottom: '1rem' }}>
+              <label htmlFor="dayNum">Day Number</label>
+              <br />
+              <input
+                id="dayNum"
+                type="number"
+                value={dayNum}
+                onChange={(e) => setDayNum(e.target.value)}
+                placeholder="1"
+                required
+              />
+            </div>
 
-          <div style={{ marginBottom: '0.5rem' }}>
-            <label htmlFor="scheduledTs">Scheduled Timestamp</label><br />
-            <input
-              id="scheduledTs"
-              type="datetime-local"
-              value={scheduledTs}
-              onChange={(e) => setScheduledTs(e.target.value)}
-              required
-            />
-          </div>
+            <div style={{ marginBottom: '1rem' }}>
+              <label htmlFor="pingTemplateId">Ping Template ID (optional)</label>
+              <br />
+              <input
+                id="pingTemplateId"
+                type="text"
+                value={pingTemplateId}
+                onChange={(e) => setPingTemplateId(e.target.value)}
+                placeholder="(if using an existing template)"
+              />
+            </div>
 
-          <div style={{ marginBottom: '0.5rem' }}>
-            <label htmlFor="expireTs">Expire Timestamp (optional)</label><br />
-            <input
-              id="expireTs"
-              type="datetime-local"
-              value={expireTs}
-              onChange={(e) => setExpireTs(e.target.value)}
-            />
-          </div>
+            <div style={{ marginBottom: '1rem' }}>
+              <label htmlFor="message">Message (optional)</label>
+              <br />
+              <textarea
+                id="message"
+                rows={3}
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+              />
+            </div>
 
-          <div style={{ marginBottom: '0.5rem' }}>
-            <label htmlFor="reminderTs">Reminder Timestamp (optional)</label><br />
-            <input
-              id="reminderTs"
-              type="datetime-local"
-              value={reminderTs}
-              onChange={(e) => setReminderTs(e.target.value)}
-            />
-          </div>
+            <div style={{ marginBottom: '1rem' }}>
+              <label htmlFor="url">URL (optional)</label>
+              <br />
+              <input
+                id="url"
+                type="text"
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+              />
+            </div>
 
-          <div style={{ marginBottom: '0.5rem' }}>
-            <label htmlFor="dayNum">Day Num</label><br />
-            <input
-              id="dayNum"
-              type="number"
-              value={dayNum}
-              onChange={(e) => setDayNum(e.target.value)}
-              required
-            />
-          </div>
+            <button type="submit">Create Ping</button>
+          </form>
+        </section>
+      )}
 
-          <div style={{ marginBottom: '0.5rem' }}>
-            <label htmlFor="message">Message (optional)</label><br />
-            <textarea
-              id="message"
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              rows={3}
-            />
-          </div>
-
-          <div style={{ marginBottom: '0.5rem' }}>
-            <label htmlFor="url">URL (optional)</label><br />
-            <input
-              id="url"
-              type="text"
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-            />
-          </div>
-
-          <button type="submit">{editMode ? 'Update' : 'Create'} Ping</button>
-          {editMode && (
-            <button type="button" onClick={resetForm} style={{ marginLeft: '1rem' }}>
-              Cancel
-            </button>
-          )}
-        </form>
-      </section>
-
-      {/* Display Pings in a table */}
       <section>
-        <h2>Your Pings</h2>
+        <h2>Existing Pings</h2>
         {loading && <p>Loading pings...</p>}
         {error && <p style={{ color: 'red' }}>{error}</p>}
 
@@ -370,29 +227,24 @@ function PingDashboard() {
                 <thead>
                   <tr>
                     <th>ID</th>
-                    <th>Study ID</th>
                     <th>Enrollment ID</th>
-                    <th>Day Num</th>
+                    <th>Day #</th>
                     <th>Scheduled</th>
+                    <th>Ping Sent?</th>
+                    <th>Reminder Sent?</th>
                     <th>Message</th>
-                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {pings.map((ping) => (
                     <tr key={ping.id}>
                       <td>{ping.id}</td>
-                      <td>{ping.study_id}</td>
                       <td>{ping.enrollment_id}</td>
                       <td>{ping.day_num}</td>
                       <td>{ping.scheduled_ts}</td>
+                      <td>{ping.ping_sent ? 'Yes' : 'No'}</td>
+                      <td>{ping.reminder_sent ? 'Yes' : 'No'}</td>
                       <td>{ping.message}</td>
-                      <td>
-                        <button onClick={() => handleEditClick(ping)}>Edit</button>
-                        <button style={{ marginLeft: '0.5rem' }} onClick={() => handleDelete(ping.id)}>
-                          Delete
-                        </button>
-                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -401,7 +253,6 @@ function PingDashboard() {
           </>
         )}
 
-        {/* Simple Pagination Controls */}
         <div style={{ marginTop: '1rem' }}>
           <button onClick={handlePreviousPage} disabled={page <= 1}>
             Previous

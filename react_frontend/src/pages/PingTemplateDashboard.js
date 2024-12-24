@@ -1,13 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import StudyNav from '../components/StudyNav';
-import axios from '../api/axios'; // your configured axios instance
+import { useStudy } from '../context/StudyContext';
+import axios from '../api/axios'; 
 
 function PingTemplateDashboard() {
   // -----------------------------------------
   // Get studyId from the URL parameter
   // -----------------------------------------
   const { studyId } = useParams();
+  const study = useStudy();
 
   // -----------------------------------------
   // State
@@ -31,6 +33,7 @@ function PingTemplateDashboard() {
 
   // Toggle for "Create Ping Template" form
   const [showCreateForm, setShowCreateForm] = useState(false);
+  
 
   // -----------------------------------------
   // Fetch ping templates whenever page or studyId changes
@@ -132,7 +135,7 @@ function PingTemplateDashboard() {
   return (
     <div style={{ margin: '2rem' }}>
       <StudyNav />
-      <h1>Ping Templates for Study #{studyId}</h1>
+      <h1>Ping Templates for {study?.internal_name || 'Loading...'}</h1>
 
       <button
         style={{ marginBottom: '1rem' }}

@@ -31,7 +31,6 @@ function StudyDashboard() {
     const value = e.target.value;
     setPublicName(value);
 
-    // Auto-populate `internalName` only if it hasn't been manually edited
     if (!internalNameEdited) {
       setInternalName(value);
     }
@@ -154,7 +153,6 @@ function StudyDashboard() {
               />
             </div>
 
-            {/* If you still want to capture contact_message here, keep it, otherwise remove */}
             <div style={{ marginBottom: '1rem' }}>
               <label htmlFor="contactMessage">Contact Message</label><br />
               <textarea
@@ -188,25 +186,20 @@ function StudyDashboard() {
                     <th>Public Name</th>
                     <th>Internal Name</th>
                     <th>Signup Code</th>
-                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {studies.map((study) => (
-                    <tr key={study.id}>
+                    <tr
+                      key={study.id}
+                      style={{ cursor: 'pointer' }}
+                      onClick={() => navigate(`/studies/${study.id}`)}
+                      title="Click to view study details"
+                    >
                       <td>{study.id}</td>
                       <td>{study.public_name}</td>
                       <td>{study.internal_name}</td>
                       <td>{study.code}</td>
-                      <td>
-                        {/* 
-                          "View" button takes user to a detail page 
-                          e.g. /studies/<studyId>
-                        */}
-                        <button onClick={() => navigate(`/studies/${study.id}`)}>
-                          View
-                        </button>
-                      </td>
                     </tr>
                   ))}
                 </tbody>

@@ -3,7 +3,7 @@
 - when user changes params of study, change upcoming pings (optionally)
 - ping url forwarding
 - expiry and reminders
-
+- add functionality to modify study permissions
 - reinit db 
     - add functionality for url_text
 

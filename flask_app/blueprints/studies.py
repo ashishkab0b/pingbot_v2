@@ -3,34 +3,10 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from app import db
 from models import User, Study, UserStudy
 from utils import generate_non_confusable_code
+from permissions import get_current_user, user_has_study_permission
 
 studies_bp = Blueprint('studies', __name__)
 
-def get_current_user():
-    """Helper function to get the current user object from the JWT."""
-    user_id = get_jwt_identity()
-    if not user_id:
-        current_app.logger.warning("JWT identity is missing.")
-        return None
-    user = db.session.get(User, user_id)
-    if not user:
-        current_app.logger.warning(f"User with id {user_id} not found.")
-    return user
-
-def user_owns_study(user, study_id):
-    """
-    Helper function to check if the user is part of (has access to) the given study_id.
-    Returns the Study object if found; otherwise returns None.
-    """
-    study = (
-        db.session.query(Study)
-        .join(UserStudy)
-        .filter(UserStudy.study_id == study_id, UserStudy.user_id == user.id)
-        .first()
-    )
-    if not study:
-        current_app.logger.info(f"User {user.id} does not own study {study_id}.")
-    return study
 
 @studies_bp.route('/studies', methods=['GET'])
 @jwt_required()
@@ -136,7 +112,7 @@ def get_single_study(study_id):
     if not user:
         return jsonify({"error": "User not found"}), 404
 
-    study = user_owns_study(user, study_id)
+    study = user_has_study_permission(user_id=user.id, study_id=study_id, minimum_role="viewer")
     if not study:
         current_app.logger.warning(f"Study {study_id} not found or user {user.id} has no access.")
         return jsonify({"error": f"Study {study_id} not found or no access"}), 404
@@ -157,7 +133,7 @@ def update_study(study_id):
     if not user:
         return jsonify({"error": "User not found"}), 404
 
-    study = user_owns_study(user, study_id)
+    study = user_has_study_permission(user_id=user.id, study_id=study_id, minimum_role="editor")
     if not study:
         current_app.logger.warning(f"Study {study_id} not found or user {user.id} has no access.")
         return jsonify({"error": f"Study {study_id} not found or no access"}), 404
@@ -183,7 +159,7 @@ def delete_study(study_id):
     if not user:
         return jsonify({"error": "User not found"}), 404
 
-    study = user_owns_study(user, study_id)
+    study = user_has_study_permission(user_id=user.id, study_id=study_id, minimum_role="editor")
     if not study:
         current_app.logger.warning(f"Study {study_id} not found or user {user.id} has no access.")
         return jsonify({"error": f"Study {study_id} not found or no access"}), 404
