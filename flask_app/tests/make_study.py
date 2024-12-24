@@ -26,7 +26,8 @@ def create_study(token):
     url = f"{config['flask_app_url']}/api/studies"
     data = {
         "public_name": "Test Study",
-        "internal_name": "test_study"
+        "internal_name": "test_study",
+        "contact_message": "Contact us",
     }
     header = {
         "Content-Type": "application/json",
@@ -44,7 +45,8 @@ def make_ping_templates(token, study_id):
     data = {
         "name": "Test Ping Template",
         "message": "Test message",
-        "url": "https://www.google.com",
+        "url_text": "Click here",
+        "url": "https://www.stanford.edu",
         "schedule": [
             {"start_day_num": 1, "start_time": "09:00", "end_day_num": 1, "end_time": "10:00"},
             {"start_day_num": 2, "start_time": "09:00", "end_day_num": 2, "end_time": "10:00"},

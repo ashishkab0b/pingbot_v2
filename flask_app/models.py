@@ -34,8 +34,8 @@ class Enrollment(db.Model):
     dashboard_otp_expire_ts = db.Column(db.DateTime(timezone=True), nullable=True)
     dashboard_otp_used = db.Column(db.Boolean, default=False, nullable=False)
     
-    created_at = db.Column(db.DateTime(timezone=True), default=datetime.now(timezone.utc), nullable=False)
-    updated_at = db.Column(db.DateTime(timezone=True), onupdate=datetime.now(timezone.utc))
+    created_at = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_at = db.Column(db.DateTime(timezone=True), onupdate=lambda: datetime.now(timezone.utc))
 
     # Relationships
     pings = db.relationship("Ping", back_populates="enrollment")
@@ -72,8 +72,8 @@ class UserStudy(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     study_id = db.Column(db.Integer, db.ForeignKey('studies.id'), nullable=False)
     role = db.Column(db.String(255), nullable=False)  # e.g. 'owner': sharing + editing + viewing, 'editor': editing + viewing, 'viewer': viewing only
-    created_at = db.Column(db.DateTime(timezone=True), default=datetime.now(timezone.utc), nullable=False)
-    updated_at = db.Column(db.DateTime(timezone=True), onupdate=datetime.now(timezone.utc))
+    created_at = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_at = db.Column(db.DateTime(timezone=True), onupdate=lambda: datetime.now(timezone.utc))
 
     # Relationships
     user = db.relationship("User", back_populates="user_studies")
@@ -101,9 +101,10 @@ class User(db.Model):
     first_name = db.Column(db.String(100))
     last_name = db.Column(db.String(100))
     institution = db.Column(db.String(255))
-    last_login = db.Column(db.DateTime(timezone=True), default=datetime.now(timezone.utc))
-    created_at = db.Column(db.DateTime(timezone=True), default=datetime.now(timezone.utc), nullable=False)
-    updated_at = db.Column(db.DateTime(timezone=True), onupdate=datetime.now(timezone.utc))
+    prolific_token = db.Column(db.String(255))
+    last_login = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_at = db.Column(db.DateTime(timezone=True), onupdate=lambda: datetime.now(timezone.utc))
 
     # Many-to-many relationship with Study
     user_studies = db.relationship(
@@ -142,8 +143,8 @@ class Study(db.Model):
     internal_name = db.Column(db.String(255), nullable=False)
     code = db.Column(db.String(255), nullable=False, unique=True)
     contact_message = db.Column(db.Text)  # e.g., "Please contact the study team for any questions or concerns by emailing ashm@stanford.edu."
-    created_at = db.Column(db.DateTime(timezone=True), default=datetime.now(timezone.utc), nullable=False)
-    updated_at = db.Column(db.DateTime(timezone=True), onupdate=datetime.now(timezone.utc))
+    created_at = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_at = db.Column(db.DateTime(timezone=True), onupdate=lambda: datetime.now(timezone.utc))
 
     # Relationships
     ping_templates = db.relationship("PingTemplate", back_populates="study")
@@ -178,12 +179,13 @@ class PingTemplate(db.Model):
     study_id = db.Column(db.Integer, db.ForeignKey('studies.id'), nullable=False)
     name = db.Column(db.String(255), nullable=False)
     message = db.Column(db.Text, nullable=False)
-    url = db.Column(db.String(255))
+    url = db.Column(db.String(255))  # e.g., "https://qualtrics.com/survey"
+    url_text = db.Column(db.String(255))  # e.g., "Click here to take the survey."
     reminder_latency = db.Column(Interval)  # e.g., '1 hour', '30 minutes'
     expire_latency = db.Column(Interval)    # e.g., '24 hours'
     schedule = db.Column(JSONB, nullable=True)  # e.g.,  [{"start_day_num": 1, "start_time": "09:00", "end_day_num": 1, "end_time": "10:00"}, {"day_num": 2, "start_time": "09:00", "end_time": "10:00"}]
-    created_at = db.Column(db.DateTime(timezone=True), default=datetime.now(timezone.utc), nullable=False)
-    updated_at = db.Column(db.DateTime(timezone=True), onupdate=datetime.now(timezone.utc))
+    created_at = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_at = db.Column(db.DateTime(timezone=True), onupdate=lambda: datetime.now(timezone.utc))
 
     # Relationships
     study = db.relationship("Study", back_populates="ping_templates")
@@ -196,8 +198,9 @@ class PingTemplate(db.Model):
             'name': self.name,
             'message': self.message,
             'url': self.url,
-            'reminder_latency': self.reminder_latency,
-            'expire_latency': self.expire_latency,
+            'url_text': self.url_text,
+            'reminder_latency': str(self.reminder_latency),
+            'expire_latency': str(self.expire_latency),
             'schedule': self.schedule,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None,
@@ -212,18 +215,23 @@ class Ping(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     study_id = db.Column(db.Integer, db.ForeignKey('studies.id'), nullable=False)
     ping_template_id = db.Column(db.Integer, db.ForeignKey('ping_templates.id'), nullable=False)
-    # participant_id = db.Column(db.Integer, db.ForeignKey('participants.id'), nullable=False)
     enrollment_id = db.Column(db.Integer, db.ForeignKey('enrollments.id'), nullable=False)
+    
     scheduled_ts = db.Column(db.DateTime(timezone=True), nullable=False)
     expire_ts = db.Column(db.DateTime(timezone=True))
     reminder_ts = db.Column(db.DateTime(timezone=True))
-    day_num = db.Column(db.Integer, nullable=False)
-    message = db.Column(db.Text, nullable=True)
-    url = db.Column(db.String(255), nullable=True)
     ping_sent = db.Column(db.Boolean, nullable=False, default=False)
     reminder_sent = db.Column(db.Boolean, nullable=False, default=False)
-    created_at = db.Column(db.DateTime(timezone=True), default=datetime.now(timezone.utc), nullable=False)
-    updated_at = db.Column(db.DateTime(timezone=True), onupdate=datetime.now(timezone.utc))
+    
+    forwarding_code = db.Column(db.String(255), nullable=False, default=lambda: os.urandom(16).hex())
+    
+    day_num = db.Column(db.Integer, nullable=False)
+    
+    message = db.Column(db.Text, nullable=False)
+    url = db.Column(db.String(255), nullable=True)
+    
+    created_at = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_at = db.Column(db.DateTime(timezone=True), onupdate=lambda: datetime.now(timezone.utc))
 
     # Relationships
     study = db.relationship("Study", back_populates="pings")

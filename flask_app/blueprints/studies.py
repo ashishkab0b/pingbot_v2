@@ -53,7 +53,11 @@ def get_studies():
 
     pagination = query.paginate(page=page, per_page=per_page, error_out=False)
     studies_list = [
-        {"id": st.id, "public_name": st.public_name, "internal_name": st.internal_name, "code": st.code}
+        {"id": st.id, 
+         "public_name": st.public_name, 
+         "internal_name": st.internal_name,
+         "contact_message": st.contact_message,
+         "code": st.code}
         for st in pagination.items
     ]
 
@@ -142,6 +146,7 @@ def get_single_study(study_id):
         "id": study.id, 
         "public_name": study.public_name, 
         "internal_name": study.internal_name,
+        "contact_message": study.contact_message,
         "code": study.code
         }), 200
 

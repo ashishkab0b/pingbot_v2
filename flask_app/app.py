@@ -52,6 +52,7 @@ def create_app(config='config.Config'):
     from blueprints.ping_templates import ping_templates_bp
     from blueprints.enrollments import enrollments_bp
     from blueprints.pings import pings_bp
+    from blueprints.ping_forwarder import ping_router_bp
     
     # app.register_blueprint(admin_bp, url_prefix='/admin')
     app.register_blueprint(bot_bp, url_prefix='/api/bot')
@@ -60,6 +61,7 @@ def create_app(config='config.Config'):
     app.register_blueprint(ping_templates_bp, url_prefix='/api')
     app.register_blueprint(enrollments_bp, url_prefix='/api')
     app.register_blueprint(pings_bp, url_prefix='/api')
+    app.register_blueprint(ping_router_bp, url_prefix='/')
     
     # @app.before_request
     # def log_request():

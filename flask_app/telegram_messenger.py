@@ -14,7 +14,7 @@ load_dotenv()
 logger = setup_logger()
 
 
-class TelegramMessenger:
+class MessageConstructor:
     """
     A class to send unprompted messages to Telegram users.
     """
@@ -104,13 +104,13 @@ class TelegramMessenger:
         },
     }
     
-    def __init__(self, bot_token: str, ping: Ping):
+    def __init__(self, ping: Ping):
         """
         Initialize the Telegram bot with the provided bot token.
         :param bot_token: str - The Telegram bot token from BotFather.
         :param ping_id: int - The ID of the ping in the database.
         """
-        self.bot = Bot(token=bot_token)
+        
         self.ping = ping
         self.telegram_id = self.ping.enrollment.telegram_id
         self.url = None
@@ -121,7 +121,7 @@ class TelegramMessenger:
         Construct a URL for a ping.
         :return: str - The URL for the ping.
         """
-        url = self.ping.ping_template.url
+        url = self.ping.url
         for key, value in self.URL_VARIABLES.items():
             if value['db_table'] == 'pings':
                 url = url.replace(key, str(getattr(self.ping, value['db_column'])))
@@ -141,16 +141,12 @@ class TelegramMessenger:
         :return: str - The message with the URL.
         """
 
-        if self.ping.message:
-            message = self.ping.message
-        else:
-            message = ""
+        message = self.ping.message or ""  # TODO: will be removed after fixing message model to non nullable
             
         if not self.ping.message and not self.ping.url: # TODO: will be removed after fixing message model to non nullable
             message = 'MISSING MESSAGE'
         
-        if "<URL>" not in message:
-            message += f"\n\n{self.ping.url}"
+        replace_url = True if "<URL>" in message else False
         
         for key, value in self.MESSAGE_VARIABLES.items():
             if value['db_table'] == 'pings':
@@ -165,32 +161,32 @@ class TelegramMessenger:
         self.message = message
         return message
     
-    def send_ping(self):
+    
+class TelegramMessenger:
+    
+    def __init__(self, bot_token):
+        self.bot = Bot(token=bot_token)
+        
+    def send_ping(self, telegram_id, message):
         """
         Send a message to a user.
-        :param chat_id: int - The Telegram chat ID of the user.
+        :param telegram_id: int - The Telegram chat ID of the user.
         :param text: str - The text message to send.
         :return: bool - True if the message was sent successfully, False otherwise.
         """
         
-        async def send(chat_id, message):
-            """
-            Send a message to a user.
-            :param chat_id: int - The Telegram chat ID of the user.
-            :param message: str - The message to send.
-            """
-            await self.bot.send_message(chat_id=chat_id, text=message)
+        async def send(telegram_id, message):
+            await self.bot.send_message(chat_id=telegram_id, text=message)
             return None
         
-        url = self.construct_url()
-        message = self.construct_message()
-        
         try:
-            asyncio.run(send(self.telegram_id, message))
+            asyncio.run(send(telegram_id, message))
         except TelegramError as e:
-            logger.error(f"Failed to send message to chat ID {self.telegram_id}")
+            logger.error(f"Failed to send message to chat ID {telegram_id}")
             logger.exception(e)
             return False
         else:
-            logger.info(f"Successfully sent message to chat ID {self.telegram_id}")
+            logger.info(f"Successfully sent message to chat ID {telegram_id}")
             return True
+        
+        

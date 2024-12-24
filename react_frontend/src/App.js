@@ -6,11 +6,16 @@ import StudyDashboard from './pages/StudyDashboard';
 import PingTemplateDashboard from './pages/PingTemplateDashboard';
 import StudyEnroll from './pages/StudyEnroll'; 
 import PingDashboard from './pages/PingDashboard';
+import ViewStudy from './pages/ViewStudy';
 import PrivateRoute from './components/PrivateRoute';
+import NavBar from './components/NavBar';
 
 function App() {
   return (
     <Router>
+      <div>
+        <NavBar />
+      <main>
       <Routes>
         {/* Public routes */}
         <Route path="/login" element={<Login />} />
@@ -25,24 +30,41 @@ function App() {
             </PrivateRoute>
           }
         />
-        <Route path="/studies/:studyId/pingtemplates"
+        <Route path="/studies/:studyId"
+          element={
+            <PrivateRoute>
+              <ViewStudy />
+            </PrivateRoute>
+          }
+        />
+        <Route path="/studies/:studyId/ping_templates"
           element={
             <PrivateRoute>
               <PingTemplateDashboard />
             </PrivateRoute>
           }
         />
-        <Route path="/pings"
+        <Route path="/studies/:studyId/pings"
           element={
             <PrivateRoute>
               <PingDashboard />
             </PrivateRoute>
           }
         />
+        <Route path="/studies/:studyId/participants"
+          element={
+            <PrivateRoute>
+              <ParticipantDashboard />
+            </PrivateRoute>
+          }
+        />
+
 
         {/* Catch-all route */}
         <Route path="*" element={<Navigate to="/studies" />} />
       </Routes>
+      </main>
+      </div>
     </Router>
   );
 }

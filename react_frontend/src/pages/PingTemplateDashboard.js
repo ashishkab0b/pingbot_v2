@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import StudyNav from '../components/StudyNav';
 import axios from '../api/axios'; // your configured axios instance
 
 function PingTemplateDashboard() {
@@ -130,6 +131,7 @@ function PingTemplateDashboard() {
   // -----------------------------------------
   return (
     <div style={{ margin: '2rem' }}>
+      <StudyNav />
       <h1>Ping Templates for Study #{studyId}</h1>
 
       <button
