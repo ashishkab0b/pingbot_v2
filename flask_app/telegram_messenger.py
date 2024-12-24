@@ -1,6 +1,7 @@
 
 from telegram import Bot
 from telegram.error import TelegramError
+import asyncio
 
 from logger_setup import setup_logger
 from dotenv import load_dotenv
@@ -139,6 +140,18 @@ class TelegramMessenger:
         Construct a message with a URL.
         :return: str - The message with the URL.
         """
+
+        if self.ping.message:
+            message = self.ping.message
+        else:
+            message = ""
+            
+        if not self.ping.message and not self.ping.url: # TODO: will be removed after fixing message model to non nullable
+            message = 'MISSING MESSAGE'
+        
+        if "<URL>" not in message:
+            message += f"\n\n{self.ping.url}"
+        
         for key, value in self.MESSAGE_VARIABLES.items():
             if value['db_table'] == 'pings':
                 message = message.replace(key, str(getattr(self.ping, value['db_column'])))
@@ -151,22 +164,33 @@ class TelegramMessenger:
         
         self.message = message
         return message
-
-    def send_message(self):
+    
+    def send_ping(self):
         """
         Send a message to a user.
         :param chat_id: int - The Telegram chat ID of the user.
         :param text: str - The text message to send.
         :return: bool - True if the message was sent successfully, False otherwise.
         """
+        
+        async def send(chat_id, message):
+            """
+            Send a message to a user.
+            :param chat_id: int - The Telegram chat ID of the user.
+            :param message: str - The message to send.
+            """
+            await self.bot.send_message(chat_id=chat_id, text=message)
+            return None
+        
         url = self.construct_url()
         message = self.construct_message()
         
         try:
-            self.bot.send_message(chat_id=self.telegram_id, text=message)
-            logger.debug(f"Message sent to chat ID {self.telegram_id}: {message}")
-            return True
+            asyncio.run(send(self.telegram_id, message))
         except TelegramError as e:
             logger.error(f"Failed to send message to chat ID {self.telegram_id}")
             logger.exception(e)
             return False
+        else:
+            logger.info(f"Successfully sent message to chat ID {self.telegram_id}")
+            return True

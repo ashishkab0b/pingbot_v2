@@ -16,7 +16,7 @@ class Config:
     
     DYNAMODB_TABLE = os.environ['DYNAMODB_TABLE']
     
-    # TELEGRAM_BOT_SECRET_KEY = os.environ['BOT_SECRET_KEY']
+    TELEGRAM_SECRET_KEY = os.environ['TELEGRAM_SECRET_KEY']
     TELEGRAM_BOT_NAME = "SurveyPingBot"
     
     BOT_SECRET_KEY = os.environ['BOT_SECRET_KEY']

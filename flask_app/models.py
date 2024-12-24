@@ -41,6 +41,26 @@ class Enrollment(db.Model):
     pings = db.relationship("Ping", back_populates="enrollment")
     study = db.relationship("Study", back_populates="enrollments")
     
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'telegram_id': self.telegram_id,
+            'telegram_link_code': self.telegram_link_code,
+            'telegram_link_code_expire_ts': self.telegram_link_code_expire_ts.isoformat() if self.telegram_link_code_expire_ts else None,
+            'telegram_link_code_used': self.telegram_link_code_used,
+            'tz': self.tz,
+            'study_id': self.study_id,
+            'study_pid': self.study_pid,
+            'enrolled': self.enrolled,
+            'start_date': self.start_date.isoformat() if self.start_date else None,
+            'pr_completed': self.pr_completed,
+            'dashboard_otp': self.dashboard_otp,
+            'dashboard_otp_expire_ts': self.dashboard_otp_expire_ts.isoformat() if self.dashboard_otp_expire_ts else None,
+            'dashboard_otp_used': self.dashboard_otp_used,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
+        }
+    
 
 # ------------------------------------------------
 # UserStudy Table (Users ↔ Studies with attributes)
@@ -58,6 +78,16 @@ class UserStudy(db.Model):
     # Relationships
     user = db.relationship("User", back_populates="user_studies")
     study = db.relationship("Study", back_populates="user_studies")
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'study_id': self.study_id,
+            'role': self.role,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
+        }
 
 # ------------------------------------------------
 # Users Table
@@ -88,6 +118,18 @@ class User(db.Model):
     def check_password(self, password):
         """Check if the provided password matches the stored hash."""
         return check_password_hash(self.password, password)
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'email': self.email,
+            'first_name': self.first_name,
+            'last_name': self.last_name,
+            'institution': self.institution,
+            'last_login': self.last_login.isoformat() if self.last_login else None,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
+        }
 
 # ------------------------------------------------
 # Studies Table
@@ -115,6 +157,17 @@ class Study(db.Model):
         back_populates="study"
     ) 
     
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'public_name': self.public_name,
+            'internal_name': self.internal_name,
+            'code': self.code,
+            'contact_message': self.contact_message,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
+        }
+    
 # ------------------------------------------------
 # PingTemplates Table
 # ------------------------------------------------
@@ -135,6 +188,20 @@ class PingTemplate(db.Model):
     # Relationships
     study = db.relationship("Study", back_populates="ping_templates")
     pings = db.relationship("Ping", back_populates="ping_template")
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'study_id': self.study_id,
+            'name': self.name,
+            'message': self.message,
+            'url': self.url,
+            'reminder_latency': self.reminder_latency,
+            'expire_latency': self.expire_latency,
+            'schedule': self.schedule,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
+        }
 
 # ------------------------------------------------
 # Pings Table
@@ -163,4 +230,21 @@ class Ping(db.Model):
     ping_template = db.relationship("PingTemplate", back_populates="pings")
     enrollment = db.relationship("Enrollment", back_populates="pings")
     # participant = db.relationship("Participant", back_populates="pings")
-
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'study_id': self.study_id,
+            'ping_template_id': self.ping_template_id,
+            'enrollment_id': self.enrollment_id,
+            'scheduled_ts': self.scheduled_ts.isoformat() if self.scheduled_ts else None,
+            'expire_ts': self.expire_ts.isoformat() if self.expire_ts else None,
+            'reminder_ts': self.reminder_ts.isoformat() if self.reminder_ts else None,
+            'day_num': self.day_num,
+            'message': self.message,
+            'url': self.url,
+            'ping_sent': self.ping_sent,
+            'reminder_sent': self.reminder_sent,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
+        }

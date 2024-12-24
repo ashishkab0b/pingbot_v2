@@ -204,12 +204,12 @@ def send_ping():
 
     # Send ping
     messenger = TelegramMessenger(
-        bot_token=current_app.config['TELEGRAM_BOT_TOKEN'], 
+        bot_token=current_app.config['TELEGRAM_SECRET_KEY'], 
         ping=ping)
     messenger.send_ping()
     
     # Log the end of the request
     current_app.logger.info(f"Successfully sent ping={ping_id}.")
     
-    return jsonify({"message": "ping_id={ping.id} sent successfully."}), 200
+    return jsonify({"message": f"ping_id={ping.id} sent successfully."}), 200
     

@@ -17,7 +17,26 @@ function StudyDashboard() {
   // Form fields for creating a new study
   const [publicName, setPublicName] = useState('');
   const [internalName, setInternalName] = useState('');
-  const [signupCode] = useState(''); // Auto-generated
+  const [contactMessage, setContactMessage] = useState('');
+
+  // Track whether `internalName` was manually edited
+  const [internalNameEdited, setInternalNameEdited] = useState(false);
+
+  const handlePublicNameChange = (e) => {
+    const value = e.target.value;
+    setPublicName(value);
+
+    // Auto-populate `internalName` only if it hasn't been manually edited
+    if (!internalNameEdited) {
+      setInternalName(value);
+    }
+  };
+
+  const handleInternalNameChange = (e) => {
+    const value = e.target.value;
+    setInternalName(value);
+    setInternalNameEdited(true); // Mark as manually edited
+  };
 
   // -----------------------------------------
   // NEW: Toggles whether the "Create Study" form is shown
@@ -66,12 +85,13 @@ function StudyDashboard() {
       await axios.post('/studies', {
         public_name: publicName,
         internal_name: internalName,
-        code: signupCode,
+        contact_message: contactMessage,
       });
 
       // Reset form fields
       setPublicName('');
       setInternalName('');
+      setContactMessage('');
 
       // Optionally hide the form after successful creation
       setShowCreateForm(false);
@@ -129,7 +149,8 @@ function StudyDashboard() {
                 id="publicName"
                 type="text"
                 value={publicName}
-                onChange={(e) => setPublicName(e.target.value)}
+                onChange={handlePublicNameChange}
+                title="Name of the study as displayed to participants."
                 required
               />
             </div>
@@ -140,10 +161,24 @@ function StudyDashboard() {
                 id="internalName"
                 type="text"
                 value={internalName}
-                onChange={(e) => setInternalName(e.target.value)}
+                onChange={handleInternalNameChange}
+                title="Name of the study as displayed in researcher interfaces."
                 required
               />
             </div>
+
+            <div style={{ marginBottom: '1rem' }}>
+              <label htmlFor="contactMessage">Contact Message</label><br />
+              <textarea
+                id="contactMessage"
+                value={contactMessage}
+                onChange={(e) => setContactMessage(e.target.value)}
+                title="This is a message to participants with instructions on how to contact you, the researcher."
+                rows="4"
+                style={{ width: '100%' }}
+              />
+            </div>
+
 
             <button type="submit">Create Study</button>
           </form>
@@ -167,6 +202,7 @@ function StudyDashboard() {
                     <th>ID</th>
                     <th>Public Name</th>
                     <th>Internal Name</th>
+                    <th>Contact Message</th>
                     <th>Signup Code</th>
                   </tr>
                 </thead>
@@ -176,6 +212,7 @@ function StudyDashboard() {
                       <td>{study.id}</td>
                       <td>{study.public_name}</td>
                       <td>{study.internal_name}</td>
+                      <td>{study.contact_message}</td>
                       <td>{study.code}</td>
                     </tr>
                   ))}

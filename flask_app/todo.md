@@ -1,3 +1,3 @@
 
-- handle timezones
-- setup automatic secrets rotation for telegram key
+- check all handling of timezones
+

@@ -29,13 +29,14 @@ def send_ping(ping_id):
         endpoint_url = f"{base_url}/send_ping"
 
         # Prepare the request payload
+        header = {"X-Bot-Secret-Key": config.BOT_SECRET_KEY}
         payload = {"ping_id": ping_id}
 
         # Log the request
         logger.info(f"Sending POST request to {endpoint_url} with ping_id={ping_id}")
 
         # Make the POST request
-        response = requests.post(endpoint_url, json=payload)
+        response = requests.post(endpoint_url, json=payload, headers=header)
 
         # Handle the response
         if response.ok:

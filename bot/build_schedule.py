@@ -35,7 +35,7 @@ def get_pings_for_schedule():
     last_ts = datetime.combine(today, datetime.max.time(), tzinfo=timezone.utc)
     
     # Query the database for pings scheduled for today
-    url = f"{config.FLASK_APP_BOT_BASE_URL}/pings_for_date"
+    url = f"{config.FLASK_APP_BOT_BASE_URL}/get_pings_in_time_interval"
     header = {"X-Bot-Secret-Key": config.BOT_SECRET_KEY}
     payload = {"start_ts": now.isoformat(), "end_ts": last_ts.isoformat()}
     response = requests.get(url, json=payload, headers=header)
@@ -47,52 +47,67 @@ def get_pings_for_schedule():
     
     # Parse response
     try:
-        data = response.json()  # Attempt to parse JSON
+        pings = response.json()  # Attempt to parse JSON
     except ValueError:
         logger.error(f"Response is not valid JSON: {response.text}")
         return
 
-    logger.info(f"Received {len(data)} pings for date today ({today}).")
-    logger.debug(f"Pings received: {[(x['id'], x['scheduled_ts']) for x in data]}")
-    return data["pings"]
+    logger.info(f"Received {len(pings)} pings for date today ({today}).")
+    logger.debug(f"Pings received: {[(x['id'], x['scheduled_ts']) for x in pings]}")
+    return pings
 
 
-def schedule_cron_jobs():
+def schedule_cron_jobs(pings: list):
     try:
-        # Retrieve pings for scheduling
-        pings = get_pings_for_schedule()
-
         # Get the absolute path of the current script
-        current_dir = os.path.dirname(os.path.abspath(__file__))
+        current_file = os.path.abspath(__file__)
+        current_dir = os.path.dirname(current_file)
         send_ping_script = os.path.join(current_dir, 'send_ping_request.py')
 
         # Log the start of scheduling
         logger.info("Starting to schedule cron jobs.")
 
-        with CronTab(user=True) as cron:
-            # Remove existing jobs
-            cron.remove_all()
-            logger.info("Removed all existing cron jobs.")
+        cron = CronTab(user=True)
+        
+        # Remove existing jobs
+        cron.remove_all()
+        logger.info("Removed all existing cron jobs.")
 
-            # Add new jobs
-            for ping in pings:
-                try:
-                    # Convert ping.scheduled_ts to a cron-compatible schedule
-                    scheduled_time = ping.scheduled_ts  # Assuming this is a datetime object
-                    cron_time = scheduled_time.strftime("%M %H %d %m *")  # Minute, Hour, Day, Month, Any weekday
+        # Add new jobs
+        success_count = 0
+        fail_count = 0
+        for ping in pings:
+            try:
+                # Convert ping.scheduled_ts to a cron-compatible schedule
+                scheduled_time = datetime.fromisoformat(ping["scheduled_ts"])
+                cron_time = scheduled_time.strftime("%M %H %d %m *")  # Minute, Hour, Day, Month, Any weekday
 
-                    # Create a new cron job
-                    job = cron.new(command=f'python3 {send_ping_script} {ping.id}')
-                    job.setall(cron_time)
-                    logger.info(f"Scheduled job for ping ID {ping.id} at {scheduled_time}.")
-                    
-                except Exception as e:
-                    logger.error(f"Error scheduling ping ID {ping.id}.")
-                    logger.exception(e)
+                # Create a new cron job
+                job = cron.new(command=f'python3 {send_ping_script} {ping["id"]}')
+                job.setall(cron_time)
+                logger.info(f"Scheduled job for ping ID {ping['id']} at {scheduled_time}.")
+                
+            except Exception as e:
+                logger.error(f"Error scheduling ping ID {ping['id']}.")
+                logger.exception(e)
+                fail_count += 1
+            else:
+                success_count += 1
+        cron.write()            
+        logger.info(f"Successfully wrote {success_count} jobs to crontab with {fail_count} errors.")
 
-            # Write all jobs to the crontab
+
+        # Add a job to run this script at the beginning of each day
+        try:
+            job = cron.new(command=f'python3 {current_file}')
+            job.setall('0 0 * * *')
             cron.write()
-            logger.info("Successfully wrote jobs to crontab.")
+        except Exception as e:
+            logger.error("Error scheduling daily job.")
+            logger.exception(e)
+        else:
+            logger.info("Scheduled daily job to run at 00:00.")
+
 
     except Exception as e:
         logger.error(f"An error occurred while scheduling cron jobs.")
@@ -102,6 +117,12 @@ def schedule_cron_jobs():
 
 
 if __name__ == '__main__':
-    
+
+    # Get pings for today
     pings = get_pings_for_schedule()
-    schedule_cron_jobs()
+    
+    # Schedule cron jobs
+    if pings:
+        schedule_cron_jobs(pings)
+    else:
+        logger.info("No pings to schedule.")

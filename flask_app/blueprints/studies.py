@@ -79,6 +79,7 @@ def create_study():
     data = request.get_json()
     public_name = data.get('public_name')
     internal_name = data.get('internal_name')
+    contact_message = data.get('contact_message')
     role = "owner"
 
     if not public_name or not internal_name:
@@ -94,7 +95,10 @@ def create_study():
 
     # Create the new study 
     try:
-        new_study = Study(public_name=public_name, internal_name=internal_name, code=study_code)
+        new_study = Study(public_name=public_name, 
+                          internal_name=internal_name, 
+                          code=study_code,
+                          contact_message=contact_message)
         db.session.add(new_study)
         db.session.commit()
     except Exception as e:
