@@ -3,7 +3,7 @@ import json
 from flask import Flask, request, jsonify
 import os
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
-import boto3
+import redis
 from datetime import datetime, timedelta
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
@@ -45,6 +45,15 @@ def create_app(config='config.Config'):
     # Extensions
     jwt.init_app(app)
     db.init_app(app)
+    
+    # Initialize Redis
+    app.redis = redis.StrictRedis(
+        host=app.config['REDIS_HOST'],
+        port=app.config['REDIS_PORT'],
+        db=app.config['REDIS_DB'],
+        password=app.config['REDIS_PASSWORD'],
+        decode_responses=True
+    )
     
     # Blueprints
     # from blueprints.admin import admin_bp

@@ -41,9 +41,9 @@ def rotate_key(root_dirs, fname, key_name, key_length, match_keys):
 
 if __name__ == "__main__":
     
-    directories_to_search = ["./bot", "./flask_app"]
+    directories_to_search = ["./bot", "./flask_app", "."]
 
-    rotate_key_names = ['BOT_SECRET_KEY', 'JWT_SECRET_KEY']
+    rotate_key_names = ['BOT_SECRET_KEY', 'JWT_SECRET_KEY', 'REDIS_PASSWORD']
     
     for key in rotate_key_names:
         rotate_key(root_dirs=directories_to_search, 

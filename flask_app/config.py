@@ -9,6 +9,13 @@ class Config:
     
     JWT_SECRET_KEY= os.environ['JWT_SECRET_KEY']
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=1)
+    JWT_BLACKLIST_ENABLED = True
+    JWT_BLACKLIST_TOKEN_CHECKS = ["access", "refresh"]
+    
+    REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
+    REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
+    REDIS_DB = 0
+    REDIS_PASSWORD = os.getenv("REDIS_PASSWORD", None)
     
     AWS_ACCESS_KEY_ID = os.environ['AWS_ACCESS_KEY_ID']
     AWS_SECRET_ACCESS_KEY = os.environ['AWS_SECRET_ACCESS_KEY']

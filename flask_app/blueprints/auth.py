@@ -10,7 +10,8 @@ from flask_jwt_extended import (
     create_access_token, 
     create_refresh_token, 
     jwt_required,
-    get_jwt_identity
+    get_jwt_identity,
+    get_jwt
 )
 from werkzeug.security import generate_password_hash, check_password_hash
 import secrets
@@ -18,10 +19,19 @@ import redis
 
 from config import Config
 from models import User
-from app import db
+from app import db, jwt
 
 auth_bp = Blueprint('auth', __name__)
 
+@jwt.token_in_blocklist_loader
+def check_if_token_is_blacklisted(jwt_header, jwt_payload):
+    """
+    Check if the given JWT is blacklisted (logged out).
+    """
+    jti = jwt_payload["jti"]
+    redis_client = current_app.redis
+    entry = redis_client.get(f"blacklisted_{jti}")
+    return entry is not None
 
 @auth_bp.route('/register', methods=['POST'])
 def register():
@@ -85,12 +95,6 @@ def login():
     return jsonify({'message': 'Invalid credentials'}), 401
 
 
-@auth_bp.route('/logout', methods=['POST'])
-@jwt_required()
-def logout():
-    pass
-
-
 @auth_bp.route('/refresh', methods=['POST'])
 @jwt_required(refresh=True)
 def refresh():
@@ -103,3 +107,19 @@ def refresh():
     except Exception as e:
         current_app.logger.error(f"Error refreshing token: {e}")
         return jsonify({'message': 'Token refresh failed'}), 500
+    
+@auth_bp.route('/logout', methods=['POST'])
+@jwt_required()
+def logout():
+    """
+    Blacklist the current JWT so that it cannot be used again.
+    """
+    jti = get_jwt()['jti']  # Unique identifier for JWT
+    # You can store other info like 'exp' in the token if you want to set a shorter TTL.
+    current_app.logger.info(f"Blacklisting token with jti: {jti}")
+
+    # Add to Redis with an expiration time. 
+    # It's recommended to match or exceed the JWT_ACCESS_TOKEN_EXPIRES time.
+    current_app.redis.setex(f"blacklisted_{jti}", Config.JWT_ACCESS_TOKEN_EXPIRES, "true")
+
+    return jsonify({"message": "Successfully logged out"}), 200
