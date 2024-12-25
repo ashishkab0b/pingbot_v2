@@ -45,3 +45,8 @@ Thumbs.db
 # Miscellaneous
 *.cache
 *.lock
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+form_gpt_queries.ipynb
+gpt_query.txt
