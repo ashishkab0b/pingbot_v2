@@ -5,6 +5,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy import Interval
+from config import CurrentConfig
 
 from app import db, create_app
 
@@ -16,7 +17,7 @@ def drop_tables():
     Drops all tables in the database by invoking db.drop_all()
     within a Flask application context.
     """
-    app = create_app()
+    app = create_app(CurrentConfig)
     with app.app_context():
         try:
             db.drop_all()
@@ -31,7 +32,7 @@ def create_tables():
     Creates all tables in the database by invoking db.create_all()
     within a Flask application context.
     """
-    app = create_app()
+    app = create_app(CurrentConfig)
     with app.app_context():
         try:
             db.create_all()

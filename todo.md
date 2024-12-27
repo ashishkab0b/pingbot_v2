@@ -4,15 +4,19 @@
 - ping url forwarding
 - expiry and reminders
 - add functionality to modify study permissions
-- reinit db 
-    - add functionality for url_text
+
+- check columns of what is displayed in dashboards (e.g. ping dash)
 
 - validation of input data
     - reminder latency, expire latency
 
-- add scheduled_ts_user_tz to ping display
+- show pings in participant timezone
 
 - deal with orphan enrollments (i.e. no one linked telegram id ). possibly move ping making to after telegram link
+
+- add feedback link on researcher interface
+    - save to db
+    - send me message on telegram
 
 participants capabilities
 - change timezone (and then update pings)
@@ -20,11 +24,7 @@ participants capabilities
 
 - rotate_keys in cron on server
 
-- put "get_user_studies" and similar methods from ping templates bp and other files into a separate file
-
 - make create ping template interface better
-
-- check blueprints use .to_dict()
 
 prolific integration
 - studies get published at the beginning of the ping block
@@ -34,3 +34,7 @@ prolific integration
 - one click approve completed participants'
 - approval button on pings sheet
 - generate spreadsheet with all pings and "approve" column. user uploads spreadsheet again to approve participants.
+
+- pings get assigned when telegram is linked
+    - within this process, messages get constructed and vars replaced
+    - enrolled = True

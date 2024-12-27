@@ -20,6 +20,8 @@ services:
       - ./flask_app/logs:/app/logs
     env_file:
       - ./flask_app/.env
+    environment:
+      - FLASK_ENV=production
     depends_on:
       - redis
 

@@ -69,7 +69,7 @@ def create_study():
     # Generate a unique study code used for signups
     study_code = None
     while not study_code:
-        code = generate_non_confusable_code(length=8)
+        code = generate_non_confusable_code(length=8, lowercase=True, uppercase=False, digits=True)
         if not Study.query.filter_by(code=code).first():
             study_code = code
 

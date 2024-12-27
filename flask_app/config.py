@@ -12,19 +12,12 @@ class Config:
     JWT_BLACKLIST_ENABLED = True
     JWT_BLACKLIST_TOKEN_CHECKS = ["access", "refresh"]
     
-    REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
-    REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
-    REDIS_DB = 0
-    REDIS_PASSWORD = os.getenv("REDIS_PASSWORD", None)
-    
-    AWS_ACCESS_KEY_ID = os.environ['AWS_ACCESS_KEY_ID']
-    AWS_SECRET_ACCESS_KEY = os.environ['AWS_SECRET_ACCESS_KEY']
-    AWS_DEFAULT_REGION = os.environ['AWS_DEFAULT_REGION']
-    
-    DYNAMODB_TABLE = os.environ['DYNAMODB_TABLE']
-    
     TELEGRAM_SECRET_KEY = os.environ['TELEGRAM_SECRET_KEY']
     TELEGRAM_BOT_NAME = "SurveyPingBot"
+    MY_TELEGRAM_ID = os.environ['MY_TELEGRAM_ID']
+    
+    REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
+    REDIS_DB = 0
     
     BOT_SECRET_KEY = os.environ['BOT_SECRET_KEY']
     BOT_ACCOUNT_EMAIL = os.environ['BOT_ACCOUNT_EMAIL']
@@ -41,12 +34,26 @@ class Config:
         "editor": {"edit", "view"},
         "viewer": {"view"},
     }
-    
 
 class DevelopmentConfig(Config):
     
     DEBUG = True
+    
+    REDIS_HOST = "localhost"
+    REDIS_PASSWORD = None
 
 class ProductionConfig(Config):
     
     DEBUG = False
+    
+    REDIS_HOST = "redis"
+    REDIS_PASSWORD = os.getenv("REDIS_PASSWORD", None)
+    
+
+config_map = {
+    "development": DevelopmentConfig,
+    "production": ProductionConfig
+}
+
+current_env = os.getenv("FLASK_ENV", "development")
+CurrentConfig = config_map.get(current_env, Config)

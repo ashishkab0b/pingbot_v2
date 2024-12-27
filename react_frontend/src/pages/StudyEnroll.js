@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import { useParams, useLocation } from 'react-router-dom';
 import axios from '../api/axios';
 
+// 1) Import the timezone select component
+import TimezoneSelect from 'react-timezone-select';
+
 function StudyEnroll() {
   // ---------------------------------------------
   // 1. Capture URL params & query params
@@ -14,27 +17,16 @@ function StudyEnroll() {
   // ---------------------------------------------
   // 2. Local state
   // ---------------------------------------------
-  const [tz, setTz] = useState('');
+  // react-timezone-select can store the selected value as an object or a string
+  // For simplicity, store it as a string representing the IANA timezone
+  const [tz, setTz] = useState(Intl.DateTimeFormat().resolvedOptions().timeZone);
   const [error, setError] = useState(null);
   const [submitted, setSubmitted] = useState(false);
-  const [telegramLinkCode, setTelegramLinkCode] = useState(''); // Add state for the code
+  const [telegramLinkCode, setTelegramLinkCode] = useState('');
 
-  const ianaTimezones = [
-    'UTC',
-    'America/New_York',
-    'America/Los_Angeles',
-    'America/Chicago',
-    'America/Denver',
-    'America/Phoenix',
-    'Europe/London',
-    'Europe/Berlin',
-    'Europe/Paris',
-    'Asia/Tokyo',
-    'Asia/Shanghai',
-    'Asia/Singapore',
-    'Australia/Sydney',
-  ];
-
+  // ---------------------------------------------
+  // 3. Form submission
+  // ---------------------------------------------
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
@@ -43,12 +35,12 @@ function StudyEnroll() {
       const response = await axios.post('/signup', {
         signup_code,
         study_pid,
-        tz,
+        tz, // Here we send the selected timezone
       });
 
       // Assume the server response includes { telegram_link_code: 'some_code' }
       const { telegram_link_code } = response.data;
-      setTelegramLinkCode(telegram_link_code); // Store the code in state
+      setTelegramLinkCode(telegram_link_code);
       setSubmitted(true);
     } catch (err) {
       console.error('Error submitting form:', err);
@@ -80,23 +72,23 @@ function StudyEnroll() {
         <form onSubmit={handleSubmit} style={{ maxWidth: '400px', marginTop: '1rem' }}>
           <label htmlFor="tz">
             Select your Timezone:
-            <br />
-            <select
-              id="tz"
-              name="tz"
-              value={tz}
-              onChange={(e) => setTz(e.target.value)}
-              required
-              style={{ width: '100%', marginTop: '0.5rem' }}
-            >
-              <option value="">-- Select Timezone --</option>
-              {ianaTimezones.map((zone) => (
-                <option key={zone} value={zone}>
-                  {zone}
-                </option>
-              ))}
-            </select>
           </label>
+          <br />
+          {/* 
+            2) Replace your existing <select> with the TimezoneSelect component.
+               Make sure to handle the value/onChange properly.
+          */}
+          <TimezoneSelect
+            id="tz"
+            value={tz}
+            onChange={(newVal) => {
+              // react-timezone-select can return an object with { value: '...', label: '...' }
+              // or just a string, depending on the version.
+              // Common usage is newVal.value or newVal if using the string-based approach.
+              setTz(newVal.value ?? newVal);
+            }}
+            style={{ width: '100%', marginTop: '0.5rem' }}
+          />
 
           {error && (
             <p style={{ color: 'red', marginTop: '1rem' }}>

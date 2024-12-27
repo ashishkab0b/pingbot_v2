@@ -38,7 +38,7 @@ class Enrollment(db.Model):
     updated_at = db.Column(db.DateTime(timezone=True), onupdate=lambda: datetime.now(timezone.utc))
 
     # Relationships
-    pings = db.relationship("Ping", back_populates="enrollment")
+    pings = db.relationship("Ping", back_populates="enrollment", cascade="all, delete-orphan")
     study = db.relationship("Study", back_populates="enrollments")
     
     def to_dict(self):
@@ -147,16 +147,10 @@ class Study(db.Model):
     updated_at = db.Column(db.DateTime(timezone=True), onupdate=lambda: datetime.now(timezone.utc))
 
     # Relationships
-    ping_templates = db.relationship("PingTemplate", back_populates="study")
-    pings = db.relationship("Ping", back_populates="study")
-    enrollments = db.relationship(
-        "Enrollment",
-        back_populates="study"
-    )
-    user_studies = db.relationship(
-        "UserStudy",
-        back_populates="study"
-    ) 
+    ping_templates = db.relationship("PingTemplate", back_populates="study", cascade="all, delete-orphan")
+    pings = db.relationship("Ping", back_populates="study", cascade="all, delete-orphan")
+    enrollments = db.relationship("Enrollment", back_populates="study", cascade="all, delete-orphan")
+    user_studies = db.relationship("UserStudy", back_populates="study", cascade="all, delete-orphan") 
     
     def to_dict(self):
         return {
@@ -189,7 +183,7 @@ class PingTemplate(db.Model):
 
     # Relationships
     study = db.relationship("Study", back_populates="ping_templates")
-    pings = db.relationship("Ping", back_populates="ping_template")
+    pings = db.relationship("Ping", back_populates="ping_template", cascade="all, delete-orphan")
     
     def to_dict(self):
         return {
@@ -217,19 +211,17 @@ class Ping(db.Model):
     ping_template_id = db.Column(db.Integer, db.ForeignKey('ping_templates.id'), nullable=False)
     enrollment_id = db.Column(db.Integer, db.ForeignKey('enrollments.id'), nullable=False)
     
+    day_num = db.Column(db.Integer, nullable=False)
     scheduled_ts = db.Column(db.DateTime(timezone=True), nullable=False)
     expire_ts = db.Column(db.DateTime(timezone=True))
     reminder_ts = db.Column(db.DateTime(timezone=True))
     ping_sent = db.Column(db.Boolean, nullable=False, default=False)
     reminder_sent = db.Column(db.Boolean, nullable=False, default=False)
     
-    forwarding_code = db.Column(db.String(255), nullable=False, default=lambda: os.urandom(16).hex())
-    
-    day_num = db.Column(db.Integer, nullable=False)
-    
     message = db.Column(db.Text, nullable=False)
     url = db.Column(db.String(255), nullable=True)
     
+    forwarding_code = db.Column(db.String(255), nullable=False, default=lambda: os.urandom(16).hex())
     created_at = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
     updated_at = db.Column(db.DateTime(timezone=True), onupdate=lambda: datetime.now(timezone.utc))
 

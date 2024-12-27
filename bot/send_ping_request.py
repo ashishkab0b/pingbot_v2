@@ -3,13 +3,13 @@ import logging
 import os
 import json
 from logger_setup import setup_logger
-from config import Config
+from config import CurrentConfig
 
 # Setup logging
 logger = setup_logger()
 
 # Load configuration
-config = Config()
+config = CurrentConfig()
 
 def send_ping(ping_id):
     """

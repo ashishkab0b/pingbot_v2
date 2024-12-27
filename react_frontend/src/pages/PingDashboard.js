@@ -241,7 +241,7 @@ function PingDashboard() {
                       <td>{ping.id}</td>
                       <td>{ping.enrollment_id}</td>
                       <td>{ping.day_num}</td>
-                      <td>{ping.scheduled_ts}</td>
+                      <td>{ping.scheduled_ts_local}</td>
                       <td>{ping.ping_sent ? 'Yes' : 'No'}</td>
                       <td>{ping.reminder_sent ? 'Yes' : 'No'}</td>
                       <td>{ping.message}</td>

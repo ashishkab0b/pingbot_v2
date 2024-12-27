@@ -10,6 +10,7 @@ import pytz
 import secrets
 from functools import wraps
 from telegram_messenger import TelegramMessenger
+from blueprints.enrollments import make_pings
 
 
 
@@ -30,6 +31,19 @@ def bot_auth_required(f):
         return f(*args, **kwargs)
     return wrapper
 
+def assign_telegram_id_to_enrollment(telegram_id: int, enrollment: Enrollment):
+    # Link Telegram ID to enrollment and mark link code as used
+    try:
+        enrollment.telegram_id = telegram_id
+        enrollment.telegram_link_code_used = True
+        db.session.commit()
+        current_app.logger.info(f"Successfully linked Telegram ID {telegram_id} to enrollment ID {enrollment.id}.")
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error linking Telegram ID {telegram_id} to enrollment with link code {telegram_link_code}.")
+        current_app.logger.exception(e)
+        return jsonify({"error": "Internal server error."}), 500
+
 @bot_bp.route('/link_telegram_id', methods=['PUT'])
 @bot_auth_required
 def link_telegram_id():
@@ -42,17 +56,11 @@ def link_telegram_id():
 
     # Get request data
     data = request.get_json()
-    secret_key = data.get('secret_key')
     telegram_id = data.get('telegram_id')
     telegram_link_code = data.get('telegram_link_code')
 
     # Log the received data (excluding sensitive information)
     current_app.logger.debug(f"Request data received: telegram_id={telegram_id}, telegram_link_code={telegram_link_code}")
-
-    # # Check if secret key is correct
-    # if secret_key != current_app.config['BOT_SECRET_KEY']:
-    #     current_app.logger.warning(f"Unauthorized attempt to link Telegram ID with secret_key={secret_key}.")
-    #     return jsonify({"error": "Unauthorized"}), 401
 
     # Check if required parameters are present
     if not telegram_id:
@@ -63,33 +71,36 @@ def link_telegram_id():
         current_app.logger.error("Missing telegram_link_code parameter.")
         return jsonify({"error": "Missing telegram_link_code parameter."}), 400
 
-    # Link Telegram ID to enrollment and mark link code as used
+    # Get enrollment
     try:
-        current_app.logger.info(f"Attempting to link Telegram ID {telegram_id} with link code {telegram_link_code}.")
         enrollment = Enrollment.query.filter_by(telegram_link_code=telegram_link_code).first()
         if not enrollment:
             current_app.logger.warning(f"No enrollment found for link code {telegram_link_code}.")
             return jsonify({"error": "Invalid telegram_link_code."}), 400
-        
-        if enrollment.telegram_link_code_used:
-            current_app.logger.warning(f"Link code {telegram_link_code} already used.")
-            return jsonify({"error": "Invalid telegram_link_code."}), 400
-
-        if enrollment.telegram_link_code_expire_ts < datetime.now(timezone.utc):
-            current_app.logger.warning(f"Link code {telegram_link_code} has expired.")
-            return jsonify({"error": "Invalid telegram_link_code."}), 400
-
-        enrollment.telegram_id = telegram_id
-        enrollment.telegram_link_code_used = True
-        db.session.commit()
-        current_app.logger.info(f"Successfully linked Telegram ID {telegram_id} to enrollment ID {enrollment.id}.")
     except Exception as e:
-        db.session.rollback()
-        current_app.logger.error(f"Error linking Telegram ID {telegram_id} to enrollment with link code {telegram_link_code}.")
+        current_app.logger.error(f"Error getting enrollment for link code {telegram_link_code}.")
         current_app.logger.exception(e)
         return jsonify({"error": "Internal server error."}), 500
+    
+    
+    # Check if the link code has already been used or has expired    
+    if enrollment.telegram_link_code_used:
+        current_app.logger.warning(f"Link code {telegram_link_code} already used.")
+        return jsonify({"error": "Invalid telegram_link_code."}), 400
 
-    return jsonify({"message": "Telegram ID linked successfully."}), 200
+    if enrollment.telegram_link_code_expire_ts < datetime.now(timezone.utc):
+        current_app.logger.warning(f"Link code {telegram_link_code} has expired.")
+        return jsonify({"error": "Invalid telegram_link_code."}), 400
+    
+    
+    # Link telegram ID and add to enrollment database
+    assign_telegram_id_to_enrollment(telegram_id=telegram_id, 
+                                     enrollment=enrollment)
+    
+    # Make pings for the enrollment
+    make_pings(enrollment_id=enrollment.id, study_id=enrollment.study_id)
+    return jsonify({"message": "Telegram ID linked successfully and pings created."}), 200
+
 
 @bot_bp.route('/unenroll', methods=['PUT'])
 @bot_auth_required
@@ -204,9 +215,8 @@ def send_ping():
 
     # Send ping
     messenger = TelegramMessenger(
-        bot_token=current_app.config['TELEGRAM_SECRET_KEY'], 
-        ping=ping)
-    messenger.send_ping()
+        bot_token=current_app.config['TELEGRAM_SECRET_KEY'])
+    messenger.send_ping(telegram_id=ping.enrollment.telegram_id, message=ping.message)
     
     # Log the end of the request
     current_app.logger.info(f"Successfully sent ping={ping_id}.")

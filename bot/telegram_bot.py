@@ -12,7 +12,7 @@ import yaml
 from dotenv import load_dotenv
 from logger_setup import setup_logger
 import requests
-from config import Config
+from config import CurrentConfig
 # from app import db
 
 # Setup logging
@@ -22,7 +22,7 @@ logger = setup_logger()
 load_dotenv()
 
 # Load configuration
-config = Config()
+config = CurrentConfig()
 
 # Define conversation states
 ENTERING_LINK_CODE = 1
@@ -30,9 +30,10 @@ ENTERING_LINK_CODE = 1
 # Define command descriptions
 COMMAND_DESCRIPTIONS = {
     'start': 'Show this message',
-    'dashboard': 'Generate a one-time login link to the online dashboard',
-    'enroll': 'Enroll in a study',
+    'enroll': 'Enroll in a new study',
+    'dashboard': 'View the online dashboard',
     'unenroll': 'Unenroll from a study',
+    'timezone': 'Set your time zone',
 }
 
 # Define the conversation handler functions
@@ -81,6 +82,10 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     await start(update, context)
     return ConversationHandler.END
 
+# Define a fallback handler for unclassified messages
+async def fallback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Fallback handler for unrecognized messages."""
+    await start(update, context)
 
 def main() -> None:
     """Main function to start the bot."""
@@ -101,10 +106,12 @@ def main() -> None:
     # Add handlers
     application.add_handler(CommandHandler('start', start))  # Independent start command
     application.add_handler(conv_handler)
+    
+    # Add a fallback handler to catch unclassified messages
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, fallback))
 
     # Run the bot until the user presses Ctrl-C
     application.run_polling(allowed_updates=Update.ALL_TYPES)
-
 
 if __name__ == "__main__":
     main()

@@ -1,5 +1,5 @@
 from crontab import CronTab
-from config import Config
+from config import CurrentConfig
 import os
 import requests
 from datetime import datetime, timedelta, timezone
@@ -19,7 +19,7 @@ logger = setup_logger()
 
 
 # Load configuration
-config = Config()
+config = CurrentConfig()
 
 
 def get_pings_for_schedule():

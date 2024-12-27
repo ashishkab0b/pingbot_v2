@@ -17,7 +17,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 import secrets
 import redis
 
-from config import Config
+from config import CurrentConfig
 from models import User
 from app import db, jwt
 

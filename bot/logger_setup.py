@@ -6,12 +6,16 @@ from logging.handlers import RotatingFileHandler
 
 def setup_logger():
     # Define log directory based on the script name
-    script_name = Path(sys.argv[0]).stem
-    log_dir = Path(f'logs/{script_name}')
+    # script_name = Path(sys.argv[0]).stem
+    # log_dir = Path(f'logs/{script_name}')
+    # log_dir.mkdir(parents=True, exist_ok=True)
+    
+    log_dir = Path('logs')
     log_dir.mkdir(parents=True, exist_ok=True)
 
     # Create a logger
-    logger = logging.getLogger(script_name)
+    # logger = logging.getLogger(script_name)
+    logger = logging.getLogger("bot_logger")
     logger.setLevel(logging.DEBUG)
 
     # Check if the logger already has handlers

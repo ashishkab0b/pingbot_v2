@@ -21,7 +21,7 @@ def ping_forwarder(ping_id):
     
     """
     # Log the start of the request
-    current_app.logger.info("Received request to forward ping.")
+    current_app.logger.info(f"Received request to forward ping, ping_id={ping_id}.")
     
     # Get the ping
     ping = Ping.query.get(ping_id)
@@ -43,86 +43,8 @@ def ping_forwarder(ping_id):
     return redirect(ping.url)
 
 
-def random_time(start_date: datetime, start_day_num: int, start_time: str, end_day_num: int, end_time: str, tz: str) -> datetime:
-    interval_start_date = start_date + timedelta(days=start_day_num)
-    interval_end_date = start_date + timedelta(days=end_day_num)
-    start_time = datetime.strptime(start_time, '%H:%M').time()
-    end_time = datetime.strptime(end_time, '%H:%M').time()
-    try:
-        tz = pytz.timezone(tz)
-    except pytz.exceptions.UnknownTimeZoneError:
-        current_app.logger.error(f"Invalid timezone {tz}.")
-        return
-    interval_start_ts = datetime.combine(interval_start_date, start_time, tzinfo=tz)
-    interval_end_ts = datetime.combine(interval_end_date, end_time, tzinfo=tz)
-    ping_interval_length = interval_end_ts - interval_start_ts
-    ping_time = interval_start_ts + timedelta(seconds=randint(0, ping_interval_length.total_seconds()))
-    return ping_time
     
-def make_pings(enrollment_id, study_id):
-    
-    current_app.logger.info(f"Making pings for enrollment {enrollment_id} in study {study_id}")
-    
-    try:
-        # Get enrollment
-        enrollment = Enrollment.query.get(enrollment_id)
-        if not enrollment:
-            current_app.logger.error(f"Enrollment {enrollment_id} not found. Aborting ping creation for study {study.id}.")
-            return
-        
-        # Get study
-        study = Study.query.get(study_id)
-        if not study:
-            current_app.logger.error(f"Study {study_id} not found. Aborting ping creation for participant {enrollment_id}.")
-            return
-        
-        # Get ping templates
-        ping_templates = study.ping_templates
-        if not ping_templates:
-            current_app.logger.error(f"No ping templates found for study {study_id}. Aborting ping creation for participant {enrollment_id}.")
-            return
-        
-        # note some assumptions:
-        # signup date is Day 0
-        # start time and end time are in format HH:MM
-        # schedule is a list of dictionaries with keys 'start_day_num', 'start_time', 'end_day_num', 'end_time'
-        pings = []
-        for pt in ping_templates:
-            for ping in pt.schedule:
-                # Generate random time within the ping interval
-                ping_time = random_time(start_date=enrollment.start_date, 
-                                        start_day_num=ping['start_day_num'],
-                                        start_time=ping['start_time'],
-                                        end_day_num=ping['end_day_num'], 
-                                        end_time=ping['end_time'], 
-                                        tz=enrollment.tz)
-                # Create ping
-                ping = {
-                    'enrollment_id': enrollment_id,
-                    'study_id': study_id,
-                    'ping_template_id': pt.id,
-                    'scheduled_ts': ping_time,
-                    'expire_ts': ping_time + pt.expire_latency,
-                    'reminder_ts': ping_time + pt.reminder_latency,
-                    'day_num': ping['start_day_num'],
-                    'url': pt.url,
-                    'ping_sent': False,
-                    'reminder_sent': False 
-                }
-                pings.append(ping)
-                db.session.add(Ping(**ping))
-        db.session.commit()
-    except Exception as e:
-        db.session.rollback()
-        current_app.logger.error(f"Error creating pings for enrollment {enrollment_id} in study {study_id}")
-        current_app.logger.exception(e)
-        return
-    
-    current_app.logger.info(f"Created {len(pings)} pings for enrollment {enrollment_id} in study {study_id}")
-    return pings
-    
-    
-@particpant_facing_bp.route('/signup', methods=['POST'])
+@particpant_facing_bp.route('/api/signup', methods=['POST'])
 def study_signup():
     '''
     This endpoint is used to collect the timezone of a participant and enroll them in a study.
@@ -137,6 +59,10 @@ def study_signup():
     study_pid = data.get('study_pid')
     tz = data.get('tz')
     
+    # Check if required fields are present
+    if not all([signup_code, study_pid, tz]):
+        return jsonify({"error": "Missing required fields: signup_code, study_pid, tz"}), 400
+    
     # Check if signup code is valid 
     study = Study.query.filter_by(code=signup_code).first()
     if not study:
@@ -145,7 +71,7 @@ def study_signup():
     # Generate a unique code for the participant to link their telegram ID
     telegram_link_code = None
     while True:
-        telegram_link_code = generate_non_confusable_code(length=6)
+        telegram_link_code = generate_non_confusable_code(length=6, lowercase=True, uppercase=False, digits=True)
         if not Enrollment.query.filter_by(telegram_link_code=telegram_link_code).first():
             break
         
@@ -169,13 +95,7 @@ def study_signup():
         current_app.logger.exception(e)
         return jsonify({"error": "Internal server error"}), 500
     
-    # Create pings for participant
-    pings = make_pings(
-        enrollment_id=enrollment.id, 
-        study_id=study.id
-        )
-    if not pings:
-        return jsonify({"error": "Internal server error"}), 500
+
     
     return jsonify({
         "message": "Participant enrolled successfully",
@@ -199,7 +119,27 @@ def participant_login():
     
     # Create a new OTP
     otp = secrets.token_urlsafe(16)
-    expiry = datetime.now() + timedelta(minutes=current_app.config["ENROLLMENT_DASHBOARD_OTP_EXPIRY_MINS"])
+    otp_lifespan = current_app.config["ENROLLMENT_DASHBOARD_OTP_EXPIRY_MINS"]
+    expiry = datetime.now() + timedelta(minutes=otp_lifespan)
+    
+    # Save the OTP
+    try:
+        user = User.query.filter_by(telegram_id=telegram_id).first()
+        if not user:
+            return jsonify({"error": "User not found"}), 404
+        
+        user.dashboard_otp = otp
+        user.dashboard_otp_expire_ts = expiry
+        db.session.commit()
+        
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error generating OTP for user {telegram_id}")
+        current_app.logger.exception(e)
+        return jsonify({"error": "Internal server error"}), 500
+    
+    # Send the OTP to the user
+    
     
 
     

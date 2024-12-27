@@ -9,6 +9,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 import hashlib
 from dotenv import load_dotenv
+from werkzeug.exceptions import HTTPException
 from flask import Response
 from flasgger import Swagger
 
@@ -26,7 +27,7 @@ db = SQLAlchemy()
 # Initialize JWT manager
 jwt = JWTManager()
 
-def create_app(config='config.Config'):
+def create_app(config):
     
     app = Flask(__name__)
     CORS(app)
@@ -83,11 +84,24 @@ def create_app(config='config.Config'):
     def health():
         return {'status': 'healthy'}, 200
     
-    # Generic error handling
+    # Specific handler for 404 Not Found
+    @app.errorhandler(404)
+    def not_found_error(e):
+        logger.warning(f"404 Not Found: {request.method} {request.url}")
+        return {'error': 'Resource not found'}, 404
+
+    # Generic error handling for other HTTP exceptions
+    @app.errorhandler(HTTPException)
+    def handle_http_exception(e):
+        logger.error(f"HTTPException: {e.description} ({e.code}) at {request.method} {request.url}")
+        return {'error': e.description}, e.code
+
+    # Catch-all handler for non-HTTP exceptions
     @app.errorhandler(Exception)
     def handle_exception(e):
-        logger.exception(e)
-        return {'error': str(e)}, 500
+        logger.exception(f"Unhandled Exception: {e} at {request.method} {request.url}")
+        return {'error': 'Internal server error'}, 500
+
     
     return app
 

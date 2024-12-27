@@ -25,7 +25,9 @@ function EnrollmentDashboard() {
   const [tz, setTz] = useState('');
   const [studyPid, setStudyPid] = useState('');
   const [enrolled, setEnrolled] = useState(true);
-  // Optional: start_date, etc.
+
+  // Optional: start_date, telegram_id, etc.
+  // e.g. const [telegramId, setTelegramId] = useState('');
 
   const [showCreateForm, setShowCreateForm] = useState(false);
 
@@ -72,12 +74,13 @@ function EnrollmentDashboard() {
         tz,
         study_pid: studyPid,
         enrolled,
-        // Optional: start_date
+        // Optional: start_date, telegram_id, etc.
       });
-      // Reset form
+      // Reset form fields
       setTz('');
       setStudyPid('');
       setEnrolled(true);
+      // e.g. setTelegramId('');
 
       setShowCreateForm(false);
 
@@ -86,6 +89,37 @@ function EnrollmentDashboard() {
     } catch (err) {
       console.error(err);
       setError('Error creating participant.');
+    }
+  };
+
+  // ------------------------------------------------
+  // Delete participant
+  // ------------------------------------------------
+  const handleDeleteParticipant = async (enrollmentId) => {
+    try {
+      await axios.delete(`/studies/${studyId}/enrollments/${enrollmentId}`);
+      // Refresh participants list
+      fetchParticipants(studyId, page, perPage);
+    } catch (err) {
+      console.error(err);
+      setError('Error deleting participant.');
+    }
+  };
+
+  // ------------------------------------------------
+  // Toggle participant enrollment
+  // ------------------------------------------------
+  const handleToggleEnrollment = async (enrollmentId, currentStatus) => {
+    try {
+      // Update the participant's 'enrolled' field to the opposite of currentStatus
+      await axios.put(`/studies/${studyId}/enrollments/${enrollmentId}`, {
+        enrolled: !currentStatus,
+      });
+      // Refresh participants list
+      fetchParticipants(studyId, page, perPage);
+    } catch (err) {
+      console.error(err);
+      setError('Error updating enrollment status.');
     }
   };
 
@@ -166,6 +200,19 @@ function EnrollmentDashboard() {
               />
             </div>
 
+            {/*
+            <div style={{ marginBottom: '1rem' }}>
+              <label htmlFor="telegramId">Telegram ID</label>
+              <br />
+              <input
+                id="telegramId"
+                type="text"
+                value={telegramId}
+                onChange={(e) => setTelegramId(e.target.value)}
+              />
+            </div>
+            */}
+
             <button type="submit">Create Participant</button>
           </form>
         </section>
@@ -189,6 +236,7 @@ function EnrollmentDashboard() {
                     <th>Time Zone</th>
                     <th>Enrolled</th>
                     <th>Start Date</th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -199,6 +247,24 @@ function EnrollmentDashboard() {
                       <td>{participant.tz}</td>
                       <td>{participant.enrolled ? 'Yes' : 'No'}</td>
                       <td>{participant.start_date}</td>
+                      <td>
+                        {/* Enroll/Unenroll button */}
+                        <button
+                          onClick={() =>
+                            handleToggleEnrollment(participant.id, participant.enrolled)
+                          }
+                        >
+                          {participant.enrolled ? 'Unenroll' : 'Enroll'}
+                        </button>
+
+                        {/* Delete button */}
+                        <button
+                          style={{ marginLeft: '0.5rem' }}
+                          onClick={() => handleDeleteParticipant(participant.id)}
+                        >
+                          Delete
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
