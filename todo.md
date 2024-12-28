@@ -33,12 +33,15 @@
     - save to db
     - send me message on telegram
 
+- check for re-use of study pid in enrollment - check implications
+
 participants capabilities
 - change timezone (and then update pings)
 - unenroll
 
 - add edit for ping templates
 - rotate_keys in cron on server
+- make update interfaces - i.e. edit
 
 - make create ping template interface better
 

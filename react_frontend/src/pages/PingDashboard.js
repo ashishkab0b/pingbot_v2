@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import StudyNav from '../components/StudyNav';
 import axios from '../api/axios';
 import { useStudy } from '../context/StudyContext';
+import DataTable from '../components/DataTable';
 
 function PingDashboard() {
   const { studyId } = useParams();
@@ -213,57 +214,32 @@ function PingDashboard() {
         </section>
       )}
 
-      <section>
-        <h2>Existing Pings</h2>
-        {loading && <p>Loading pings...</p>}
-        {error && <p style={{ color: 'red' }}>{error}</p>}
-
-        {!loading && !error && (
-          <>
-            {pings.length === 0 ? (
-              <p>No pings found.</p>
-            ) : (
-              <table border="1" cellPadding="8" style={{ borderCollapse: 'collapse' }}>
-                <thead>
-                  <tr>
-                    <th>ID</th>
-                    <th>Enrollment ID</th>
-                    <th>Day #</th>
-                    <th>Scheduled</th>
-                    <th>Ping Sent?</th>
-                    <th>Reminder Sent?</th>
-                    {/* <th>Message</th> */}
-                  </tr>
-                </thead>
-                <tbody>
-                  {pings.map((ping) => (
-                    <tr key={ping.id}>
-                      <td>{ping.id}</td>
-                      <td>{ping.enrollment_id}</td>
-                      <td>{ping.day_num}</td>
-                      <td>{ping.scheduled_ts_local}</td>
-                      <td>{ping.ping_sent ? 'Yes' : 'No'}</td>
-                      <td>{ping.reminder_sent ? 'Yes' : 'No'}</td>
-                      {/* <td>{ping.message}</td> */}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </>
-        )}
-
-        <div style={{ marginTop: '1rem' }}>
-          <button onClick={handlePreviousPage} disabled={page <= 1}>
-            Previous
-          </button>
-          <span style={{ margin: '0 1rem' }}>
-            Page {page} of {totalPages}
-          </span>
-          <button onClick={handleNextPage} disabled={page >= totalPages}>
-            Next
-          </button>
-        </div>
+<section>
+        <h2>Pings</h2>
+        <DataTable
+          data={pings.map((ping) => ({
+            ID: ping.id,
+            'Enrollment ID': ping.enrollment_id,
+            'Day #': ping.day_num,
+            Scheduled: ping.scheduled_ts_local,
+            'Ping Sent?': ping.ping_sent ? 'Yes' : 'No',
+            'Reminder Sent?': ping.reminder_sent ? 'Yes' : 'No',
+          }))}
+          headers={[
+            'ID',
+            'Enrollment ID',
+            'Day #',
+            'Scheduled',
+            'Ping Sent?',
+            'Reminder Sent?',
+          ]}
+          loading={loading}
+          error={error}
+          currentPage={page}
+          totalPages={totalPages}
+          onPreviousPage={handlePreviousPage}
+          onNextPage={handleNextPage}
+        />
       </section>
     </div>
   );

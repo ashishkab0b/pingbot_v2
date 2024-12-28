@@ -7,7 +7,8 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy import Interval
 from config import CurrentConfig
 
-from app import db, create_app
+from app import create_app
+from extensions import db
 
 load_dotenv()
 

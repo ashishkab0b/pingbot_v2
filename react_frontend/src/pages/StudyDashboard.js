@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import DataTable from '../components/DataTable';
 import axios from '../api/axios';
 
 function StudyDashboard() {
@@ -103,6 +104,22 @@ function StudyDashboard() {
     }
   };
 
+    // -----------------------------------------
+    // API: DELETE /studies/:id
+    // -----------------------------------------
+    const handleDeleteStudy = async (studyId) => {
+      if (!window.confirm('Are you sure you want to delete this study?')) return;
+
+      try {
+        await axios.delete(`/studies/${studyId}`);
+        // Refresh studies after deletion
+        fetchStudies(page, perPage);
+      } catch (err) {
+        console.error(err);
+        setError('Error deleting study');
+      }
+    };
+
   // -----------------------------------------
   // Pagination
   // -----------------------------------------
@@ -182,58 +199,33 @@ function StudyDashboard() {
 
       {/* Display the studies in a simplified table */}
       <section>
-        <h2>Your Studies</h2>
-        {loading && <p>Loading studies...</p>}
-        {error && <p style={{ color: 'red' }}>{error}</p>}
-
-        {!loading && !error && (
-          <>
-            {studies.length === 0 ? (
-              <p>No studies found.</p>
-            ) : (
-              <table border="1" cellPadding="8" style={{ borderCollapse: 'collapse' }}>
-                <thead>
-                  <tr>
-                    <th>ID</th>
-                    <th>Public Name</th>
-                    <th>Internal Name</th>
-                    <th>Signup Code</th>
-                    <th>Contact Message</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {studies.map((study) => (
-                    <tr
-                      key={study.id}
-                      style={{ cursor: 'pointer' }}
-                      onClick={() => navigate(`/studies/${study.id}`)}
-                      title="Click to view study details"
-                    >
-                      <td>{study.id}</td>
-                      <td>{study.public_name}</td>
-                      <td>{study.internal_name}</td>
-                      <td>{study.code}</td>
-                      <td>{study.contact_message}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </>
+      <DataTable
+        data={studies.map((study) => ({
+          ID: study.id,
+          'Public Name': study.public_name,
+          'Internal Name': study.internal_name,
+          'Signup Code': study.code,
+          'Contact Message': study.contact_message,
+        }))}
+        headers={['ID', 'Public Name', 'Internal Name', 'Signup Code', 'Contact Message']}
+        loading={loading}
+        error={error}
+        currentPage={page}
+        totalPages={totalPages}
+        onPreviousPage={handlePreviousPage}
+        onNextPage={handleNextPage}
+        actionsColumn={(row) => (
+          <button
+            onClick={(e) => {
+              e.stopPropagation(); // Prevent row click
+              handleDeleteStudy(row.ID);
+            }}
+          >
+            Delete
+          </button>
         )}
-
-        {/* Pagination Controls */}
-        <div style={{ marginTop: '1rem' }}>
-          <button onClick={handlePreviousPage} disabled={page <= 1}>
-            Previous
-          </button>
-          <span style={{ margin: '0 1rem' }}>
-            Page {page} of {totalPages}
-          </span>
-          <button onClick={handleNextPage} disabled={page >= totalPages}>
-            Next
-          </button>
-        </div>
+        onRowClick={(row) => navigate(`/studies/${row.ID}`)}
+      />
       </section>
     </div>
   );

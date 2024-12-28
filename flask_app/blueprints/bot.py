@@ -3,7 +3,7 @@ from flask_jwt_extended import jwt_required
 import urllib.parse
 from utils import generate_non_confusable_code
 from models import Study, Enrollment, Ping, PingTemplate, User
-from app import db
+from extensions import db
 from random import randint
 from datetime import timedelta, datetime, timezone
 import pytz
@@ -212,6 +212,22 @@ def send_ping():
         current_app.logger.error(f"Error getting ping {ping_id}.")
         current_app.logger.exception(e)
         return jsonify({"error": "Internal server error."}), 500
+    
+    # Get enrollment
+    try: 
+        enrollment = Enrollment.query.get(ping.enrollment_id)
+        if not enrollment:
+            current_app.logger.error(f"Enrollment for ping {ping_id} not found.")
+            return jsonify({"error": "Enrollment not found."}), 404
+    except Exception as e:
+        current_app.logger.error(f"Error getting enrollment for ping {ping_id}.")
+        current_app.logger.exception(e)
+        return jsonify({"error": "Internal server error."}), 500
+    
+    # Check if participant is enrolled
+    if not enrollment.enrolled:
+        current_app.logger.warning(f"Participant {enrollment.telegram_id} is not enrolled. Skipping ping sending.")
+        return jsonify({"error": "Participant not enrolled."}), 400
     
     # Construct message and ping_link
     message_constructor = MessageConstructor(ping)

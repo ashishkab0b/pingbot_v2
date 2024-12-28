@@ -17,12 +17,22 @@ function StudyEnroll() {
   // ---------------------------------------------
   // 2. Local state
   // ---------------------------------------------
-  // react-timezone-select can store the selected value as an object or a string
-  // For simplicity, store it as a string representing the IANA timezone
   const [tz, setTz] = useState(Intl.DateTimeFormat().resolvedOptions().timeZone);
   const [error, setError] = useState(null);
   const [submitted, setSubmitted] = useState(false);
   const [telegramLinkCode, setTelegramLinkCode] = useState('');
+
+  // ---------------------------------------------
+  // Early exit if pid is missing
+  // ---------------------------------------------
+  if (!study_pid) {
+    return (
+      <div style={{ margin: '2rem' }}>
+        <h1>Error</h1>
+        <p>Missing participant ID. Please contact the researcher for assistance.</p>
+      </div>
+    );
+  }
 
   // ---------------------------------------------
   // 3. Form submission
@@ -35,10 +45,9 @@ function StudyEnroll() {
       const response = await axios.post('/signup', {
         signup_code,
         study_pid,
-        tz, // Here we send the selected timezone
+        tz,
       });
 
-      // Assume the server response includes { telegram_link_code: 'some_code' }
       const { telegram_link_code } = response.data;
       setTelegramLinkCode(telegram_link_code);
       setSubmitted(true);
@@ -53,11 +62,6 @@ function StudyEnroll() {
   return (
     <div style={{ margin: '2rem' }}>
       <h1>Study Enroll</h1>
-      <p>
-        You are signing up for the study with code: <strong>{signup_code}</strong>  
-        <br />
-        Participant ID (PID): <strong>{study_pid}</strong>
-      </p>
 
       {submitted ? (
         <div style={{ marginTop: '2rem' }}>
@@ -70,23 +74,12 @@ function StudyEnroll() {
         </div>
       ) : (
         <form onSubmit={handleSubmit} style={{ maxWidth: '400px', marginTop: '1rem' }}>
-          <label htmlFor="tz">
-            Select your Timezone:
-          </label>
+          <label htmlFor="tz">Select your Timezone:</label>
           <br />
-          {/* 
-            2) Replace your existing <select> with the TimezoneSelect component.
-               Make sure to handle the value/onChange properly.
-          */}
           <TimezoneSelect
             id="tz"
             value={tz}
-            onChange={(newVal) => {
-              // react-timezone-select can return an object with { value: '...', label: '...' }
-              // or just a string, depending on the version.
-              // Common usage is newVal.value or newVal if using the string-based approach.
-              setTz(newVal.value ?? newVal);
-            }}
+            onChange={(newVal) => setTz(newVal.value ?? newVal)}
             style={{ width: '100%', marginTop: '0.5rem' }}
           />
 

@@ -1,19 +1,22 @@
-from flask import Blueprint, request, g, Response, jsonify, current_app
-from flask_jwt_extended import jwt_required, get_jwt_identity
-from config import CurrentConfig
-import urllib.parse
-from random import randint
-from datetime import timedelta, datetime, timezone
-import pytz
-import secrets
+
+from flask import Blueprint, request, jsonify, current_app
+from flask_jwt_extended import jwt_required
+from datetime import datetime, timezone
+
+from extensions import db
+from crud import (
+    create_enrollment,
+    get_enrollment_by_id,
+    update_enrollment,
+    soft_delete_enrollment,
+    get_user_study_relation,
+)
+from permissions import get_current_user, user_has_study_permission
+from utils import paginate_statement, random_time
+
+from models import Enrollment, Study, Ping
 
 
-from app import db
-from permissions import user_has_study_permission, get_current_user
-from models import Study, Enrollment, Ping, PingTemplate, User, UserStudy
-
-
-enrollments_bp = Blueprint('enrollments', __name__)
 
 
 class MessageConstructor:
@@ -109,25 +112,19 @@ class MessageConstructor:
     
     def __init__(self, ping: Ping):
         """
-        Initialize the Telegram bot with the provided bot token.
-        :param bot_token: str - The Telegram bot token from BotFather.
-        :param ping_id: int - The ID of the ping in the database.
+        Initialize with the provided ping.
         """
-        
         self.ping = ping
         self.telegram_id = self.ping.enrollment.telegram_id
         self.url = None
         self.survey_link = None
         self.message = None
         
-        
     def construct_ping_link(self):
         """
         Construct an HTML link for the ping. 
         This is done at the point of sending the ping.
-        :return: str - The HTML link for the ping.
         """
-        
         forwarding_code = self.ping.forwarding_code
         url = f"{current_app.config['PING_LINK_BASE_URL']}/ping/{self.ping.id}?code={forwarding_code}"
         url_text = self.ping.ping_template.url_text if self.ping.ping_template.url_text else current_app.config['PING_DEFAULT_URL_TEXT']
@@ -139,9 +136,7 @@ class MessageConstructor:
         """
         Construct a message with a URL.
         This is done at the point of sending the ping.
-        :return: str - The message with the URL.
         """
-        
         message = self.ping.ping_template.message
         survey_link = self.construct_ping_link() if self.ping.ping_template.url else None
         
@@ -163,12 +158,10 @@ class MessageConstructor:
         self.message = message
         return message
         
-        
     def construct_survey_url(self):
         """
         Construct a URL for a ping. 
         This is done in the ping forwarding route at the point of redirecting to the survey after the participant clicks.
-        :return: str - The URL for the ping.
         """
         url = self.ping.ping_template.url
 
@@ -186,289 +179,294 @@ class MessageConstructor:
         return url
     
 
-def random_time(start_date: datetime, begin_day_num: int, begin_time: str, end_day_num: int, end_time: str, tz: str) -> datetime:
-    interval_start_date = start_date + timedelta(days=begin_day_num)
-    interval_end_date = start_date + timedelta(days=end_day_num)
-    begin_time = datetime.strptime(begin_time, '%H:%M').time()
-    end_time = datetime.strptime(end_time, '%H:%M').time()
-    try:
-        tz = pytz.timezone(tz)
-    except pytz.exceptions.UnknownTimeZoneError:
-        current_app.logger.error(f"Invalid timezone {tz}.")
-        return
-    interval_start_ts = datetime.combine(interval_start_date, begin_time, tzinfo=tz)
-    interval_end_ts = datetime.combine(interval_end_date, end_time, tzinfo=tz)
-    ping_interval_length = interval_end_ts - interval_start_ts
-    ping_time = interval_start_ts + timedelta(seconds=randint(0, ping_interval_length.total_seconds()))
-    return ping_time
-       
 
 def make_pings(enrollment_id, study_id):
-    
-    current_app.logger.info(f"Making pings for enrollment {enrollment_id} in study {study_id}")
+    current_app.logger.info(f"Making pings for enrollment={enrollment_id} in study={study_id}")
     
     try:
         # Get enrollment
         enrollment = Enrollment.query.get(enrollment_id)
         if not enrollment:
-            current_app.logger.error(f"Enrollment {enrollment_id} not found. Aborting ping creation for study {study.id}.")
+            current_app.logger.error(
+                f"Enrollment={enrollment_id} not found. Aborting ping creation for study={study_id}."
+            )
             return
         
         # Get study
         study = Study.query.get(study_id)
         if not study:
-            current_app.logger.error(f"Study {study_id} not found. Aborting ping creation for participant {enrollment_id}.")
+            current_app.logger.error(
+                f"Study={study_id} not found. Aborting ping creation for enrollment={enrollment_id}."
+            )
             return
         
         # Get ping templates
         ping_templates = study.ping_templates
         if not ping_templates:
-            current_app.logger.error(f"No ping templates found for study {study_id}. Aborting ping creation for participant {enrollment_id}.")
+            current_app.logger.error(
+                f"No ping templates found for study={study_id}. Aborting ping creation for enrollment={enrollment_id}."
+            )
             return
         
-        # note some assumptions:
-        # signup date is Day 0
-        # start time and end time are in format HH:MM
-        # schedule is a list of dictionaries with keys 'begin_day_num', 'begin_time', 'end_day_num', 'end_time'
         pings = []
         for pt in ping_templates:
-            for ping in pt.schedule:
+            for ping_obj in pt.schedule:
                 # Generate random time within the ping interval
-                ping_time = random_time(start_date=enrollment.start_date, 
-                                        begin_day_num=ping['begin_day_num'],
-                                        begin_time=ping['begin_time'],
-                                        end_day_num=ping['end_day_num'], 
-                                        end_time=ping['end_time'], 
-                                        tz=enrollment.tz)
-                # Create ping
-                ping_data = {
+                ping_time = random_time(
+                    start_date=enrollment.start_date, 
+                    begin_day_num=ping_obj['begin_day_num'],
+                    begin_time=ping_obj['begin_time'],
+                    end_day_num=ping_obj['end_day_num'], 
+                    end_time=ping_obj['end_time'], 
+                    tz=enrollment.tz
+                )
+            
+                expire_ts = ping_time + pt.expire_latency if pt.expire_latency else None
+                reminder_ts = ping_time + pt.reminder_latency if pt.reminder_latency else None        
+                
+                new_ping_data = {
                     'enrollment_id': enrollment_id,
                     'study_id': study_id,
                     'ping_template_id': pt.id,
                     'scheduled_ts': ping_time,
-                    'expire_ts': ping_time + pt.expire_latency,
-                    'reminder_ts': ping_time + pt.reminder_latency,
-                    'day_num': ping['begin_day_num'],
-                    'message': pt.message,
-                    'url': pt.url,
+                    'expire_ts': expire_ts,
+                    'reminder_ts': reminder_ts,
+                    'day_num': ping_obj['begin_day_num'],
                     'ping_sent': False,
                     'reminder_sent': False 
                 }
-                ping_obj = Ping(**ping_data)
-                db.session.add(ping_obj)
+                ping_instance = Ping(**new_ping_data)
+                db.session.add(ping_instance)
                 
-                # Construct message and URL
-                # db.session.flush()
-                # message_constructor = MessageConstructor(ping_obj)
-                # url = message_constructor.construct_url()
-                # message = message_constructor.construct_message()
-                # ping_obj.url = url
-                # ping_obj.message = message
-                
-                # Append to pings list
-                pings.append(ping_obj.to_dict())
+                # Keep track of the new ping in a list (for returning).
+                pings.append(ping_instance.to_dict())
                 
         db.session.commit()
     except Exception as e:
         db.session.rollback()
-        current_app.logger.error(f"Error creating pings for enrollment {enrollment_id} in study {study_id}")
+        current_app.logger.error(
+            f"Error creating pings for enrollment={enrollment_id} in study={study_id}"
+        )
         current_app.logger.exception(e)
         return
     
-    current_app.logger.info(f"Created {len(pings)} pings for enrollment {enrollment_id} in study {study_id}")
+    current_app.logger.info(
+        f"Created {len(pings)} pings for enrollment={enrollment_id} in study={study_id}"
+    )
     return pings
 
-
-    
+enrollments_bp = Blueprint('enrollments', __name__)
 
 
 @enrollments_bp.route('/studies/<int:study_id>/enrollments', methods=['GET'])
-@enrollments_bp.route('/enrollments', methods=['GET'])
 @jwt_required()
-def get_enrollments(study_id=None):
+def get_enrollments(study_id):
+    current_app.logger.debug("Entered get_enrollments route.")
+    
     user = get_current_user()
     if not user:
+        current_app.logger.warning("Attempted to fetch enrollments but user not found.")
         return jsonify({"error": "User not found"}), 404
 
+    current_app.logger.info(f"User={user.email} requested enrollments for study={study_id}.")
+    
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 10, type=int)
 
-    try:
-        if study_id:
-            study = user_has_study_permission(user_id=user.id, study_id=study_id, minimum_role="viewer")
-            if not study:
-                return jsonify({"error": f"No access to study {study_id}"}), 403
-            query = Enrollment.query.filter_by(study_id=study.id)
-        else:
-            # fetch all enrollments across studies user can access
-            accessible_studies = (
-                db.session.query(UserStudy.study_id)
-                .filter(UserStudy.user_id == user.id)
-                .subquery()
-            )
-            query = Enrollment.query.filter(Enrollment.study_id.in_(accessible_studies))
+    study = user_has_study_permission(user_id=user.id, study_id=study_id, minimum_role="viewer")
+    if not study:
+        current_app.logger.warning(f"User={user.id} does not have access to study={study_id}.")
+        return jsonify({"error": f"Study={study_id} not found or no access"}), 403
 
-        pagination = query.paginate(page=page, per_page=per_page, error_out=False)
-        items = [en.to_dict() for en in pagination.items]
+    stmt = (
+        db.session.query(Enrollment)
+        .filter_by(study_id=study_id)
+        .filter(Enrollment.deleted_at.is_(None))
+        .order_by(Enrollment.id.asc())
+        .statement
+    )
 
-        return jsonify({
-            "data": items,
-            "meta": {
-                "page": pagination.page,
-                "per_page": pagination.per_page,
-                "total": pagination.total,
-                "pages": pagination.pages
-            }
-        }), 200
+    pagination = paginate_statement(db.session, stmt, page=page, per_page=per_page)
 
-    except Exception as e:
-        current_app.logger.error("Error retrieving enrollments")
-        current_app.logger.exception(e)
-        return jsonify({"error": "Error retrieving enrollments"}), 500
-    
+    enrollments_list = [
+        {
+            "id": en.id,
+            "tz": en.tz,
+            "study_pid": en.study_pid,
+            "telegram_id": en.telegram_id,
+            "enrolled": en.enrolled,
+            "start_date": en.start_date,
+        }
+        for en in pagination["items"]
+    ]
+
+    current_app.logger.info(
+        f"User={user.email} fetched {len(enrollments_list)} enrollments on page {page}/{pagination['pages']}."
+    )
+
+    return jsonify({
+        "data": enrollments_list,
+        "meta": {
+            "page": pagination["page"],
+            "per_page": pagination["per_page"],
+            "total": pagination["total"],
+            "pages": pagination["pages"]
+        }
+    }), 200
+
 
 @enrollments_bp.route('/studies/<int:study_id>/enrollments', methods=['POST'])
 @jwt_required()
-def create_enrollment(study_id):
+def create_enrollment_route(study_id):
+    current_app.logger.debug("Entered create_enrollment route.")
+    
     user = get_current_user()
     if not user:
+        current_app.logger.warning("User not found while trying to create an enrollment.")
         return jsonify({"error": "User not found"}), 404
 
     study = user_has_study_permission(user_id=user.id, study_id=study_id, minimum_role="editor")
     if not study:
-        return jsonify({"error": f"Study {study_id} not found or no access"}), 404
+        current_app.logger.warning(f"User={user.id} does not have editor access to study={study_id}.")
+        return jsonify({"error": f"Study={study_id} not found or no access"}), 403
 
-    # Parse data
     data = request.get_json()
     tz = data.get('tz')
     study_pid = data.get('study_pid')
-    telegram_id = data.get('telegram_id', None)  # optional    
-    start_date = data.get('start_date', datetime.now(timezone.utc).date())
-    enrolled = True if telegram_id else False
-    
-    # Check if required fields are present
-    if not all([tz, study_pid]):
-        return jsonify({"error": "Missing required fields: tz, study_pid"}), 400
-    
-    # Warn if no telegram ID provided
-    if not telegram_id:
-        current_app.logger.warning("No telegram ID provided for enrollment. Participant will not receive pings.")
+    telegram_id = data.get('telegram_id', None)
+    start_date = data.get('start_date', datetime.now(timezone.utc))
+    enrolled = bool(telegram_id)
 
-    # Make enrollment object and add to database
+    if not all([tz, study_pid]):
+        current_app.logger.warning(f"Missing required fields in create_enrollment with data={data}.")
+        return jsonify({"error": "Missing required fields: tz, study_pid"}), 400
+
     try:
-        enrollment = Enrollment(
-            study_id=study.id,
+        new_enrollment = create_enrollment(
+            db.session,
+            study_id=study_id,
             tz=tz,
             study_pid=study_pid,
             enrolled=enrolled,
             start_date=start_date,
             telegram_id=telegram_id
         )
-        db.session.add(enrollment)
         db.session.commit()
+
+        current_app.logger.info(f"User={user.email} created a new enrollment={new_enrollment.id} in study={study_id}.")
+        return jsonify({
+            "message": "Enrollment created successfully",
+            "enrollment": {
+                "id": new_enrollment.id,
+                "tz": new_enrollment.tz,
+                "study_pid": new_enrollment.study_pid,
+                "telegram_id": new_enrollment.telegram_id,
+                "enrolled": new_enrollment.enrolled,
+                "start_date": new_enrollment.start_date
+            }
+        }), 201
+
     except Exception as e:
         db.session.rollback()
-        current_app.logger.error(f"Error creating enrollment in study {study_id}")
+        current_app.logger.error(f"Error creating enrollment in study={study_id} with data={data}.")
         current_app.logger.exception(e)
-        return jsonify({"error": "Error creating enrollment"}), 500
-    
-    # Create pings for participant if enrolled (i.e. telegram ID was provided)
-    if enrolled and telegram_id:
-        pings = make_pings(
-            enrollment_id=enrollment.id, 
-            study_id=study.id
-            )
-        if not pings:
-            return jsonify({"error": "Internal server error"}), 500
-
-    return jsonify({
-        "message": "Enrollment created successfully",
-        "enrollment": enrollment.to_dict()
-    }), 201
+        return jsonify({"error": "Internal server error"}), 500
 
 
 @enrollments_bp.route('/studies/<int:study_id>/enrollments/<int:enrollment_id>', methods=['GET'])
 @jwt_required()
-def get_single_enrollment(study_id, enrollment_id):
+def get_single_enrollment_route(study_id, enrollment_id):
+    current_app.logger.debug(f"Entered get_single_enrollment route for enrollment {enrollment_id}.")
+
     user = get_current_user()
     if not user:
+        current_app.logger.warning("User not found while accessing an enrollment.")
         return jsonify({"error": "User not found"}), 404
 
     study = user_has_study_permission(user_id=user.id, study_id=study_id, minimum_role="viewer")
     if not study:
-        return jsonify({"error": f"No access to study {study_id}"}), 403
+        current_app.logger.warning(
+            f"User={user.id} attempted to access enrollment={enrollment_id} without permissions."
+        )
+        return jsonify({"error": f"Study {study_id} not found or no access"}), 403
 
-    enrollment = Enrollment.query.filter_by(id=enrollment_id, study_id=study.id).first()
+    enrollment = get_enrollment_by_id(db.session, enrollment_id)
     if not enrollment:
-        return jsonify({"error": f"Enrollment {enrollment_id} not found or no access"}), 404
+        current_app.logger.warning(
+            f"User={user.id} attempted to access nonexistent enrollment={enrollment_id}."
+        )
+        return jsonify({"error": "Enrollment not found"}), 404
 
+    current_app.logger.info(f"User={user.email} accessed enrollment={enrollment_id}.")
     return jsonify(enrollment.to_dict()), 200
 
 
 @enrollments_bp.route('/studies/<int:study_id>/enrollments/<int:enrollment_id>', methods=['PUT'])
 @jwt_required()
-def update_enrollment(study_id, enrollment_id):
+def update_enrollment_route(study_id, enrollment_id):
+    current_app.logger.debug(f"Entered update_enrollment route for enrollment={enrollment_id}.")
+    
     user = get_current_user()
     if not user:
+        current_app.logger.warning("User not found while trying to update an enrollment.")
         return jsonify({"error": "User not found"}), 404
 
     study = user_has_study_permission(user_id=user.id, study_id=study_id, minimum_role="editor")
     if not study:
-        return jsonify({"error": f"No access to study {study_id}"}), 403
-
-    enrollment = Enrollment.query.filter_by(id=enrollment_id, study_id=study.id).first()
-    if not enrollment:
-        return jsonify({"error": f"Enrollment {enrollment_id} not found or no access"}), 404
+        current_app.logger.warning(
+            f"User={user.id} attempted to update enrollment={enrollment_id} without permissions."
+        )
+        return jsonify({"error": f"Study {study_id} not found or no access"}), 403
 
     data = request.get_json()
-    for field in ["telegram_id", "tz", "study_pid", "enrolled", "start_date", "pr_completed"]:
-        if field in data:
-            setattr(enrollment, field, data[field])
-
     try:
+        updated_enrollment = update_enrollment(db.session, enrollment_id, **data)
         db.session.commit()
+
+        current_app.logger.info(f"User={user.email} updated enrollment={enrollment_id}.")
+        return jsonify({
+            "message": "Enrollment updated successfully",
+            "enrollment": updated_enrollment.to_dict()
+        }), 200
+
     except Exception as e:
         db.session.rollback()
-        current_app.logger.error(f"Error updating enrollment {enrollment_id} in study {study_id}")
+        current_app.logger.error(f"Error updating enrollment={enrollment_id}.")
         current_app.logger.exception(e)
-        return jsonify({"error": "Error updating enrollment"}), 500
-
-    return jsonify({
-        "message": "Enrollment updated successfully",
-        "enrollment": enrollment.to_dict()
-    }), 200
+        return jsonify({"error": "Internal server error"}), 500
 
 
 @enrollments_bp.route('/studies/<int:study_id>/enrollments/<int:enrollment_id>', methods=['DELETE'])
 @jwt_required()
-def delete_enrollment(study_id, enrollment_id):
+def delete_enrollment_route(study_id, enrollment_id):
+    current_app.logger.debug(f"Entered delete_enrollment route for enrollment={enrollment_id}.")
+
     user = get_current_user()
     if not user:
+        current_app.logger.warning("User not found while trying to delete an enrollment.")
         return jsonify({"error": "User not found"}), 404
 
     study = user_has_study_permission(user_id=user.id, study_id=study_id, minimum_role="editor")
     if not study:
-        return jsonify({"error": f"No access to study {study_id}"}), 403
-
-    # Get enrollment
-    enrollment = Enrollment.query.filter_by(id=enrollment_id, study_id=study.id).first()
-    if not enrollment:
-        return jsonify({"error": f"Enrollment {enrollment_id} not found or no access"}), 404
-    
-    # Get all pings
-    pings = Ping.query.filter_by(enrollment_id=enrollment_id).all()
+        current_app.logger.warning(
+            f"User={user.id} attempted to delete enrollment={enrollment_id} without permissions."
+        )
+        return jsonify({"error": f"Study {study_id} not found or no access"}), 403
 
     try:
-        # Soft delete all pings
-        for ping in pings:
-            ping.deleted_at = datetime.now(timezone.utc)
-        # Soft delete enrollment
-        enrollment.deleted_at = datetime.now(timezone.utc)
+        if not soft_delete_enrollment(db.session, enrollment_id):
+            current_app.logger.warning(
+                f"Failed to soft-delete enrollment={enrollment_id}. Possibly nonexistent."
+            )
+            return jsonify({"error": "Enrollment not found"}), 404
+
         db.session.commit()
+
+        current_app.logger.info(f"User={user.email} deleted enrollment={enrollment_id}.")
+        return jsonify({"message": f"Enrollment {enrollment_id} deleted successfully."}), 200
+
     except Exception as e:
         db.session.rollback()
-        current_app.logger.error(f"Error deleting enrollment {enrollment_id} in study {study_id}")
+        current_app.logger.error(f"Error deleting enrollment={enrollment_id}.")
         current_app.logger.exception(e)
-        return jsonify({"error": "Error deleting enrollment"}), 500
-
-    return jsonify({"message": f"Enrollment {enrollment_id} deleted successfully."}), 200
+        return jsonify({"error": "Internal server error"}), 500

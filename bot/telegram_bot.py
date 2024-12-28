@@ -13,7 +13,6 @@ from dotenv import load_dotenv
 from logger_setup import setup_logger
 import requests
 from config import CurrentConfig
-# from app import db
 
 # Setup logging
 logger = setup_logger()

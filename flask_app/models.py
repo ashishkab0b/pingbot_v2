@@ -6,31 +6,14 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy import Interval
 from sqlalchemy.orm import Query
-
-from app import db, create_app
+from extensions import db
 
 load_dotenv()
-
-class SoftDeleteMixin:
-    deleted_at = db.Column(db.DateTime(timezone=True), nullable=True)
-
-    @classmethod
-    def active(cls, session):
-        """Filter for active (non-deleted) records."""
-        return session.query(cls).filter(cls.deleted_at.is_(None))
-
-class SoftDeleteQuery(Query):
-    def __new__(cls, *args, **kwargs):
-        if hasattr(cls, 'deleted_at'):
-            return super().__new__(cls).filter(cls.deleted_at.is_(None))
-        return super().__new__(cls)
-
-db.Query = SoftDeleteQuery
 
 # ------------------------------------------------
 # Enrollments Table
 # ------------------------------------------------
-class Enrollment(SoftDeleteMixin, db.Model):
+class Enrollment(db.Model):
     __tablename__ = 'enrollments'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
@@ -83,7 +66,7 @@ class Enrollment(SoftDeleteMixin, db.Model):
 # ------------------------------------------------
 # UserStudy Table (Users ↔ Studies with attributes)
 # ------------------------------------------------
-class UserStudy(SoftDeleteMixin, db.Model):
+class UserStudy(db.Model):
     __tablename__ = 'user_studies'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
@@ -92,6 +75,7 @@ class UserStudy(SoftDeleteMixin, db.Model):
     role = db.Column(db.String(255), nullable=False)  # e.g. 'owner': sharing + editing + viewing, 'editor': editing + viewing, 'viewer': viewing only
     created_at = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
     updated_at = db.Column(db.DateTime(timezone=True), onupdate=lambda: datetime.now(timezone.utc))
+    deleted_at = db.Column(db.DateTime(timezone=True), nullable=True)
 
     # Relationships
     user = db.relationship("User", back_populates="user_studies")
@@ -110,7 +94,7 @@ class UserStudy(SoftDeleteMixin, db.Model):
 # ------------------------------------------------
 # Users Table
 # ------------------------------------------------
-class User(SoftDeleteMixin, db.Model):
+class User(db.Model):
     __tablename__ = 'users'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
@@ -123,6 +107,7 @@ class User(SoftDeleteMixin, db.Model):
     last_login = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     created_at = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
     updated_at = db.Column(db.DateTime(timezone=True), onupdate=lambda: datetime.now(timezone.utc))
+    deleted_at = db.Column(db.DateTime(timezone=True), nullable=True)
 
     support = db.relationship("Support", back_populates="user", cascade="all, delete-orphan")
     
@@ -155,7 +140,7 @@ class User(SoftDeleteMixin, db.Model):
 # ------------------------------------------------
 # Studies Table
 # ------------------------------------------------
-class Study(SoftDeleteMixin, db.Model):
+class Study(db.Model):
     __tablename__ = 'studies'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
@@ -165,6 +150,7 @@ class Study(SoftDeleteMixin, db.Model):
     contact_message = db.Column(db.Text)  # e.g., "Please contact the study team for any questions or concerns by emailing ashm@stanford.edu."
     created_at = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
     updated_at = db.Column(db.DateTime(timezone=True), onupdate=lambda: datetime.now(timezone.utc))
+    deleted_at = db.Column(db.DateTime(timezone=True), nullable=True)
 
     # Relationships
     ping_templates = db.relationship("PingTemplate", back_populates="study", cascade="all, delete-orphan")
@@ -186,7 +172,7 @@ class Study(SoftDeleteMixin, db.Model):
 # ------------------------------------------------
 # PingTemplates Table
 # ------------------------------------------------
-class PingTemplate(SoftDeleteMixin, db.Model):
+class PingTemplate(db.Model):
     __tablename__ = 'ping_templates'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
@@ -200,6 +186,7 @@ class PingTemplate(SoftDeleteMixin, db.Model):
     schedule = db.Column(JSONB, nullable=True)  # e.g.,  [{"begin_day_num": 1, "begin_time": "09:00", "end_day_num": 1, "end_time": "10:00"}, {"day_num": 2, "begin_time": "09:00", "end_time": "10:00"}]
     created_at = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
     updated_at = db.Column(db.DateTime(timezone=True), onupdate=lambda: datetime.now(timezone.utc))
+    deleted_at = db.Column(db.DateTime(timezone=True), nullable=True)
 
     # Relationships
     study = db.relationship("Study", back_populates="ping_templates")
@@ -223,7 +210,7 @@ class PingTemplate(SoftDeleteMixin, db.Model):
 # ------------------------------------------------
 # Pings Table
 # ------------------------------------------------
-class Ping(SoftDeleteMixin, db.Model):
+class Ping(db.Model):
     __tablename__ = 'pings'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
@@ -246,6 +233,7 @@ class Ping(SoftDeleteMixin, db.Model):
     forwarding_code = db.Column(db.String(255), nullable=False, default=lambda: os.urandom(16).hex())
     created_at = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
     updated_at = db.Column(db.DateTime(timezone=True), onupdate=lambda: datetime.now(timezone.utc))
+    deleted_at = db.Column(db.DateTime(timezone=True), nullable=True)
 
     # Relationships
     study = db.relationship("Study", back_populates="pings")
@@ -277,7 +265,7 @@ class Ping(SoftDeleteMixin, db.Model):
 # Support Queries Table
 # ------------------------------------------------
 
-class Support(SoftDeleteMixin, db.Model):
+class Support(db.Model):
     __tablename__ = 'support'
     
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)

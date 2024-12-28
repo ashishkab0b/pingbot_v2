@@ -25,6 +25,7 @@ class Config:
     
     SQLALCHEMY_DATABASE_URI = os.environ['SQLALCHEMY_DATABASE_URI']
     SQLALCHEMY_ENGINE_OPTIONS = {'connect_args': {'options': '-csearch_path=public'}}
+
     
     TELEGRAM_LINK_CODE_EXPIRY_DAYS = 1
     ENROLLMENT_DASHBOARD_OTP_EXPIRY_MINS = 60

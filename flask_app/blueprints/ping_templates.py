@@ -1,181 +1,97 @@
-"""
-ping_templates.py
-
-Blueprint for creating, retrieving, updating, and deleting PingTemplate objects.
-Includes both "global" style (all ping templates user can access) and
-"study-specific" routes (under /studies/<study_id>/ping_templates).
-
-Routes:
-    - GET /studies/<int:study_id>/ping_templates
-    - GET /ping_templates (optional "global" listing)
-    - POST /studies/<int:study_id>/ping_templates
-    - GET /studies/<int:study_id>/ping_templates/<int:template_id>
-    - PUT /studies/<int:study_id>/ping_templates/<int:template_id>
-    - DELETE /studies/<int:study_id>/ping_templates/<int:template_id>
-"""
+# flask_app/blueprints/ping_templates.py
 
 from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import jwt_required
-from app import db
-from models import Study, PingTemplate, UserStudy
+from extensions import db
 from permissions import get_current_user, user_has_study_permission
-from sqlalchemy.orm import joinedload
-from typing import Any, Optional
+from crud import (
+    create_ping_template,
+    get_ping_template_by_id,
+    update_ping_template,
+    soft_delete_ping_template
+)
+from utils import paginate_statement
+from models import PingTemplate
 
 ping_templates_bp = Blueprint('ping_templates', __name__)
 
 
 @ping_templates_bp.route('/studies/<int:study_id>/ping_templates', methods=['GET'])
-@ping_templates_bp.route('/ping_templates', methods=['GET'])
 @jwt_required()
-def get_ping_templates(study_id: Optional[int] = None) -> Any:
-    """
-    Retrieve a paginated list of PingTemplates. If study_id is provided, list PingTemplates
-    under that study (if the user has at least 'viewer' role). Otherwise, list all templates 
-    in studies the user can access.
-
-    ---
-    parameters:
-      - name: study_id
-        in: path
-        type: integer
-        required: false
-        description: The ID of the study.
-      - name: page
-        in: query
-        type: integer
-        required: false
-        description: Page number for pagination (default: 1).
-      - name: per_page
-        in: query
-        type: integer
-        required: false
-        description: Number of items per page (default: 10).
-    responses:
-      200:
-        description: Paginated list of PingTemplates.
-      403:
-        description: Access denied to the study.
-      404:
-        description: User not found.
-      500:
-        description: Server error retrieving PingTemplates.
-    """
-    current_app.logger.info(f"GET request to ping_templates, study_id={study_id}")
+def get_ping_templates(study_id):
+    current_app.logger.debug(f"Entered get_ping_templates route for study_id={study_id}.")
 
     user = get_current_user()
     if not user:
+        current_app.logger.warning("User not found while attempting to fetch ping templates.")
         return jsonify({"error": "User not found"}), 404
 
-    if study_id:
-        current_app.logger.info(f"Fetching ping_templates for user={user.id}, study_id={study_id}")
-        study = user_has_study_permission(user.id, study_id, minimum_role="viewer")
-        if not study:
-            current_app.logger.warning(f"User {user.id} lacks permission to study {study_id}.")
-            return jsonify({"error": f"No access to study {study_id}"}), 403
+    study = user_has_study_permission(user.id, study_id, minimum_role="viewer")
+    if not study:
+        current_app.logger.warning(
+            f"User {user.id} lacks 'viewer' permission for study_id={study_id}."
+        )
+        return jsonify({"error": f"No access to study {study_id}"}), 403
 
-    # Parse pagination
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 10, type=int)
 
-    try:
-        if study_id:
-            query = PingTemplate.query.filter_by(study_id=study_id)
-        else:
-            accessible_studies = (
-                db.session.query(UserStudy.study_id)
-                .filter(UserStudy.user_id == user.id)
-                .subquery()
-            )
-            query = PingTemplate.query.filter(PingTemplate.study_id.in_(accessible_studies))
+    stmt = (
+        db.session.query(PingTemplate)
+        .filter_by(study_id=study_id)
+        .filter(PingTemplate.deleted_at.is_(None))
+        .order_by(PingTemplate.id.asc())
+        .statement
+    )
 
-        pagination = query.paginate(page=page, per_page=per_page, error_out=False)
-        items = [pt.to_dict() for pt in pagination.items]
+    pagination = paginate_statement(db.session, stmt, page=page, per_page=per_page)
 
-        current_app.logger.info(
-            f"Returning {len(items)} ping_templates (page {pagination.page}/{pagination.pages}) "
-            f"for user={user.id}, study_id={study_id}"
-        )
+    ping_templates = [
+        {
+            "id": pt.id,
+            "name": pt.name,
+            "message": pt.message,
+            "url": pt.url,
+            "url_text": pt.url_text,
+            "reminder_latency": str(pt.reminder_latency) if pt.reminder_latency else None,
+            "expire_latency": str(pt.expire_latency) if pt.expire_latency else None,
+            "schedule": pt.schedule,
+        }
+        for pt in pagination["items"]
+    ]
 
-        return jsonify({
-            "data": items,
-            "meta": {
-                "page": pagination.page,
-                "per_page": pagination.per_page,
-                "total": pagination.total,
-                "pages": pagination.pages
-            }
-        }), 200
+    current_app.logger.info(
+        f"User {user.id} fetched {len(ping_templates)} ping templates for study {study_id} "
+        f"on page {page}/{pagination['pages']}."
+    )
 
-    except Exception as e:
-        current_app.logger.error("Error querying PingTemplate table.")
-        current_app.logger.exception(e)
-        return jsonify({"error": "Error retrieving PingTemplates"}), 500
+    return jsonify({
+        "data": ping_templates,
+        "meta": {
+            "page": pagination["page"],
+            "per_page": pagination["per_page"],
+            "total": pagination["total"],
+            "pages": pagination["pages"]
+        }
+    }), 200
+
 
 @ping_templates_bp.route('/studies/<int:study_id>/ping_templates', methods=['POST'])
 @jwt_required()
-def create_ping_template(study_id: int) -> Any:
-    """
-    Create a new PingTemplate under the given study. Requires 'editor' role or higher.
-
-    ---
-    parameters:
-      - name: study_id
-        in: path
-        type: integer
-        required: true
-        description: The ID of the study.
-    requestBody:
-      description: JSON payload with the details of the new PingTemplate.
-      required: true
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              name:
-                type: string
-                description: Name of the PingTemplate.
-              message:
-                type: string
-                description: Message of the PingTemplate.
-              url:
-                type: string
-                description: Optional URL.
-              url_text:
-                type: string
-                description: Optional text for the URL.
-              reminder_latency:
-                type: string
-                description: Latency before a reminder.
-              expire_latency:
-                type: string
-                description: Latency before expiration.
-              schedule:
-                type: array
-                items:
-                  type: object
-    responses:
-      201:
-        description: PingTemplate created successfully.
-      403:
-        description: No access to the study.
-      404:
-        description: User not found.
-      500:
-        description: Error creating PingTemplate.
-    """
-    current_app.logger.info(f"POST request to create ping_template, study_id={study_id}")
+def create_ping_template_route(study_id):
+    current_app.logger.debug(f"Entered create_ping_template route for study_id={study_id}.")
 
     user = get_current_user()
     if not user:
+        current_app.logger.error("User not found while attempting to create ping template.")
         return jsonify({"error": "User not found"}), 404
 
-    # Ensure user can edit this study
     study = user_has_study_permission(user.id, study_id, minimum_role="editor")
     if not study:
-        current_app.logger.warning(f"User {user.id} lacks edit permission on study {study_id}.")
-        return jsonify({"error": f"Study {study_id} not found or no access"}), 404
+        current_app.logger.warning(
+            f"User {user.id} lacks 'editor' permission for study_id={study_id}."
+        )
+        return jsonify({"error": f"No access to study {study_id}"}), 403
 
     data = request.get_json()
     name = data.get('name')
@@ -187,10 +103,12 @@ def create_ping_template(study_id: int) -> Any:
     schedule = data.get('schedule')
 
     if not name or not message:
+        current_app.logger.error(f"Missing required fields: name={name}, message={message}.")
         return jsonify({"error": "Missing required fields: name, message"}), 400
 
     try:
-        pt = PingTemplate(
+        new_ping_template = create_ping_template(
+            db.session,
             study_id=study_id,
             name=name,
             message=message,
@@ -200,212 +118,128 @@ def create_ping_template(study_id: int) -> Any:
             expire_latency=expire_latency,
             schedule=schedule
         )
-        db.session.add(pt)
         db.session.commit()
+        current_app.logger.info(f"User {user.id} created ping template ID={new_ping_template.id}.")
+        return jsonify({
+            "message": "Ping Template created successfully",
+            "ping_template": new_ping_template.to_dict()
+        }), 201
     except Exception as e:
         db.session.rollback()
-        current_app.logger.error(f"Error creating PingTemplate in study {study_id}")
+        current_app.logger.error(f"Error creating ping template for study_id={study_id}.")
         current_app.logger.exception(e)
-        return jsonify({"error": "Error creating PingTemplate"}), 500
-
-    current_app.logger.info(f"User created ping template ID={pt.id} in study={study_id}")
-    return jsonify({
-        "message": "Ping Template created successfully",
-        "ping_template": pt.to_dict()
-    }), 201
+        return jsonify({"error": "Internal server error"}), 500
 
 
 @ping_templates_bp.route('/studies/<int:study_id>/ping_templates/<int:template_id>', methods=['GET'])
 @jwt_required()
-def get_single_ping_template(study_id: int, template_id: int) -> Any:
-    """
-    Retrieve a single PingTemplate by its ID under a specific study.
-
-    ---
-    parameters:
-      - name: study_id
-        in: path
-        type: integer
-        required: true
-        description: The ID of the study.
-      - name: template_id
-        in: path
-        type: integer
-        required: true
-        description: The ID of the PingTemplate.
-    responses:
-      200:
-        description: PingTemplate retrieved successfully.
-      403:
-        description: No access to the study.
-      404:
-        description: PingTemplate not found or user not found.
-      500:
-        description: Error retrieving PingTemplate.
-    """
-    current_app.logger.info(f"GET single ping_template {template_id} in study {study_id}")
+def get_single_ping_template_route(study_id, template_id):
+    current_app.logger.debug(
+        f"Entered get_single_ping_template route for study_id={study_id}, template_id={template_id}."
+    )
 
     user = get_current_user()
     if not user:
+        current_app.logger.warning("User not found while attempting to fetch ping template.")
         return jsonify({"error": "User not found"}), 404
 
-    # Check permission
     study = user_has_study_permission(user.id, study_id, minimum_role="viewer")
     if not study:
-        current_app.logger.warning(f"User {user.id} has no access to study {study_id}")
+        current_app.logger.warning(
+            f"User {user.id} lacks 'viewer' permission for study_id={study_id}."
+        )
         return jsonify({"error": f"No access to study {study_id}"}), 403
 
-    pt = PingTemplate.query.filter_by(id=template_id, study_id=study_id).first()
-    if not pt:
+    pt = get_ping_template_by_id(db.session, template_id)
+    if not pt or pt.deleted_at is not None or pt.study_id != study_id:
+        current_app.logger.warning(
+            f"Ping template ID={template_id} not found or inaccessible for study_id={study_id}."
+        )
         return jsonify({"error": f"PingTemplate {template_id} not found"}), 404
 
-    current_app.logger.info(f"Returning ping_template {template_id} for study {study_id}")
+    current_app.logger.info(
+        f"User {user.id} fetched ping template ID={template_id} for study {study_id}."
+    )
     return jsonify(pt.to_dict()), 200
+
 
 @ping_templates_bp.route('/studies/<int:study_id>/ping_templates/<int:template_id>', methods=['PUT'])
 @jwt_required()
-def update_ping_template(study_id: int, template_id: int) -> Any:
-    """
-    Update an existing PingTemplate under a study. Requires 'editor' role or higher.
-
-    ---
-    parameters:
-      - name: study_id
-        in: path
-        type: integer
-        required: true
-        description: The ID of the study.
-      - name: template_id
-        in: path
-        type: integer
-        required: true
-        description: The ID of the PingTemplate.
-    requestBody:
-      description: JSON payload with the fields to update.
-      required: true
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              name:
-                type: string
-                description: Updated name of the PingTemplate.
-              message:
-                type: string
-                description: Updated message of the PingTemplate.
-              url:
-                type: string
-                description: Updated URL.
-              url_text:
-                type: string
-                description: Updated text for the URL.
-              reminder_latency:
-                type: string
-                description: Updated latency before a reminder.
-              expire_latency:
-                type: string
-                description: Updated latency before expiration.
-              schedule:
-                type: array
-                items:
-                  type: object
-    responses:
-      200:
-        description: PingTemplate updated successfully.
-      403:
-        description: No access to the study.
-      404:
-        description: PingTemplate not found or user not found.
-      500:
-        description: Error updating PingTemplate.
-    """
-    current_app.logger.info(f"PUT request to update ping_template {template_id} in study {study_id}")
+def update_ping_template_route(study_id, template_id):
+    current_app.logger.debug(
+        f"Entered update_ping_template route for study_id={study_id}, template_id={template_id}."
+    )
 
     user = get_current_user()
     if not user:
+        current_app.logger.warning("User not found while attempting to update ping template.")
         return jsonify({"error": "User not found"}), 404
 
     study = user_has_study_permission(user.id, study_id, minimum_role="editor")
     if not study:
-        current_app.logger.warning(f"User {user.id} lacks edit permission on study {study_id}.")
+        current_app.logger.warning(
+            f"User {user.id} lacks 'editor' permission for study_id={study_id}."
+        )
         return jsonify({"error": f"No access to study {study_id}"}), 403
 
-    pt = PingTemplate.query.filter_by(id=template_id, study_id=study_id).first()
-    if not pt:
-        return jsonify({"error": f"PingTemplate {template_id} not found"}), 404
-
     data = request.get_json()
-    for field in ["name", "message", "url", "url_text", "reminder_latency", "expire_latency", "schedule"]:
-        if field in data:
-            setattr(pt, field, data[field])
 
     try:
+        updated_ping_template = update_ping_template(db.session, template_id, **data)
+        if not updated_ping_template or updated_ping_template.deleted_at is not None:
+            current_app.logger.warning(
+                f"Ping template ID={template_id} not found or inaccessible for study_id={study_id}."
+            )
+            return jsonify({"error": f"PingTemplate {template_id} not found"}), 404
+
         db.session.commit()
+        current_app.logger.info(
+            f"User {user.id} updated ping template ID={template_id} for study {study_id}."
+        )
+        return jsonify({
+            "message": "Ping Template updated successfully",
+            "ping_template": updated_ping_template.to_dict()
+        }), 200
     except Exception as e:
         db.session.rollback()
-        current_app.logger.error(f"Error updating ping_template {template_id} in study {study_id}")
+        current_app.logger.error(f"Error updating ping template ID={template_id} for study_id={study_id}.")
         current_app.logger.exception(e)
-        return jsonify({"error": "Error updating PingTemplate"}), 500
-
-    current_app.logger.info(f"Ping template {template_id} in study {study_id} updated successfully.")
-    return jsonify({
-        "message": "Ping Template updated successfully",
-        "ping_template": pt.to_dict()
-    }), 200
+        return jsonify({"error": "Internal server error"}), 500
 
 
 @ping_templates_bp.route('/studies/<int:study_id>/ping_templates/<int:template_id>', methods=['DELETE'])
 @jwt_required()
-def delete_ping_template(study_id: int, template_id: int) -> Any:
-    """
-    Delete a PingTemplate from a study. Requires 'editor' role or higher.
-
-    ---
-    parameters:
-      - name: study_id
-        in: path
-        type: integer
-        required: true
-        description: The ID of the study.
-      - name: template_id
-        in: path
-        type: integer
-        required: true
-        description: The ID of the PingTemplate to delete.
-    responses:
-      200:
-        description: PingTemplate deleted successfully.
-      403:
-        description: No access to the study.
-      404:
-        description: PingTemplate not found or user not found.
-      500:
-        description: Error deleting PingTemplate.
-    """
-    current_app.logger.info(f"DELETE ping_template {template_id} in study {study_id}")
+def delete_ping_template_route(study_id, template_id):
+    current_app.logger.debug(
+        f"Entered delete_ping_template route for study_id={study_id}, template_id={template_id}."
+    )
 
     user = get_current_user()
     if not user:
+        current_app.logger.warning("User not found while attempting to delete ping template.")
         return jsonify({"error": "User not found"}), 404
 
     study = user_has_study_permission(user.id, study_id, minimum_role="editor")
     if not study:
-        current_app.logger.warning(f"User {user.id} has no edit access to study {study_id}")
+        current_app.logger.warning(
+            f"User {user.id} lacks 'editor' permission for study_id={study_id}."
+        )
         return jsonify({"error": f"No access to study {study_id}"}), 403
 
-    pt = PingTemplate.query.filter_by(id=template_id, study_id=study_id).first()
-    if not pt:
-        return jsonify({"error": f"PingTemplate {template_id} not found"}), 404
-
     try:
-        db.session.delete(pt)
+        if not soft_delete_ping_template(db.session, template_id):
+            current_app.logger.warning(
+                f"Ping template ID={template_id} not found or already deleted for study_id={study_id}."
+            )
+            return jsonify({"error": f"PingTemplate {template_id} not found"}), 404
+
         db.session.commit()
+        current_app.logger.info(
+            f"User {user.id} deleted ping template ID={template_id} for study {study_id}."
+        )
+        return jsonify({"message": f"Ping Template {template_id} deleted successfully."}), 200
     except Exception as e:
         db.session.rollback()
-        current_app.logger.error(f"Error deleting ping_template {template_id} in study {study_id}")
+        current_app.logger.error(f"Error deleting ping template ID={template_id} for study_id={study_id}.")
         current_app.logger.exception(e)
-        return jsonify({"error": "Error deleting PingTemplate"}), 500
-
-    current_app.logger.info(f"Ping template {template_id} deleted from study {study_id}.")
-    return jsonify({"message": f"Ping Template {template_id} deleted successfully."}), 200
+        return jsonify({"error": "Internal server error"}), 500

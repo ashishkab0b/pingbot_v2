@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import StudyNav from '../components/StudyNav';
 import { useStudy } from '../context/StudyContext';
 import axios from '../api/axios';
+import DataTable from '../components/DataTable';
 
 function EnrollmentDashboard() {
   const { studyId } = useParams();
@@ -220,71 +221,42 @@ function EnrollmentDashboard() {
 
       <section>
         <h2>Participants</h2>
-        {loading && <p>Loading participants...</p>}
-        {error && <p style={{ color: 'red' }}>{error}</p>}
+        <DataTable
+          data={participants.map((participant) => ({
+            ID: participant.id,
+            'Study PID': participant.study_pid,
+            'Time Zone': participant.tz,
+            Enrolled: participant.enrolled ? 'Yes' : 'No',
+            'Start Date': participant.start_date,
+          }))}
+          headers={['ID', 'Study PID', 'Time Zone', 'Enrolled', 'Start Date']} // Removed 'Actions' from headers
+          loading={loading}
+          error={error}
+          currentPage={page}
+          totalPages={totalPages}
+          onPreviousPage={handlePreviousPage}
+          onNextPage={handleNextPage}
+          actionsColumn={(row) => (
+            <>
+              {/* Enroll/Unenroll button */}
+              <button
+                onClick={() =>
+                  handleToggleEnrollment(row.ID, row.Enrolled === 'Yes')
+                }
+              >
+                {row.Enrolled === 'Yes' ? 'Unenroll' : 'Enroll'}
+              </button>
 
-        {!loading && !error && (
-          <>
-            {participants.length === 0 ? (
-              <p>No participants found.</p>
-            ) : (
-              <table border="1" cellPadding="8" style={{ borderCollapse: 'collapse' }}>
-                <thead>
-                  <tr>
-                    <th>ID</th>
-                    <th>Study PID</th>
-                    <th>Time Zone</th>
-                    <th>Enrolled</th>
-                    <th>Start Date</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {participants.map((participant) => (
-                    <tr key={participant.id}>
-                      <td>{participant.id}</td>
-                      <td>{participant.study_pid}</td>
-                      <td>{participant.tz}</td>
-                      <td>{participant.enrolled ? 'Yes' : 'No'}</td>
-                      <td>{participant.start_date}</td>
-                      <td>
-                        {/* Enroll/Unenroll button */}
-                        <button
-                          onClick={() =>
-                            handleToggleEnrollment(participant.id, participant.enrolled)
-                          }
-                        >
-                          {participant.enrolled ? 'Unenroll' : 'Enroll'}
-                        </button>
-
-                        {/* Delete button */}
-                        <button
-                          style={{ marginLeft: '0.5rem' }}
-                          onClick={() => handleDeleteParticipant(participant.id)}
-                        >
-                          Delete
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </>
-        )}
-
-        {/* Pagination controls */}
-        <div style={{ marginTop: '1rem' }}>
-          <button onClick={handlePreviousPage} disabled={page <= 1}>
-            Previous
-          </button>
-          <span style={{ margin: '0 1rem' }}>
-            Page {page} of {totalPages}
-          </span>
-          <button onClick={handleNextPage} disabled={page >= totalPages}>
-            Next
-          </button>
-        </div>
+              {/* Delete button */}
+              <button
+                style={{ marginLeft: '0.5rem' }}
+                onClick={() => handleDeleteParticipant(row.ID)}
+              >
+                Delete
+              </button>
+            </>
+          )}
+        />
       </section>
     </div>
   );

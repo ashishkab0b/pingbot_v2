@@ -44,7 +44,11 @@ function ViewStudy() {
         <p><strong>Public Name:</strong> {study.public_name}</p>
         <p><strong>Internal Name:</strong> {study.internal_name}</p>
         <p><strong>Contact Message:</strong> {study.contact_message}</p>
-        <p><strong>Signup Code:</strong> {study.code}</p>
+        <p>
+        <strong>Enrollment link: </strong>
+        {`${process.env.REACT_APP_BASE_URL}/enroll/${study.code}?pid=`}
+        <span style={{ color: 'red' }}>&lt;REPLACE_WITH_PARTICIPANT_ID&gt;</span>
+      </p>
       </section>
 
     </div>

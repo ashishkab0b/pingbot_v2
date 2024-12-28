@@ -6,6 +6,7 @@ import StudyNav from '../components/StudyNav';
 import { useStudy } from '../context/StudyContext';
 import PingScheduleForm from '../components/PingScheduleForm';
 import VariableAutoCompleteTextarea from '../components/VariableAutoCompleteTextarea';
+import DataTable from '../components/DataTable';
 
 
 function PingTemplateDashboard() {
@@ -403,69 +404,37 @@ const urlVariables = [
 
       {/* List existing Ping Templates */}
       <section>
-        <h2>Existing templates for {study?.internal_name || 'Loading...'} </h2>
-        {loading && <p>Loading ping templates...</p>}
-        {error && <p style={{ color: 'red' }}>{error}</p>}
+        <h2>Ping Templates</h2>
 
-        {!loading && !error && (
-          <>
-            {pingTemplates.length === 0 ? (
-              <p>No ping templates found.</p>
-            ) : (
-              <table
-                border="1"
-                cellPadding="8"
-                style={{ borderCollapse: 'collapse' }}
-              >
-                <thead>
-                  <tr>
-                    <th>ID</th>
-                    <th>Name</th>
-                    <th>Message</th>
-                    <th>URL</th>
-                    <th>Reminder Latency</th>
-                    <th>Expire Latency</th>
-                    <th>Schedule</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {pingTemplates.map((pt) => (
-                    <tr key={pt.id}>
-                      <td>{pt.id}</td>
-                      <td>{pt.name}</td>
-                      <td>{pt.message}</td>
-                      <td>{pt.url}</td>
-                      <td>{pt.reminder_latency}</td>
-                      <td>{pt.expire_latency}</td>
-                      <td>{JSON.stringify(pt.schedule)}</td>
-                      <td>
-                        <button
-                          onClick={() => deletePingTemplate(pt.id)}
-                        >
-                          Delete
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </>
-        )}
-
-        {/* Simple Pagination */}
-        <div style={{ marginTop: '1rem' }}>
-          <button onClick={handlePreviousPage} disabled={page <= 1}>
-            Previous
-          </button>
-          <span style={{ margin: '0 1rem' }}>
-            Page {page} of {totalPages}
-          </span>
-          <button onClick={handleNextPage} disabled={page >= totalPages}>
-            Next
-          </button>
-        </div>
+        <DataTable
+          data={pingTemplates.map((pt) => ({
+            ID: pt.id,
+            Name: pt.name,
+            Message: pt.message,
+            URL: pt.url,
+            'Reminder Latency': pt.reminder_latency,
+            'Expire Latency': pt.expire_latency,
+            Schedule: JSON.stringify(pt.schedule),
+          }))}
+          headers={[
+            'ID',
+            'Name',
+            'Message',
+            'URL',
+            'Reminder Latency',
+            'Expire Latency',
+            'Schedule',
+          ]} // Removed 'Actions' from the headers
+          loading={loading}
+          error={error}
+          currentPage={page}
+          totalPages={totalPages}
+          onPreviousPage={handlePreviousPage}
+          onNextPage={handleNextPage}
+          actionsColumn={(row) => (
+            <button onClick={() => deletePingTemplate(row.ID)}>Delete</button>
+          )}
+        />
       </section>
     </div>
   );

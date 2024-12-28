@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify, current_app, redirect
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from app import db
+from extensions import db
 from models import User, Study, PingTemplate, UserStudy, Ping, Enrollment
 from permissions import user_has_study_permission, get_current_user
 from random import randint

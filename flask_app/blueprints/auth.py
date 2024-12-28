@@ -19,7 +19,7 @@ import redis
 
 from config import CurrentConfig
 from models import User
-from app import db, jwt
+from extensions import db, jwt
 
 auth_bp = Blueprint('auth', __name__)
 
