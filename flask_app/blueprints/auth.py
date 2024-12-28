@@ -120,6 +120,6 @@ def logout():
 
     # Add to Redis with an expiration time. 
     # It's recommended to match or exceed the JWT_ACCESS_TOKEN_EXPIRES time.
-    current_app.redis.setex(f"blacklisted_{jti}", Config.JWT_ACCESS_TOKEN_EXPIRES, "true")
+    current_app.redis.setex(f"blacklisted_{jti}", current_app.config["JWT_ACCESS_TOKEN_EXPIRES"], "true")
 
     return jsonify({"message": "Successfully logged out"}), 200

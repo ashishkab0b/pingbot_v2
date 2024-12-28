@@ -5,6 +5,8 @@ import axios from '../api/axios';
 function StudyDashboard() {
   const navigate = useNavigate();
 
+  const userEmail = localStorage.getItem('user_email');
+
   // -----------------------------------------
   // State
   // -----------------------------------------
@@ -133,6 +135,9 @@ function StudyDashboard() {
           <form onSubmit={handleCreateStudy} style={{ maxWidth: '400px' }}>
             <div style={{ marginBottom: '1rem' }}>
               <label htmlFor="publicName">Public Name</label><br />
+              <span className="form-description">
+                This label will be used to identify the study to participants.
+              </span><br />
               <input
                 id="publicName"
                 type="text"
@@ -144,6 +149,9 @@ function StudyDashboard() {
 
             <div style={{ marginBottom: '1rem' }}>
               <label htmlFor="internalName">Internal Name</label><br />
+              <span className="form-description">
+                This label will be used to identify the study internally.
+              </span><br />
               <input
                 id="internalName"
                 type="text"
@@ -155,8 +163,12 @@ function StudyDashboard() {
 
             <div style={{ marginBottom: '1rem' }}>
               <label htmlFor="contactMessage">Contact Message</label><br />
+              <span className="form-description">
+                This is a message that can be accessed by participants in order to find information on how they should contact you.<br />
+              </span><br />
               <textarea
                 id="contactMessage"
+                placeholder={`For questions or concerns about the study, please email the researchers at ${userEmail || '...'}`}
                 rows="4"
                 value={contactMessage}
                 onChange={(e) => setContactMessage(e.target.value)}
@@ -186,6 +198,7 @@ function StudyDashboard() {
                     <th>Public Name</th>
                     <th>Internal Name</th>
                     <th>Signup Code</th>
+                    <th>Contact Message</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -200,6 +213,7 @@ function StudyDashboard() {
                       <td>{study.public_name}</td>
                       <td>{study.internal_name}</td>
                       <td>{study.code}</td>
+                      <td>{study.contact_message}</td>
                     </tr>
                   ))}
                 </tbody>

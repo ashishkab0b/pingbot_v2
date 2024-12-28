@@ -70,7 +70,7 @@ Table: pings
 columns: id, scheduled_ts, expire_ts, reminder_ts, day_num, url, ping_sent, reminder_sent
 
 Table: ping_templates
-columns: id, name, message, url, reminder_latency, expire_latency, start_day_num, schedule
+columns: id, name, message, url, reminder_latency, expire_latency, begin_day_num, schedule
 
 Table: participants:
 columns: id, telegram_id, tz

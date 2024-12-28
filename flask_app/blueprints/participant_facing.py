@@ -8,6 +8,7 @@ from datetime import timedelta, datetime, timezone
 import pytz
 from utils import generate_non_confusable_code
 import secrets
+from blueprints.enrollments import MessageConstructor
 
 particpant_facing_bp = Blueprint('particpant_facing', __name__)
 
@@ -39,8 +40,33 @@ def ping_forwarder(ping_id):
         current_app.logger.error(f"Invalid forwarding code: {code}.")
         return jsonify({"error": "Invalid code."}), 400
     
-    # Redirect to ping.url
-    return redirect(ping.url)
+    # Update the ping with click timestamps
+    try:
+        # First clicked timestamp
+        if not ping.first_clicked_ts:
+            ping.first_clicked_ts = datetime.now(timezone.utc)
+            
+        # Last clicked timestamp
+        ping.last_clicked_ts = datetime.now(timezone.utc)
+        
+        # Commit changes
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Failed to update ping {ping.id} with click timestamps.")
+        current_app.logger.exception(e)
+        return jsonify({"error": "Internal server error."}), 500
+    
+    # Check if expired and return message if so
+    if ping.expiry_ts and ping.expiry_ts < datetime.now(timezone.utc):
+        current_app.logger.info(f"Ping {ping.id} has expired.")
+        return current_app.config["PING_EXPIRED_MESSAGE"], 200
+    
+    # Redirect to survey
+    message_constructor = MessageConstructor(ping)
+    survey_url = message_constructor.construct_survey_url()
+    
+    return redirect(survey_url, code=301)
 
 
     

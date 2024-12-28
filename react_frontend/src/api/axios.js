@@ -36,7 +36,7 @@ instance.interceptors.response.use(
           return Promise.reject(error);
         }
         // Attempt refresh
-        const res = await instance.post('/auth/refresh', {}, {
+        const res = await instance.post('/refresh', {}, {
           headers: {
             Authorization: `Bearer ${refreshToken}`
           }

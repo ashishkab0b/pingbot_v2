@@ -12,7 +12,7 @@ from dotenv import load_dotenv
 from werkzeug.exceptions import HTTPException
 from flask import Response
 from flasgger import Swagger
-
+from flask_migrate import Migrate
 
 
 # Load environment variables
@@ -23,6 +23,9 @@ logger = setup_logger()
 
 # Initialize PostgreSQL database
 db = SQLAlchemy()
+
+# Initialize migrations
+migrate = Migrate()
 
 # Initialize JWT manager
 jwt = JWTManager()
@@ -46,6 +49,8 @@ def create_app(config):
     # Extensions
     jwt.init_app(app)
     db.init_app(app)
+    migrate.init_app(app, db)
+    from models import User, Study, PingTemplate, UserStudy, Ping, Enrollment, Support
     
     # Initialize Redis
     app.redis = redis.StrictRedis(
@@ -83,6 +88,10 @@ def create_app(config):
     @app.route('/health', methods=['GET'])
     def health():
         return {'status': 'healthy'}, 200
+    
+    # @app.before_request
+    # def log_request():
+    #     logger.info(f"Request: {request.method} {request.url}")
     
     # Specific handler for 404 Not Found
     @app.errorhandler(404)

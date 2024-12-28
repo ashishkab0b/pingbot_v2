@@ -117,37 +117,38 @@ class MessageConstructor:
         self.ping = ping
         self.telegram_id = self.ping.enrollment.telegram_id
         self.url = None
+        self.survey_link = None
         self.message = None
         
-    def construct_url(self):
-        """
-        Construct a URL for a ping.
-        :return: str - The URL for the ping.
-        """
-        url = self.ping.url
-        for key, value in self.URL_VARIABLES.items():
-            if value['db_table'] == 'pings':
-                url = url.replace(key, str(getattr(self.ping, value['db_column'])))
-            elif value['db_table'] == 'studies':
-                url = url.replace(key, str(getattr(self.ping.enrollment.study, value['db_column'])))
-            elif value['db_table'] == 'ping_templates':
-                url = url.replace(key, str(getattr(self.ping.ping_template, value['db_column'])))
-            elif value['db_table'] == 'enrollments':
-                url = url.replace(key, str(getattr(self.ping.enrollment, value['db_column'])))
         
-        self.url = url
-        return url
+    def construct_ping_link(self):
+        """
+        Construct an HTML link for the ping. 
+        This is done at the point of sending the ping.
+        :return: str - The HTML link for the ping.
+        """
+        
+        forwarding_code = self.ping.forwarding_code
+        url = f"{current_app.config['PING_LINK_BASE_URL']}/ping/{self.ping.id}?code={forwarding_code}"
+        url_text = self.ping.ping_template.url_text if self.ping.ping_template.url_text else current_app.config['PING_DEFAULT_URL_TEXT']
+        self.survey_link = f"<a href='{url}'>{url_text}</a>"
+        
+        return self.survey_link
         
     def construct_message(self):
         """
         Construct a message with a URL.
+        This is done at the point of sending the ping.
         :return: str - The message with the URL.
         """
         
         message = self.ping.ping_template.message
+        survey_link = self.construct_ping_link() if self.ping.ping_template.url else None
         
         if "<URL>" in self.ping.ping_template.message:
-            message = self.ping.ping_template.message.replace("<URL>", self.url)
+            message = message.replace("<URL>", survey_link)
+        elif survey_link:
+            message += f"\n\n{survey_link}"
         
         for key, value in self.MESSAGE_VARIABLES.items():
             if value['db_table'] == 'pings':
@@ -161,19 +162,41 @@ class MessageConstructor:
         
         self.message = message
         return message
+        
+        
+    def construct_survey_url(self):
+        """
+        Construct a URL for a ping. 
+        This is done in the ping forwarding route at the point of redirecting to the survey after the participant clicks.
+        :return: str - The URL for the ping.
+        """
+        url = self.ping.ping_template.url
+
+        for key, value in self.URL_VARIABLES.items():
+            if value['db_table'] == 'pings':
+                url = url.replace(key, str(getattr(self.ping, value['db_column'])))
+            elif value['db_table'] == 'studies':
+                url = url.replace(key, str(getattr(self.ping.enrollment.study, value['db_column'])))
+            elif value['db_table'] == 'ping_templates':
+                url = url.replace(key, str(getattr(self.ping.ping_template, value['db_column'])))
+            elif value['db_table'] == 'enrollments':
+                url = url.replace(key, str(getattr(self.ping.enrollment, value['db_column'])))
+        
+        self.url = url
+        return url
     
 
-def random_time(start_date: datetime, start_day_num: int, start_time: str, end_day_num: int, end_time: str, tz: str) -> datetime:
-    interval_start_date = start_date + timedelta(days=start_day_num)
+def random_time(start_date: datetime, begin_day_num: int, begin_time: str, end_day_num: int, end_time: str, tz: str) -> datetime:
+    interval_start_date = start_date + timedelta(days=begin_day_num)
     interval_end_date = start_date + timedelta(days=end_day_num)
-    start_time = datetime.strptime(start_time, '%H:%M').time()
+    begin_time = datetime.strptime(begin_time, '%H:%M').time()
     end_time = datetime.strptime(end_time, '%H:%M').time()
     try:
         tz = pytz.timezone(tz)
     except pytz.exceptions.UnknownTimeZoneError:
         current_app.logger.error(f"Invalid timezone {tz}.")
         return
-    interval_start_ts = datetime.combine(interval_start_date, start_time, tzinfo=tz)
+    interval_start_ts = datetime.combine(interval_start_date, begin_time, tzinfo=tz)
     interval_end_ts = datetime.combine(interval_end_date, end_time, tzinfo=tz)
     ping_interval_length = interval_end_ts - interval_start_ts
     ping_time = interval_start_ts + timedelta(seconds=randint(0, ping_interval_length.total_seconds()))
@@ -206,14 +229,14 @@ def make_pings(enrollment_id, study_id):
         # note some assumptions:
         # signup date is Day 0
         # start time and end time are in format HH:MM
-        # schedule is a list of dictionaries with keys 'start_day_num', 'start_time', 'end_day_num', 'end_time'
+        # schedule is a list of dictionaries with keys 'begin_day_num', 'begin_time', 'end_day_num', 'end_time'
         pings = []
         for pt in ping_templates:
             for ping in pt.schedule:
                 # Generate random time within the ping interval
                 ping_time = random_time(start_date=enrollment.start_date, 
-                                        start_day_num=ping['start_day_num'],
-                                        start_time=ping['start_time'],
+                                        begin_day_num=ping['begin_day_num'],
+                                        begin_time=ping['begin_time'],
                                         end_day_num=ping['end_day_num'], 
                                         end_time=ping['end_time'], 
                                         tz=enrollment.tz)
@@ -225,7 +248,7 @@ def make_pings(enrollment_id, study_id):
                     'scheduled_ts': ping_time,
                     'expire_ts': ping_time + pt.expire_latency,
                     'reminder_ts': ping_time + pt.reminder_latency,
-                    'day_num': ping['start_day_num'],
+                    'day_num': ping['begin_day_num'],
                     'message': pt.message,
                     'url': pt.url,
                     'ping_sent': False,
@@ -233,14 +256,14 @@ def make_pings(enrollment_id, study_id):
                 }
                 ping_obj = Ping(**ping_data)
                 db.session.add(ping_obj)
-                db.session.flush()
                 
                 # Construct message and URL
-                message_constructor = MessageConstructor(ping_obj)
-                url = message_constructor.construct_url()
-                message = message_constructor.construct_message()
-                ping_obj.url = url
-                ping_obj.message = message
+                # db.session.flush()
+                # message_constructor = MessageConstructor(ping_obj)
+                # url = message_constructor.construct_url()
+                # message = message_constructor.construct_message()
+                # ping_obj.url = url
+                # ping_obj.message = message
                 
                 # Append to pings list
                 pings.append(ping_obj.to_dict())
@@ -427,12 +450,20 @@ def delete_enrollment(study_id, enrollment_id):
     if not study:
         return jsonify({"error": f"No access to study {study_id}"}), 403
 
+    # Get enrollment
     enrollment = Enrollment.query.filter_by(id=enrollment_id, study_id=study.id).first()
     if not enrollment:
         return jsonify({"error": f"Enrollment {enrollment_id} not found or no access"}), 404
+    
+    # Get all pings
+    pings = Ping.query.filter_by(enrollment_id=enrollment_id).all()
 
     try:
-        db.session.delete(enrollment)
+        # Soft delete all pings
+        for ping in pings:
+            ping.deleted_at = datetime.now(timezone.utc)
+        # Soft delete enrollment
+        enrollment.deleted_at = datetime.now(timezone.utc)
         db.session.commit()
     except Exception as e:
         db.session.rollback()

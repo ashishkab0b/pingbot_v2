@@ -27,8 +27,8 @@ function PingDashboard() {
   const [dayNum, setDayNum] = useState('');
   // Optional fields
   const [pingTemplateId, setPingTemplateId] = useState('');
-  const [message, setMessage] = useState('');
-  const [url, setUrl] = useState('');
+  // const [message, setMessage] = useState('');
+  // const [url, setUrl] = useState('');
 
   const [showCreateForm, setShowCreateForm] = useState(false);
 
@@ -80,8 +80,8 @@ function PingDashboard() {
         scheduled_ts: scheduledTs,
         day_num: dayNum,
         ping_template_id: pingTemplateId || null,
-        message: message || null,
-        url: url || null,
+        // message: message || null,
+        // url: url || null,
       });
 
       // Reset form
@@ -89,8 +89,8 @@ function PingDashboard() {
       setScheduledTs('');
       setDayNum('');
       setPingTemplateId('');
-      setMessage('');
-      setUrl('');
+      // setMessage('');
+      // setUrl('');
       setShowCreateForm(false);
 
       // Refresh the table
@@ -186,7 +186,7 @@ function PingDashboard() {
               />
             </div>
 
-            <div style={{ marginBottom: '1rem' }}>
+            {/* <div style={{ marginBottom: '1rem' }}>
               <label htmlFor="message">Message (optional)</label>
               <br />
               <textarea
@@ -195,9 +195,9 @@ function PingDashboard() {
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
               />
-            </div>
+            </div> */}
 
-            <div style={{ marginBottom: '1rem' }}>
+            {/* <div style={{ marginBottom: '1rem' }}>
               <label htmlFor="url">URL (optional)</label>
               <br />
               <input
@@ -206,7 +206,7 @@ function PingDashboard() {
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
               />
-            </div>
+            </div> */}
 
             <button type="submit">Create Ping</button>
           </form>
@@ -232,7 +232,7 @@ function PingDashboard() {
                     <th>Scheduled</th>
                     <th>Ping Sent?</th>
                     <th>Reminder Sent?</th>
-                    <th>Message</th>
+                    {/* <th>Message</th> */}
                   </tr>
                 </thead>
                 <tbody>
@@ -244,7 +244,7 @@ function PingDashboard() {
                       <td>{ping.scheduled_ts_local}</td>
                       <td>{ping.ping_sent ? 'Yes' : 'No'}</td>
                       <td>{ping.reminder_sent ? 'Yes' : 'No'}</td>
-                      <td>{ping.message}</td>
+                      {/* <td>{ping.message}</td> */}
                     </tr>
                   ))}
                 </tbody>

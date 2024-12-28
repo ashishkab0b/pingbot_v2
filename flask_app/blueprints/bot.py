@@ -10,7 +10,7 @@ import pytz
 import secrets
 from functools import wraps
 from telegram_messenger import TelegramMessenger
-from blueprints.enrollments import make_pings
+from blueprints.enrollments import make_pings, MessageConstructor
 
 
 
@@ -48,7 +48,7 @@ def assign_telegram_id_to_enrollment(telegram_id: int, enrollment: Enrollment):
 @bot_auth_required
 def link_telegram_id():
     """
-    Link a Telegram ID to a user account.
+    Link a Telegram ID to a user account and create pings for the user.
     """
 
     # Log the start of the request
@@ -212,14 +212,27 @@ def send_ping():
         current_app.logger.error(f"Error getting ping {ping_id}.")
         current_app.logger.exception(e)
         return jsonify({"error": "Internal server error."}), 500
+    
+    # Construct message and ping_link
+    message_constructor = MessageConstructor(ping)
+    message = message_constructor.construct_message()
 
     # Send ping
-    messenger = TelegramMessenger(
-        bot_token=current_app.config['TELEGRAM_SECRET_KEY'])
-    messenger.send_ping(telegram_id=ping.enrollment.telegram_id, message=ping.message)
-    
-    # Log the end of the request
-    current_app.logger.info(f"Successfully sent ping={ping_id}.")
-    
-    return jsonify({"message": f"ping_id={ping_id} sent successfully."}), 200
+    try:
+        messenger = TelegramMessenger(
+            bot_token=current_app.config['TELEGRAM_SECRET_KEY'])
+        messenger.send_ping(telegram_id=ping.enrollment.telegram_id, message=message)
+    except Exception as e:
+        current_app.logger.error(f"Failed to send ping={ping_id}.")
+        current_app.logger.exception(e)
+        return jsonify({"error": "Failed to send ping."}), 500
+    else:
+        ping.sent = True
+        ping.message = message
+        db.session.commit()
+        
+        # Log the end of the request
+        current_app.logger.info(f"Successfully sent ping={ping_id}.")
+        
+        return jsonify({"message": f"ping_id={ping_id} sent successfully."}), 200
     

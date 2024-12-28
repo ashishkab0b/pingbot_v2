@@ -5,15 +5,32 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy import Interval
+from sqlalchemy.orm import Query
 
 from app import db, create_app
 
 load_dotenv()
 
+class SoftDeleteMixin:
+    deleted_at = db.Column(db.DateTime(timezone=True), nullable=True)
+
+    @classmethod
+    def active(cls, session):
+        """Filter for active (non-deleted) records."""
+        return session.query(cls).filter(cls.deleted_at.is_(None))
+
+class SoftDeleteQuery(Query):
+    def __new__(cls, *args, **kwargs):
+        if hasattr(cls, 'deleted_at'):
+            return super().__new__(cls).filter(cls.deleted_at.is_(None))
+        return super().__new__(cls)
+
+db.Query = SoftDeleteQuery
+
 # ------------------------------------------------
 # Enrollments Table
 # ------------------------------------------------
-class Enrollment(db.Model):
+class Enrollment(SoftDeleteMixin, db.Model):
     __tablename__ = 'enrollments'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
@@ -36,6 +53,7 @@ class Enrollment(db.Model):
     
     created_at = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
     updated_at = db.Column(db.DateTime(timezone=True), onupdate=lambda: datetime.now(timezone.utc))
+    deleted_at = db.Column(db.DateTime(timezone=True), nullable=True)
 
     # Relationships
     pings = db.relationship("Ping", back_populates="enrollment", cascade="all, delete-orphan")
@@ -65,7 +83,7 @@ class Enrollment(db.Model):
 # ------------------------------------------------
 # UserStudy Table (Users ↔ Studies with attributes)
 # ------------------------------------------------
-class UserStudy(db.Model):
+class UserStudy(SoftDeleteMixin, db.Model):
     __tablename__ = 'user_studies'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
@@ -92,7 +110,7 @@ class UserStudy(db.Model):
 # ------------------------------------------------
 # Users Table
 # ------------------------------------------------
-class User(db.Model):
+class User(SoftDeleteMixin, db.Model):
     __tablename__ = 'users'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
@@ -106,6 +124,8 @@ class User(db.Model):
     created_at = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
     updated_at = db.Column(db.DateTime(timezone=True), onupdate=lambda: datetime.now(timezone.utc))
 
+    support = db.relationship("Support", back_populates="user", cascade="all, delete-orphan")
+    
     # Many-to-many relationship with Study
     user_studies = db.relationship(
         "UserStudy",
@@ -135,7 +155,7 @@ class User(db.Model):
 # ------------------------------------------------
 # Studies Table
 # ------------------------------------------------
-class Study(db.Model):
+class Study(SoftDeleteMixin, db.Model):
     __tablename__ = 'studies'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
@@ -166,7 +186,7 @@ class Study(db.Model):
 # ------------------------------------------------
 # PingTemplates Table
 # ------------------------------------------------
-class PingTemplate(db.Model):
+class PingTemplate(SoftDeleteMixin, db.Model):
     __tablename__ = 'ping_templates'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
@@ -177,7 +197,7 @@ class PingTemplate(db.Model):
     url_text = db.Column(db.String(255))  # e.g., "Click here to take the survey."
     reminder_latency = db.Column(Interval)  # e.g., '1 hour', '30 minutes'
     expire_latency = db.Column(Interval)    # e.g., '24 hours'
-    schedule = db.Column(JSONB, nullable=True)  # e.g.,  [{"start_day_num": 1, "start_time": "09:00", "end_day_num": 1, "end_time": "10:00"}, {"day_num": 2, "start_time": "09:00", "end_time": "10:00"}]
+    schedule = db.Column(JSONB, nullable=True)  # e.g.,  [{"begin_day_num": 1, "begin_time": "09:00", "end_day_num": 1, "end_time": "10:00"}, {"day_num": 2, "begin_time": "09:00", "end_time": "10:00"}]
     created_at = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
     updated_at = db.Column(db.DateTime(timezone=True), onupdate=lambda: datetime.now(timezone.utc))
 
@@ -203,7 +223,7 @@ class PingTemplate(db.Model):
 # ------------------------------------------------
 # Pings Table
 # ------------------------------------------------
-class Ping(db.Model):
+class Ping(SoftDeleteMixin, db.Model):
     __tablename__ = 'pings'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
@@ -217,9 +237,11 @@ class Ping(db.Model):
     reminder_ts = db.Column(db.DateTime(timezone=True))
     ping_sent = db.Column(db.Boolean, nullable=False, default=False)
     reminder_sent = db.Column(db.Boolean, nullable=False, default=False)
+    first_clicked_ts = db.Column(db.DateTime(timezone=True))
+    last_clicked_ts = db.Column(db.DateTime(timezone=True))
     
-    message = db.Column(db.Text, nullable=False)
-    url = db.Column(db.String(255), nullable=True)
+    # message = db.Column(db.Text, nullable=False)
+    # url = db.Column(db.String(255), nullable=True)
     
     forwarding_code = db.Column(db.String(255), nullable=False, default=lambda: os.urandom(16).hex())
     created_at = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
@@ -240,11 +262,40 @@ class Ping(db.Model):
             'scheduled_ts': self.scheduled_ts.isoformat() if self.scheduled_ts else None,
             'expire_ts': self.expire_ts.isoformat() if self.expire_ts else None,
             'reminder_ts': self.reminder_ts.isoformat() if self.reminder_ts else None,
+            'first_clicked_ts': self.first_clicked_ts.isoformat() if self.first_clicked_ts else None,
+            'last_clicked_ts': self.last_clicked_ts.isoformat() if self.last_clicked_ts else None,
             'day_num': self.day_num,
-            'message': self.message,
-            'url': self.url,
+            # 'message': self.message,
+            # 'url': self.url,
             'ping_sent': self.ping_sent,
             'reminder_sent': self.reminder_sent,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None,
         }
+
+# ------------------------------------------------
+# Support Queries Table
+# ------------------------------------------------
+
+class Support(SoftDeleteMixin, db.Model):
+    __tablename__ = 'support'
+    
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    email = db.Column(db.String(255), nullable=False)
+    # Make a JSONB field for the message
+    messages = db.Column(JSONB, nullable=False)  # e.g., {"message": "I am having trouble logging in.", "attachments": ["screenshot.png"], "sender": "user"}
+    is_urgent = db.Column(db.Boolean, default=False, nullable=False)
+    query_type = db.Column(db.String(255), nullable=False)
+    resolved = db.Column(db.Boolean, default=False, nullable=False)
+    notes = db.Column(db.Text)
+    created_at = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_at = db.Column(db.DateTime(timezone=True), onupdate=lambda: datetime.now(timezone.utc))
+    deleted_at = db.Column(db.DateTime(timezone=True), nullable=True)
+    
+    user = db.relationship("User", back_populates="support")
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    
+    __table_args__ = (db.UniqueConstraint('email', 'messages', name='unique_support_query'),)
+    
+    
+    

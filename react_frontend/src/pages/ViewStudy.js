@@ -1,11 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import StudyNav from '../components/StudyNav';
 import axios from '../api/axios';
 
 function ViewStudy() {
   const { studyId } = useParams();
-  const navigate = useNavigate();
 
   const [study, setStudy] = useState(null);
   const [loading, setLoading] = useState(true);

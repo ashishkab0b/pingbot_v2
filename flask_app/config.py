@@ -34,6 +34,9 @@ class Config:
         "editor": {"edit", "view"},
         "viewer": {"view"},
     }
+    
+    PING_DEFAULT_URL_TEXT = "Click here to take the survey."
+    PING_EXPIRED_MESSAGE = "This ping has expired. Please be sure to take the survey as soon as possible after receiving."
 
 class DevelopmentConfig(Config):
     
@@ -41,6 +44,10 @@ class DevelopmentConfig(Config):
     
     REDIS_HOST = "localhost"
     REDIS_PASSWORD = None
+    
+    
+    PING_LINK_BASE_URL="http://localhost:8000"
+    
 
 class ProductionConfig(Config):
     
@@ -48,6 +55,10 @@ class ProductionConfig(Config):
     
     REDIS_HOST = "redis"
     REDIS_PASSWORD = os.getenv("REDIS_PASSWORD", None)
+    
+    
+    PING_LINK_BASE_URL="http://localhost:8000"
+    
     
 
 config_map = {

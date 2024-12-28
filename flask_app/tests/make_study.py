@@ -48,9 +48,9 @@ def make_ping_templates(token, study_id):
         "url_text": "Click here",
         "url": "https://www.stanford.edu",
         "schedule": [
-            {"start_day_num": 1, "start_time": "09:00", "end_day_num": 1, "end_time": "10:00"},
-            {"start_day_num": 2, "start_time": "09:00", "end_day_num": 2, "end_time": "10:00"},
-            {"start_day_num": 3, "start_time": "09:00", "end_day_num": 3, "end_time": "10:00"},
+            {"begin_day_num": 1, "begin_time": "09:00", "end_day_num": 1, "end_time": "10:00"},
+            {"begin_day_num": 2, "begin_time": "09:00", "end_day_num": 2, "end_time": "10:00"},
+            {"begin_day_num": 3, "begin_time": "09:00", "end_day_num": 3, "end_time": "10:00"},
         ],
         "reminder_latency": "1 hour",
         "expire_latency": "12 hours"

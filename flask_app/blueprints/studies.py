@@ -4,6 +4,7 @@ from app import db
 from models import User, Study, UserStudy
 from utils import generate_non_confusable_code
 from permissions import get_current_user, user_has_study_permission
+from datetime import datetime, timezone
 
 studies_bp = Blueprint('studies', __name__)
 
@@ -164,7 +165,7 @@ def delete_study(study_id):
         current_app.logger.warning(f"Study {study_id} not found or user {user.id} has no access.")
         return jsonify({"error": f"Study {study_id} not found or no access"}), 404
 
-    db.session.delete(study)
+    study.deleted_at = datetime.now(timezone.utc)
     db.session.commit()
 
     current_app.logger.info(f"User {user.email} deleted study {study_id}.")

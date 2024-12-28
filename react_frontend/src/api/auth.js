@@ -16,3 +16,12 @@ export const loginUser = async (credentials) => {
 export const refreshToken = async () => {
   return axios.post('/refresh', {});
 };
+
+// Logout user
+export const logoutUser = async (token) => {
+  return axios.post('/logout', {}, {
+    headers: {
+      Authorization: `Bearer ${token}`, // Pass the JWT as a Bearer token
+    },
+  });
+};

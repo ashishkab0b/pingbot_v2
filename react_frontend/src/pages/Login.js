@@ -14,6 +14,7 @@ function Login() {
       const { access_token, refresh_token } = response.data;
       localStorage.setItem('access_token', access_token);
       localStorage.setItem('refresh_token', refresh_token);
+      localStorage.setItem('user_email', email);
       navigate('/studies');
     } catch (error) {
       console.error(error);
