@@ -11,6 +11,7 @@ class Config:
     TELEGRAM_SECRET_KEY=os.getenv('TELEGRAM_SECRET_KEY')
     
     FLASK_APP_BOT_BASE_URL="http://localhost:8000/api/bot"
+    FRONTEND_BASE_URL="http://localhost:3000"
     
 
 class DevelopmentConfig(Config):

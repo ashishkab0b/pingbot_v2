@@ -7,6 +7,7 @@ import PingTemplateDashboard from './pages/PingTemplateDashboard';
 import StudyEnroll from './pages/StudyEnroll';
 import PingDashboard from './pages/PingDashboard';
 import EnrollmentDashboard from './pages/EnrollmentDashboard';
+import ParticipantFacingDashboard from './pages/ParticipantFacingDashboard';
 import ViewStudy from './pages/ViewStudy';
 import PrivateRoute from './components/PrivateRoute';
 import NavBar from './components/NavBar';
@@ -21,7 +22,7 @@ function Layout() {
   const location = useLocation();
 
   // List of routes where the navbar should be hidden
-  const hideNavBarRoutes = ['/enroll'];
+  const hideNavBarRoutes = ['/enroll', '/participant_dash'];
 
   // Check if the current route matches any of the hideNavBarRoutes
   const shouldHideNavBar = hideNavBarRoutes.some((route) =>
@@ -38,6 +39,7 @@ function Layout() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/enroll/:signup_code" element={<StudyEnroll />} />
+          <Route path="/participant_dash" element={<ParticipantFacingDashboard />} />
 
           {/* Protected routes */}
           <Route

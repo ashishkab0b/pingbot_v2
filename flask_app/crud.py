@@ -308,6 +308,19 @@ def get_enrollment_by_id(
     return result.scalar_one_or_none()
 
 
+def get_enrollments_by_telegram_id(
+    session: Session, 
+    telegram_id: int,
+    include_deleted: bool = False
+) -> List[Enrollment]:
+    telegram_id = str(telegram_id)
+    stmt = select(Enrollment).where(Enrollment.telegram_id == telegram_id)
+    if not include_deleted:
+        stmt = stmt.where(Enrollment.deleted_at.is_(None))
+    result = session.execute(stmt)
+    return result.scalars().all()
+
+
 def update_enrollment(
     session: Session, 
     enrollment_id: int, 

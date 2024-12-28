@@ -9,6 +9,8 @@ import pytz
 from utils import generate_non_confusable_code
 import secrets
 from blueprints.enrollments import MessageConstructor
+from crud import get_enrollments_by_telegram_id, get_study_by_id
+from telegram_messenger import TelegramMessenger
 
 particpant_facing_bp = Blueprint('particpant_facing', __name__)
 
@@ -107,7 +109,7 @@ def study_signup():
         local_now = utc_now.astimezone(pytz.timezone(tz))
         enrollment = Enrollment(study_id=study.id, 
                                 tz=tz,
-                                enrolled=True, 
+                                enrolled=False,  # This will be set to True once the telegram ID is linked
                                 study_pid=study_pid,
                                 signup_ts_local=local_now,
                                 pr_completed=0.0,
@@ -133,42 +135,46 @@ def study_signup():
         "study_pid": study_pid,
         "tz": enrollment.tz
     }), 200
-    
 
 
-@particpant_facing_bp.route('/enrollment/login', methods=['POST'])
-def participant_login():
+@particpant_facing_bp.route('/api/participant_dashboard', methods=['GET'])
+def api_participant_dashboard():
     '''
-    This endpoint is used to generate a one-time login link for a participant.
+    This endpoint is used to provide data to render the participant dashboard.
     '''
     
-    data = request.get_json()
-    telegram_id = data.get('telegram_id')
+    current_app.logger.debug("Entered participant_dashboard endpoint.")
+    study_keys_to_return = ['public_name', 'contact_message']
+    enrollment_keys_to_return = ['study_pid', 'tz', 'study_id', 'enrolled', 'signup_ts_local']
     
-    # Create a new OTP
-    otp = secrets.token_urlsafe(16)
-    otp_lifespan = current_app.config["ENROLLMENT_DASHBOARD_OTP_EXPIRY_MINS"]
-    expiry = datetime.now() + timedelta(minutes=otp_lifespan)
+    telegram_id = request.args.get('t')
+    otp = request.args.get('otp')
     
-    # Save the OTP
-    try:
-        user = User.query.filter_by(telegram_id=telegram_id).first()
-        if not user:
-            return jsonify({"error": "User not found"}), 404
-        
-        user.dashboard_otp = otp
-        user.dashboard_otp_expire_ts = expiry
-        db.session.commit()
-        
-    except Exception as e:
-        db.session.rollback()
-        current_app.logger.error(f"Error generating OTP for user {telegram_id}")
-        current_app.logger.exception(e)
-        return jsonify({"error": "Internal server error"}), 500
+    # Check if OTP is valid and get the enrollment objects
+    enrollments = get_enrollments_by_telegram_id(db.session, telegram_id)
+    if not enrollments:
+        current_app.logger.error(f"Participant not found for telegram_id={telegram_id} with OTP={otp}")
+        return jsonify({"error": "Participant not found"}), 404
+    valid_enrollments = []
+    for enrollment in enrollments:
+        if enrollment.dashboard_otp == otp and enrollment.dashboard_otp_expire_ts > datetime.now(timezone.utc):
+            en = {k: v for k,v in enrollment.to_dict().items() if k in enrollment_keys_to_return}
+            study = get_study_by_id(db.session, enrollment.study_id).to_dict()
+            for k,v in study.items():
+                if k in study_keys_to_return:
+                    en[k] = v
+            signup_date = datetime.fromisoformat(en['signup_ts_local'])
+            signup_date = signup_date.astimezone(pytz.timezone(en['tz']))
+            en['signup_ts_local'] = signup_date.strftime("%Y-%m-%d")
+            valid_enrollments.append(en)
+            
     
-    # Send the OTP to the user
+            
+    if not valid_enrollments:
+        return jsonify({"error": "Invalid OTP"}), 400
     
-    
+    return jsonify(valid_enrollments), 200
+
 
     
     

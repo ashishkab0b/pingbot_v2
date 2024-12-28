@@ -1,5 +1,6 @@
 
 from telegram import Bot
+from telegram.constants import ParseMode
 from telegram.error import TelegramError
 import asyncio
 
@@ -28,7 +29,7 @@ class TelegramMessenger:
         """
         
         async def send(telegram_id, message):
-            await self.bot.send_message(chat_id=telegram_id, text=message, parse_mode='HTML')
+            await self.bot.send_message(chat_id=telegram_id, text=message, parse_mode=ParseMode.HTML)
             return None
         
         try:

@@ -11,7 +11,7 @@ import secrets
 from functools import wraps
 from telegram_messenger import TelegramMessenger
 from blueprints.enrollments import make_pings, MessageConstructor
-
+from crud import get_enrollments_by_telegram_id
 
 
 bot_bp = Blueprint('bot', __name__)
@@ -36,6 +36,7 @@ def assign_telegram_id_to_enrollment(telegram_id: int, enrollment: Enrollment):
     try:
         enrollment.telegram_id = telegram_id
         enrollment.telegram_link_code_used = True
+        enrollment.enrolled = True
         db.session.commit()
         current_app.logger.info(f"Successfully linked Telegram ID {telegram_id} to enrollment ID {enrollment.id}.")
     except Exception as e:
@@ -195,6 +196,57 @@ def get_pings_in_time_interval():
     
     return jsonify([ping.to_dict() for ping in pings]), 200
     
+
+@bot_bp.route('/participant_login', methods=['POST'])
+@bot_auth_required
+def participant_login():
+    '''
+    This endpoint is used to generate and send a one-time login link for a participant.
+    '''
+    
+    data = request.get_json()
+    telegram_id = data.get('telegram_id')
+    
+    # Create a new OTP
+    otp = secrets.token_urlsafe(16)
+    otp_lifespan = current_app.config["ENROLLMENT_DASHBOARD_OTP_EXPIRY_MINS"]
+    expiry = datetime.now(timezone.utc) + timedelta(minutes=otp_lifespan)
+    
+    # Save the OTP
+    try:
+        enrollments = get_enrollments_by_telegram_id(db.session, telegram_id)
+        if not enrollments:
+            return jsonify({"error": "Participant not found"}), 404
+        
+        for enrollment in enrollments:
+            enrollment.dashboard_otp = otp
+            enrollment.dashboard_otp_expire_ts = expiry
+        db.session.commit()
+        
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error generating OTP for telegramID={telegram_id}")
+        current_app.logger.exception(e)
+        return jsonify({"error": "Internal server error"}), 500
+    
+    # return jsonify({"message": "OTP generated successfully"}), 200
+    
+    # Send the OTP to the participant
+    try:
+        link = f"{current_app.config['FRONTEND_BASE_URL']}/participant_dash?otp={otp}&t={telegram_id}"
+        msg = f"""Your one-time login link is: <a href='{link}'>{link}</a>. 
+Do not share this link with anyone.
+If you did not request this link, you can ignore this message."""
+        messenger = TelegramMessenger(bot_token=current_app.config['TELEGRAM_SECRET_KEY'])
+        messenger.send_ping(telegram_id=telegram_id, message=msg)
+    except Exception as e:
+        current_app.logger.error(f"Error sending OTP to telegramID={telegram_id}")
+        current_app.logger.exception(e)
+        return jsonify({"error": "Internal server error"}), 500
+    
+        
+    current_app.logger.info(f"Sent OTP to telegramID={telegram_id}")
+    return jsonify({"message": "OTP sent successfully"}), 200
 
 @bot_bp.route('/send_ping', methods=['POST'])
 @bot_auth_required

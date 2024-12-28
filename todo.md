@@ -1,14 +1,17 @@
 
 REQUIRED FOR BASIC FUNCTION
 
-- cascade deletes (finished participant -> ping)
+- cascade deletes 
+    - (finished enrollment -> ping)
+    - study -> ping, enrollment, ping_templates
+    - ping_templates -> ping
 - test ping url forwarding including reminders, expire, completed, and pr completed
 
 MID PRIORITY
 - prevent double enrollment of a study_pid
 - page numbers incorrect sometimes for table
 - when user changes params of study, change upcoming pings (optionally)
-
+- otp links are not clickable
 - form validation (esp ping templates)
 
 LOWER PRIORITY

@@ -76,11 +76,29 @@ async def entering_link_code(update: Update, context: ContextTypes.DEFAULT_TYPE)
         await update.message.reply_text(msg)
         return ENTERING_LINK_CODE
     
-    
-    
     msg = "You have been successfully enrolled in the study."
     await update.message.reply_text(msg)
     return ConversationHandler.END
+
+
+async def dashboard(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handles the /dashboard command."""
+    header = {
+        "X-Bot-Secret-Key": config.BOT_SECRET_KEY,
+    }
+    payload = {
+        "telegram_id": update.message.from_user.id,
+    }
+    url = f"{config.FLASK_APP_BOT_BASE_URL}/participant_login"
+    logger.debug(f"Sending dashboard login request to {url} with telegramID={update.message.from_user.id}")
+    resp = requests.post(url=url, json=payload, headers=header)
+    
+    if resp.status_code != 200:
+        msg = "An error occurred. Please try again later."
+        logger.error(f"Error with participant_login endpoint. Status code: {resp.status_code}")
+        await update.message.reply_text(msg)
+        return
+    
 
 
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -105,6 +123,8 @@ def main() -> None:
     conv_handler = ConversationHandler(
         entry_points=[
             CommandHandler('enroll', enroll),
+            CommandHandler('dashboard', dashboard),
+            CommandHandler('unenroll', dashboard),
         ],
         states={
             ENTERING_LINK_CODE: [MessageHandler(filters.TEXT & ~filters.COMMAND, entering_link_code)],

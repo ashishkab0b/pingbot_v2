@@ -45,9 +45,7 @@ class DevelopmentConfig(Config):
     
     REDIS_HOST = "localhost"
     REDIS_PASSWORD = None
-    
-    
-    PING_LINK_BASE_URL="http://localhost:8000"
+    FRONTEND_BASE_URL = "http://localhost:3000"
     
 
 class ProductionConfig(Config):
@@ -56,9 +54,7 @@ class ProductionConfig(Config):
     
     REDIS_HOST = "redis"
     REDIS_PASSWORD = os.getenv("REDIS_PASSWORD", None)
-    
-    
-    PING_LINK_BASE_URL="http://localhost:8000"
+    # FRONTEND_BASE_URL = "https://www.surveyping.com"
     
     
 
