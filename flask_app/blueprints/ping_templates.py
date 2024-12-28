@@ -61,7 +61,7 @@ def get_ping_templates(study_id):
     ]
 
     current_app.logger.info(
-        f"User {user.id} fetched {len(ping_templates)} ping templates for study {study_id} "
+        f"User={user.id} fetched {len(ping_templates)} ping templates for study={study_id} "
         f"on page {page}/{pagination['pages']}."
     )
 
@@ -146,7 +146,7 @@ def get_single_ping_template_route(study_id, template_id):
     study = user_has_study_permission(user.id, study_id, minimum_role="viewer")
     if not study:
         current_app.logger.warning(
-            f"User {user.id} lacks 'viewer' permission for study_id={study_id}."
+            f"User_{user.id} lacks 'viewer' permission for study_id={study_id}."
         )
         return jsonify({"error": f"No access to study {study_id}"}), 403
 
@@ -155,10 +155,10 @@ def get_single_ping_template_route(study_id, template_id):
         current_app.logger.warning(
             f"Ping template ID={template_id} not found or inaccessible for study_id={study_id}."
         )
-        return jsonify({"error": f"PingTemplate {template_id} not found"}), 404
+        return jsonify({"error": f"Ping_template_{template_id} not found"}), 404
 
     current_app.logger.info(
-        f"User {user.id} fetched ping template ID={template_id} for study {study_id}."
+        f"User={user.id} fetched ping_template={template_id} for study_{study_id}."
     )
     return jsonify(pt.to_dict()), 200
 
@@ -178,9 +178,9 @@ def update_ping_template_route(study_id, template_id):
     study = user_has_study_permission(user.id, study_id, minimum_role="editor")
     if not study:
         current_app.logger.warning(
-            f"User {user.id} lacks 'editor' permission for study_id={study_id}."
+            f"User={user.id} lacks 'editor' permission for study_id={study_id}."
         )
-        return jsonify({"error": f"No access to study {study_id}"}), 403
+        return jsonify({"error": f"No access to study={study_id}"}), 403
 
     data = request.get_json()
 
@@ -190,11 +190,11 @@ def update_ping_template_route(study_id, template_id):
             current_app.logger.warning(
                 f"Ping template ID={template_id} not found or inaccessible for study_id={study_id}."
             )
-            return jsonify({"error": f"PingTemplate {template_id} not found"}), 404
+            return jsonify({"error": f"Ping template={template_id} not found"}), 404
 
         db.session.commit()
         current_app.logger.info(
-            f"User {user.id} updated ping template ID={template_id} for study {study_id}."
+            f"User={user.id} updated ping template={template_id} for study={study_id}."
         )
         return jsonify({
             "message": "Ping Template updated successfully",
@@ -231,13 +231,13 @@ def delete_ping_template_route(study_id, template_id):
             current_app.logger.warning(
                 f"Ping template ID={template_id} not found or already deleted for study_id={study_id}."
             )
-            return jsonify({"error": f"PingTemplate {template_id} not found"}), 404
+            return jsonify({"error": f"Ping template={template_id} not found"}), 404
 
         db.session.commit()
         current_app.logger.info(
-            f"User {user.id} deleted ping template ID={template_id} for study {study_id}."
+            f"User={user.id} deleted ping template ID={template_id} for study={study_id}."
         )
-        return jsonify({"message": f"Ping Template {template_id} deleted successfully."}), 200
+        return jsonify({"message": f"Ping template={template_id} deleted successfully."}), 200
     except Exception as e:
         db.session.rollback()
         current_app.logger.error(f"Error deleting ping template ID={template_id} for study_id={study_id}.")

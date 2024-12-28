@@ -103,11 +103,13 @@ def study_signup():
         
     # Create a new enrollment
     try:
+        utc_now = datetime.now(timezone.utc)
+        local_now = utc_now.astimezone(pytz.timezone(tz))
         enrollment = Enrollment(study_id=study.id, 
                                 tz=tz,
                                 enrolled=True, 
                                 study_pid=study_pid,
-                                start_date=datetime.now().date(),
+                                signup_ts_local=local_now,
                                 pr_completed=0.0,
                                 telegram_link_code=telegram_link_code,
                                 telegram_link_code_expire_ts=datetime.now(timezone.utc) + timedelta(days=current_app.config["TELEGRAM_LINK_CODE_EXPIRY_DAYS"])
@@ -117,7 +119,7 @@ def study_signup():
         
     except Exception as e:
         db.session.rollback()
-        current_app.logger.error(f"Error with enrollment in study {study.id} using signup code {signup_code} for study pid {study_pid}")
+        current_app.logger.error(f"Error with enrollment in study={study.id} using signup code={signup_code} for study_pid={study_pid}")
         current_app.logger.exception(e)
         return jsonify({"error": "Internal server error"}), 500
     

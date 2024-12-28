@@ -27,7 +27,7 @@ class Enrollment(db.Model):
     study_id = db.Column(db.Integer, db.ForeignKey('studies.id'), nullable=False)
     study_pid = db.Column(db.String(255), nullable=False)  # Participant ID in the study assigned by researcher
     enrolled = db.Column(db.Boolean, default=True, nullable=False)
-    start_date = db.Column(db.DateTime(timezone=True), nullable=False)
+    signup_ts_local = db.Column(db.DateTime(timezone=True), nullable=False)
     pr_completed = db.Column(db.Float, default=0.0)
     
     dashboard_otp = db.Column(db.String(255), nullable=True)
@@ -53,7 +53,7 @@ class Enrollment(db.Model):
             'study_id': self.study_id,
             'study_pid': self.study_pid,
             'enrolled': self.enrolled,
-            'start_date': self.start_date.isoformat() if self.start_date else None,
+            'signup_ts_local': self.signup_ts_local.isoformat() if self.signup_ts_local else None,
             'pr_completed': self.pr_completed,
             'dashboard_otp': self.dashboard_otp,
             'dashboard_otp_expire_ts': self.dashboard_otp_expire_ts.isoformat() if self.dashboard_otp_expire_ts else None,

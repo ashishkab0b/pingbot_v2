@@ -3,13 +3,15 @@ import string
 import math
 from math import ceil
 from sqlalchemy import select, func
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import pytz
+from pytz import UTC
 from random import randint
 
 from typing import Dict, Any
 from sqlalchemy.orm import Session
 
+from flask import current_app
 from extensions import db
 
 
@@ -39,24 +41,61 @@ def random_time(start_date: datetime, begin_day_num: int, begin_time: str, end_d
     ping_interval_length = interval_end_ts - interval_start_ts
     ping_time = interval_start_ts + timedelta(seconds=randint(0, int(ping_interval_length.total_seconds())))
     return ping_time
+
+# def convert_dt_to_local(dt_obj, participant_tz):
+#     """
+#     Convert a datetime object to the participant's local time zone.
+#     """
+#     # print(type(dt_obj))
+#     # print(type(participant_tz))
+#     print(dt_obj)
+#     print(participant_tz)
+    
+#     if not dt_obj or not participant_tz:
+#         return None
+#     try:
+#         if dt_obj.tzinfo is None:
+#             dt_obj = dt_obj.replace(tzinfo=UTC)
+        
+
+#         if participant_tz in pytz.all_timezones:
+#             local_tz = pytz.timezone(participant_tz)
+#         else:
+#             local_tz = timezone(participant_tz)
+#         local_dt = dt_obj.astimezone(local_tz)
+#         return local_dt
+#     except Exception as e:
+#         current_app.logger.warning(f"Error converting time with tz={participant_tz}: {e}")
+#         return dt_obj
        
 
-# def paginate_query(query, page=1, per_page=10):
-#     # Remove ordering on the query to speed up count
-#     count_q = query.with_entities(db.func.count()).order_by(None)
-#     total = count_q.scalar() or 0
+def convert_dt_to_local(dt_obj, participant_tz):
+    """
+    Convert a datetime object to the participant's local time zone.
+    """
+    if not dt_obj or not participant_tz:
+        return None
 
-#     items = query.offset((page - 1) * per_page).limit(per_page).all()
-#     pages = math.ceil(total / per_page) if per_page else 1
+    try:
+        # Ensure the datetime object has UTC timezone if tzinfo is missing
+        if dt_obj.tzinfo is None:
+            dt_obj = dt_obj.replace(tzinfo=UTC)
 
-#     return {
-#         "items": items,
-#         "total": total,
-#         "page": page,
-#         "per_page": per_page,
-#         "pages": pages
-#     }
-    
+        # Handle participant timezone
+        participant_tz = participant_tz.strip()  # Remove extra spaces
+        if participant_tz in pytz.all_timezones:
+            local_tz = pytz.timezone(participant_tz)
+        else:
+            raise ValueError(f"Invalid timezone: {participant_tz}")
+        
+        # Convert to local timezone
+        local_dt = dt_obj.astimezone(local_tz)
+        return local_dt
+
+    except Exception as e:
+        # Log exception (replace `current_app.logger.warning` with print if not in Flask)
+        print(f"Error converting time with tz={participant_tz}: {e}")
+        return dt_obj
 
 def paginate_statement(
     session: Session,
@@ -73,8 +112,13 @@ def paginate_statement(
       - pages: total number of pages
     """
 
-    # Get total count
-    count_subquery = stmt.with_only_columns(func.count()).order_by(None)
+    # Get total count excluding soft deleted rows
+    # count_subquery = stmt.with_only_columns(func.count()).order_by(None)
+    count_subquery = (
+        stmt.filter(stmt.selected_columns.deleted_at.is_(None))
+        .with_only_columns(func.count())
+        .order_by(None)
+    )
     total = session.scalar(count_subquery)
 
     # Paginate

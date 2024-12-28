@@ -1,4 +1,17 @@
 import React from 'react';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  Button,
+  CircularProgress,
+  Typography,
+  TablePagination
+} from '@mui/material';
 
 function DataTable({
   data = [],
@@ -12,61 +25,86 @@ function DataTable({
   onRowClick = null,
   actionsColumn = null,
 }) {
+  // Calculate total number of rows for pagination
+  const totalRows = totalPages * data.length;
+  const rowsPerPage = data.length;
+
+  const handleChangePage = (event, newPage) => {
+    if (newPage + 1 > currentPage) {
+      onNextPage();
+    } else {
+      onPreviousPage();
+    }
+  };
+
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', padding: '1rem' }}>
+        <CircularProgress />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <Typography color="error" sx={{ padding: '1rem' }}>
+        {error}
+      </Typography>
+    );
+  }
+
+  if (!data.length) {
+    return (
+      <Typography sx={{ padding: '1rem' }}>
+        No data found.
+      </Typography>
+    );
+  }
+
   return (
-    <div>
-      {loading && <p>Loading...</p>}
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-
-      {!loading && !error && (
-        <>
-          {data.length === 0 ? (
-            <p>No data found.</p>
-          ) : (
-            <table border="1" cellPadding="8" style={{ borderCollapse: 'collapse', width: '100%' }}>
-              <thead>
-                <tr>
-                  {headers.map((header, index) => (
-                    <th key={index}>{header}</th>
-                  ))}
-                  {actionsColumn && <th>Actions</th>}
-                </tr>
-              </thead>
-              <tbody>
-                {data.map((row, rowIndex) => (
-                  <tr
-                    key={rowIndex}
-                    style={onRowClick ? { cursor: 'pointer' } : {}}
-                    onClick={onRowClick ? () => onRowClick(row) : undefined}
-                  >
-                    {Object.values(row).map((cell, cellIndex) => (
-                      <td key={cellIndex}>{cell}</td>
-                    ))}
-                    {actionsColumn && (
-                      <td>
-                        {actionsColumn(row)}
-                      </td>
-                    )}
-                  </tr>
+    <Paper sx={{ width: '100%' }}>
+      <TableContainer>
+        <Table>
+          <TableHead>
+            <TableRow>
+              {headers.map((header, index) => (
+                <TableCell key={index} sx={{ fontWeight: 'bold' }}>
+                  {header}
+                </TableCell>
+              ))}
+              {actionsColumn && <TableCell>Actions</TableCell>}
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {data.map((row, rowIndex) => (
+              <TableRow
+                key={rowIndex}
+                hover={!!onRowClick}
+                onClick={onRowClick ? () => onRowClick(row) : undefined}
+                sx={{ cursor: onRowClick ? 'pointer' : 'default' }}
+              >
+                {Object.values(row).map((cell, cellIndex) => (
+                  <TableCell key={cellIndex}>{cell}</TableCell>
                 ))}
-              </tbody>
-            </table>
-          )}
-
-          {/* Pagination Controls */}
-          <div style={{ marginTop: '1rem' }}>
-            <button onClick={onPreviousPage} disabled={currentPage <= 1}>
-              Previous
-            </button>
-            <span style={{ margin: '0 1rem' }}>
-              Page {currentPage} of {totalPages}
-            </span>
-            <button onClick={onNextPage} disabled={currentPage >= totalPages}>
-              Next
-            </button>
-          </div>
-        </>
-      )}
-    </div>
+                {actionsColumn && (
+                  <TableCell>
+                    {actionsColumn(row)}
+                  </TableCell>
+                )}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
+      <TablePagination
+        component="div"
+        count={totalRows}
+        page={currentPage - 1}
+        onPageChange={handleChangePage}
+        rowsPerPage={rowsPerPage}
+        rowsPerPageOptions={[rowsPerPage]}
+      />
+    </Paper>
   );
 }
 

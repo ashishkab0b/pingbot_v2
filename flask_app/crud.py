@@ -281,7 +281,7 @@ def create_enrollment(
     tz: str,
     study_pid: str,
     enrolled: bool,
-    start_date: datetime,
+    signup_ts_local: datetime,
     telegram_id: Optional[str] = None
 ) -> Enrollment:
     enrollment = Enrollment(
@@ -289,7 +289,7 @@ def create_enrollment(
         tz=tz,
         study_pid=study_pid,
         enrolled=enrolled,
-        start_date=start_date,
+        signup_ts_local=signup_ts_local,
         telegram_id=telegram_id
     )
     session.add(enrollment)
@@ -317,7 +317,7 @@ def update_enrollment(
     if not enrollment:
         return None
 
-    for field in ["telegram_id", "tz", "study_pid", "enrolled", "start_date", "pr_completed"]:
+    for field in ["telegram_id", "tz", "study_pid", "enrolled", "signup_ts_local", "pr_completed"]:
         if field in kwargs:
             setattr(enrollment, field, kwargs[field])
     return enrollment
@@ -472,6 +472,21 @@ def soft_delete_ping(
         return False
 
     ping.deleted_at = datetime.now(timezone.utc)
+    return True
+
+
+def soft_delete_all_pings_for_enrollment(
+    session: Session, 
+    enrollment_id: int
+) -> bool:
+    stmt = (
+        select(Ping)
+        .where(Ping.enrollment_id == enrollment_id)
+        .where(Ping.deleted_at.is_(None))
+    )
+    pings = session.execute(stmt).scalars().all()
+    for ping in pings:
+        ping.deleted_at = datetime.now(timezone.utc)
     return True
 
 

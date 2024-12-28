@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 from flask import Flask, request, jsonify
 from werkzeug.exceptions import HTTPException
 from logger_setup import setup_logger
+from sqlalchemy.orm import Session
 
 # Import extensions from extensions.py
 from extensions import db, migrate, jwt, swagger, cors
@@ -86,5 +87,10 @@ def create_app(config):
     def handle_exception(e):
         logger.exception(f"Unhandled Exception: {e} at {request.method} {request.url}")
         return {'error': 'Internal server error'}, 500
+    
+    # TODO: DO I NEED THIS??
+    # @app.teardown_request
+    # def remove_session(exception=None):
+    #     Session.remove()
 
     return app

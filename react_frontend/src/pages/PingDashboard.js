@@ -34,7 +34,7 @@ function PingDashboard() {
   const [showCreateForm, setShowCreateForm] = useState(false);
 
   // -----------------------------------------
-  // Fetch pings whenever page or studyId changes
+  // API: GET /pings
   // -----------------------------------------
   useEffect(() => {
     if (studyId) {
@@ -66,7 +66,7 @@ function PingDashboard() {
   };
 
   // -----------------------------------------
-  // Create a new ping
+  // API: POST /studies (create ping)
   // -----------------------------------------
   const handleCreatePing = async (e) => {
     e.preventDefault();
@@ -99,6 +99,21 @@ function PingDashboard() {
     } catch (err) {
       console.error(err);
       setError('Error creating ping.');
+    }
+  };
+  // -----------------------------------------
+  // API: DELETE /studies/:id
+  // -----------------------------------------
+  const handleDeletePing = async (pingId) => {
+    if (!window.confirm('Are you sure you want to delete this ping?')) return;
+
+    try {
+      await axios.delete(`/studies/${studyId}/pings/${pingId}`);
+      // Refresh studies after deletion
+      fetchPings(studyId, page, perPage);
+    } catch (err) {
+      console.error(err);
+      setError('Error deleting study');
     }
   };
 
@@ -187,28 +202,6 @@ function PingDashboard() {
               />
             </div>
 
-            {/* <div style={{ marginBottom: '1rem' }}>
-              <label htmlFor="message">Message (optional)</label>
-              <br />
-              <textarea
-                id="message"
-                rows={3}
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-              />
-            </div> */}
-
-            {/* <div style={{ marginBottom: '1rem' }}>
-              <label htmlFor="url">URL (optional)</label>
-              <br />
-              <input
-                id="url"
-                type="text"
-                value={url}
-                onChange={(e) => setUrl(e.target.value)}
-              />
-            </div> */}
-
             <button type="submit">Create Ping</button>
           </form>
         </section>
@@ -219,6 +212,7 @@ function PingDashboard() {
         <DataTable
           data={pings.map((ping) => ({
             ID: ping.id,
+            'Participant ID': ping.pid,
             'Enrollment ID': ping.enrollment_id,
             'Day #': ping.day_num,
             Scheduled: ping.scheduled_ts_local,
@@ -227,6 +221,7 @@ function PingDashboard() {
           }))}
           headers={[
             'ID',
+            'Participant ID',
             'Enrollment ID',
             'Day #',
             'Scheduled',
@@ -239,6 +234,9 @@ function PingDashboard() {
           totalPages={totalPages}
           onPreviousPage={handlePreviousPage}
           onNextPage={handleNextPage}
+          actionsColumn={(row) => (
+            <button onClick={() => handleDeletePing(row.ID)}>Delete</button>
+          )}
         />
       </section>
     </div>

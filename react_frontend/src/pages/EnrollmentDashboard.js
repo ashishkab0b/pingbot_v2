@@ -97,6 +97,8 @@ function EnrollmentDashboard() {
   // Delete participant
   // ------------------------------------------------
   const handleDeleteParticipant = async (enrollmentId) => {
+    if (!window.confirm('Are you sure you want to delete this participant?')) return;
+
     try {
       await axios.delete(`/studies/${studyId}/enrollments/${enrollmentId}`);
       // Refresh participants list
@@ -227,9 +229,9 @@ function EnrollmentDashboard() {
             'Study PID': participant.study_pid,
             'Time Zone': participant.tz,
             Enrolled: participant.enrolled ? 'Yes' : 'No',
-            'Start Date': participant.start_date,
+            'Start Date': participant.signup_ts_local,
           }))}
-          headers={['ID', 'Study PID', 'Time Zone', 'Enrolled', 'Start Date']} // Removed 'Actions' from headers
+          headers={['ID', 'Study PID', 'Time Zone', 'Enrolled', 'Start Date']} 
           loading={loading}
           error={error}
           currentPage={page}
@@ -256,6 +258,7 @@ function EnrollmentDashboard() {
               </button>
             </>
           )}
+
         />
       </section>
     </div>

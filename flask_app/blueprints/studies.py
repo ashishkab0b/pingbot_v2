@@ -145,7 +145,7 @@ def create_study_route():
 @studies_bp.route('/studies/<int:study_id>', methods=['GET'])
 @jwt_required()
 def get_single_study_route(study_id):
-    current_app.logger.debug(f"Entered get_single_study route for study {study_id}.")
+    current_app.logger.debug(f"Entered get_single_study route for study={study_id}.")
     
     user = get_current_user()
     if not user:
@@ -173,7 +173,7 @@ def get_single_study_route(study_id):
 @studies_bp.route('/studies/<int:study_id>', methods=['PUT'])
 @jwt_required()
 def update_study_route(study_id):
-    current_app.logger.debug(f"Entered update_study route for study {study_id}.")
+    current_app.logger.debug(f"Entered update_study route for study={study_id}.")
     
     user = get_current_user()
     if not user:
@@ -210,7 +210,7 @@ def update_study_route(study_id):
 @studies_bp.route('/studies/<int:study_id>', methods=['DELETE'])
 @jwt_required()
 def delete_study_route(study_id):
-    current_app.logger.debug(f"Entered delete_study route for study {study_id}.")
+    current_app.logger.debug(f"Entered delete_study route for study={study_id}.")
     
     user = get_current_user()
     if not user:
@@ -222,12 +222,12 @@ def delete_study_route(study_id):
         current_app.logger.warning(
             f"User {user.id} attempted to delete study={study_id} without access."
         )
-        return jsonify({"error": f"Study {study_id} not found or no access"}), 404
+        return jsonify({"error": f"Study={study_id} not found or no access"}), 404
 
     try:
         if not soft_delete_study(db.session, study.id):
             current_app.logger.warning(
-                f"Failed to soft-delete study {study_id}. Possibly doesn't exist."
+                f"Failed to soft-delete study={study_id}. Possibly doesn't exist."
             )
             return jsonify({"error": f"Could not delete study={study_id}"}), 404
         db.session.commit()

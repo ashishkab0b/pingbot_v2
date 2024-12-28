@@ -10,9 +10,10 @@ from crud import (
     update_enrollment,
     soft_delete_enrollment,
     get_user_study_relation,
+    soft_delete_all_pings_for_enrollment
 )
 from permissions import get_current_user, user_has_study_permission
-from utils import paginate_statement, random_time
+from utils import paginate_statement, random_time, convert_dt_to_local
 
 from models import Enrollment, Study, Ping
 
@@ -90,10 +91,10 @@ class MessageConstructor:
             "db_table": "enrollments",
             "db_column": "id",
         },
-        "<ENROLLMENT_START_DATE>": {
+        "<ENROLLMENT_SIGNUP_DATE>": {
             "description": "The date the participant enrolled in the study.",
             "db_table": "enrollments",
-            "db_column": "start_date",
+            "db_column": "signup_ts_local",
         },
         "<PR_COMPLETED>": {
             "description": "The proportion of completed pings out of sent pings (i.e., excluding future pings).",
@@ -213,7 +214,7 @@ def make_pings(enrollment_id, study_id):
             for ping_obj in pt.schedule:
                 # Generate random time within the ping interval
                 ping_time = random_time(
-                    start_date=enrollment.start_date, 
+                    start_date=enrollment.signup_ts_local, 
                     begin_day_num=ping_obj['begin_day_num'],
                     begin_time=ping_obj['begin_time'],
                     end_day_num=ping_obj['end_day_num'], 
@@ -295,7 +296,7 @@ def get_enrollments(study_id):
             "study_pid": en.study_pid,
             "telegram_id": en.telegram_id,
             "enrolled": en.enrolled,
-            "start_date": en.start_date,
+            "signup_ts_local": convert_dt_to_local(en.signup_ts_local, en.tz).strftime("%Y-%m-%d"),
         }
         for en in pagination["items"]
     ]
@@ -334,7 +335,7 @@ def create_enrollment_route(study_id):
     tz = data.get('tz')
     study_pid = data.get('study_pid')
     telegram_id = data.get('telegram_id', None)
-    start_date = data.get('start_date', datetime.now(timezone.utc))
+    signup_ts_local = data.get('signup_ts_local', datetime.now(timezone.utc))
     enrolled = bool(telegram_id)
 
     if not all([tz, study_pid]):
@@ -348,7 +349,7 @@ def create_enrollment_route(study_id):
             tz=tz,
             study_pid=study_pid,
             enrolled=enrolled,
-            start_date=start_date,
+            signup_ts_local=signup_ts_local,
             telegram_id=telegram_id
         )
         db.session.commit()
@@ -362,7 +363,7 @@ def create_enrollment_route(study_id):
                 "study_pid": new_enrollment.study_pid,
                 "telegram_id": new_enrollment.telegram_id,
                 "enrolled": new_enrollment.enrolled,
-                "start_date": new_enrollment.start_date
+                "signup_ts_local": new_enrollment.signup_ts_local
             }
         }), 201
 
@@ -441,11 +442,13 @@ def update_enrollment_route(study_id, enrollment_id):
 def delete_enrollment_route(study_id, enrollment_id):
     current_app.logger.debug(f"Entered delete_enrollment route for enrollment={enrollment_id}.")
 
+    # Get the current user
     user = get_current_user()
     if not user:
         current_app.logger.warning("User not found while trying to delete an enrollment.")
         return jsonify({"error": "User not found"}), 404
 
+    # Check if the user has permission to delete the enrollment
     study = user_has_study_permission(user_id=user.id, study_id=study_id, minimum_role="editor")
     if not study:
         current_app.logger.warning(
@@ -454,11 +457,20 @@ def delete_enrollment_route(study_id, enrollment_id):
         return jsonify({"error": f"Study {study_id} not found or no access"}), 403
 
     try:
+        # Attempt to soft-delete the enrollment
         if not soft_delete_enrollment(db.session, enrollment_id):
             current_app.logger.warning(
                 f"Failed to soft-delete enrollment={enrollment_id}. Possibly nonexistent."
             )
             return jsonify({"error": "Enrollment not found"}), 404
+        
+        # Attempt to soft-delete the pings
+        if not soft_delete_all_pings_for_enrollment(db.session, enrollment_id):
+            current_app.logger.warning(
+                f"Failed to soft-delete pings for enrollment={enrollment_id}."
+            )
+            return jsonify({"error": "Internal server error"}), 500
+        
 
         db.session.commit()
 

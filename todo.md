@@ -1,27 +1,29 @@
 
+REQUIRED FOR BASIC FUNCTION
+
+- start date is incorrect
+- cascade deletes
+- prevent double enrollment of a telegram id
+- test ping url forwarding including reminders, expire, completed, and pr completed
+
+LOWER PRIORITY
 - check all handling of timezones
 
 - when user changes params of study, change upcoming pings (optionally)
-- ping url forwarding
-- expiry and reminders
+
 - add functionality to modify study permissions
 
-- check columns of what is displayed in dashboards (e.g. ping dash)
+- look at gpt conversation called session management to make sure i'm doing this right
 
-- validation of input data
-    - reminder latency, expire latency greater than 0. 
-    - reminder less than expire
+- form validation (esp ping templates)
 
-- click on ping to show template
-
+- click on ping to show template or participant
 
 - show pings in participant timezone
 
-- REPLACE PING URL WITH FORWARDING URL
-
 - make a route to get a survey link or survey message 
 
-- split react pages view/create into separate components (e.g. ping templates)
+- add material ui
 
 - instructions
     - clarify on ping template page that day 0 is not included in "every day"
