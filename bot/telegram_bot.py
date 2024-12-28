@@ -62,11 +62,21 @@ async def entering_link_code(update: Update, context: ContextTypes.DEFAULT_TYPE)
         "telegram_link_code": linking_code,
     }
     resp = requests.put(f"{config.FLASK_APP_BOT_BASE_URL}/link_telegram_id", json=payload, headers=header)
+    logger.debug(f"Status code from link_telegram_id: {resp.status_code}")
+    # Handle telegram ID already linked
+    if resp.status_code == 409:
+        msg = "This Telegram account is already linked to the study. Please contact the researcher for assistance."
+        await update.message.reply_text(msg)
+        return
+    
+    # Catch all
     if resp.status_code != 200:
         msg = "An error occurred. Please try again or type /cancel to cancel."
         logger.error(f"Error linking Telegram ID to enrollment with status code: {resp.status_code}")
         await update.message.reply_text(msg)
         return ENTERING_LINK_CODE
+    
+    
     
     msg = "You have been successfully enrolled in the study."
     await update.message.reply_text(msg)

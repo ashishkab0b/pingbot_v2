@@ -140,12 +140,12 @@ function PingDashboard() {
       <StudyNav />
       <h1>Pings for {study?.internal_name || 'Loading...'}</h1>
 
-      <button
+      {/* <button
         style={{ marginBottom: '1rem' }}
         onClick={() => setShowCreateForm(!showCreateForm)}
       >
         {showCreateForm ? 'Cancel' : 'Create New Ping'}
-      </button>
+      </button> */}
 
       {showCreateForm && (
         <section style={{ marginBottom: '2rem' }}>

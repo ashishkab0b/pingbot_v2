@@ -56,7 +56,7 @@ def link_telegram_id():
 
     # Get request data
     data = request.get_json()
-    telegram_id = data.get('telegram_id')
+    telegram_id = str(data.get('telegram_id'))
     telegram_link_code = data.get('telegram_link_code')
 
     # Log the received data (excluding sensitive information)
@@ -82,6 +82,17 @@ def link_telegram_id():
         current_app.logger.exception(e)
         return jsonify({"error": "Internal server error."}), 500
     
+    # Check if telegram ID is already linked to this study
+    study_id = enrollment.study_id
+    try:
+        existing_enrollment = Enrollment.query.filter_by(telegram_id=telegram_id, study_id=study_id).first()
+        if existing_enrollment:
+            current_app.logger.warning(f"Telegram ID={telegram_id} already linked to enrollment={existing_enrollment.id}.")
+            return jsonify({"error": "Telegram ID already linked to this study."}), 409
+    except Exception as e:
+        current_app.logger.error(f"Error checking if telegram ID {telegram_id} is already linked to study {study_id}.")
+        current_app.logger.exception(e)
+        return jsonify({"error": "Internal server error."}), 500
     
     # Check if the link code has already been used or has expired    
     if enrollment.telegram_link_code_used:

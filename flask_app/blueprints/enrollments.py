@@ -294,7 +294,7 @@ def get_enrollments(study_id):
             "id": en.id,
             "tz": en.tz,
             "study_pid": en.study_pid,
-            "telegram_id": en.telegram_id,
+            "linked_telegram": en.telegram_id is not None,
             "enrolled": en.enrolled,
             "signup_ts_local": convert_dt_to_local(en.signup_ts_local, en.tz).strftime("%Y-%m-%d"),
         }

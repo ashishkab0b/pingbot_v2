@@ -156,12 +156,12 @@ function EnrollmentDashboard() {
       <StudyNav />
       <h1>Participants for {study?.internal_name || 'Loading...'}</h1>
 
-      <button
+      {/* <button
         style={{ marginBottom: '1rem' }}
         onClick={() => setShowCreateForm(!showCreateForm)}
       >
         {showCreateForm ? 'Cancel' : 'Create New Participant'}
-      </button>
+      </button> */}
 
       {showCreateForm && (
         <section style={{ marginBottom: '2rem' }}>
@@ -229,9 +229,10 @@ function EnrollmentDashboard() {
             'Study PID': participant.study_pid,
             'Time Zone': participant.tz,
             Enrolled: participant.enrolled ? 'Yes' : 'No',
+            'Linked Telegram?': participant.linked_telegram ? 'Yes' : 'No',
             'Start Date': participant.signup_ts_local,
           }))}
-          headers={['ID', 'Study PID', 'Time Zone', 'Enrolled', 'Start Date']} 
+          headers={['ID', 'Study PID', 'Time Zone', 'Enrolled', 'Linked Telegram?', 'Start Date']} 
           loading={loading}
           error={error}
           currentPage={page}
