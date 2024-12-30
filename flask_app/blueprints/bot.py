@@ -11,7 +11,7 @@ import secrets
 from functools import wraps
 from telegram_messenger import TelegramMessenger
 from blueprints.enrollments import make_pings, MessageConstructor
-from crud import get_enrollments_by_telegram_id
+from crud import get_enrollments_by_telegram_id, get_enrollment_by_telegram_link_code
 
 
 bot_bp = Blueprint('bot', __name__)
@@ -74,7 +74,7 @@ def link_telegram_id():
 
     # Get enrollment
     try:
-        enrollment = Enrollment.query.filter_by(telegram_link_code=telegram_link_code).first()
+        enrollment = get_enrollment_by_telegram_link_code(db.session, telegram_link_code)
         if not enrollment:
             current_app.logger.warning(f"No enrollment found for link code {telegram_link_code}.")
             return jsonify({"error": "Invalid telegram_link_code."}), 400
@@ -86,7 +86,8 @@ def link_telegram_id():
     # Check if telegram ID is already linked to this study
     study_id = enrollment.study_id
     try:
-        existing_enrollment = Enrollment.query.filter_by(telegram_id=telegram_id, study_id=study_id).first()
+        enrollments_for_tid = get_enrollments_by_telegram_id(db.session, telegram_id)
+        existing_enrollment = next((e for e in enrollments_for_tid if e.study_id == study_id), None)
         if existing_enrollment:
             current_app.logger.warning(f"Telegram ID={telegram_id} already linked to enrollment={existing_enrollment.id}.")
             return jsonify({"error": "Telegram ID already linked to this study."}), 409

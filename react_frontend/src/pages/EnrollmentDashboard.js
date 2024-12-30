@@ -221,18 +221,25 @@ function EnrollmentDashboard() {
         </section>
       )}
 
-      <section>
+<section>
         <h2>Participants</h2>
         <DataTable
           data={participants.map((participant) => ({
-            ID: participant.id,
-            'Study PID': participant.study_pid,
-            'Time Zone': participant.tz,
-            Enrolled: participant.enrolled ? 'Yes' : 'No',
-            'Linked Telegram?': participant.linked_telegram ? 'Yes' : 'No',
-            'Start Date': participant.signup_ts_local,
+            id: participant.id,
+            studyPid: participant.study_pid,
+            timeZone: participant.tz,
+            enrolled: participant.enrolled ? 'Yes' : 'No',
+            linkedTelegram: participant.linked_telegram ? 'Yes' : 'No',
+            startDate: participant.signup_ts,
           }))}
-          headers={['ID', 'Study PID', 'Time Zone', 'Enrolled', 'Linked Telegram?', 'Start Date']} 
+          columns={[
+            { label: 'ID', key: 'id' },
+            { label: 'Study PID', key: 'studyPid' },
+            { label: 'Time Zone', key: 'timeZone' },
+            { label: 'Enrolled', key: 'enrolled' },
+            { label: 'Linked Telegram?', key: 'linkedTelegram' },
+            { label: 'Start Date', key: 'startDate' },
+          ]}
           loading={loading}
           error={error}
           currentPage={page}
@@ -244,22 +251,21 @@ function EnrollmentDashboard() {
               {/* Enroll/Unenroll button */}
               <button
                 onClick={() =>
-                  handleToggleEnrollment(row.ID, row.Enrolled === 'Yes')
+                  handleToggleEnrollment(row.id, row.enrolled === 'Yes')
                 }
               >
-                {row.Enrolled === 'Yes' ? 'Unenroll' : 'Enroll'}
+                {row.enrolled === 'Yes' ? 'Unenroll' : 'Enroll'}
               </button>
 
               {/* Delete button */}
               <button
                 style={{ marginLeft: '0.5rem' }}
-                onClick={() => handleDeleteParticipant(row.ID)}
+                onClick={() => handleDeleteParticipant(row.id)}
               >
                 Delete
               </button>
             </>
           )}
-
         />
       </section>
     </div>

@@ -30,9 +30,10 @@ def generate_non_confusable_code(length, lowercase, uppercase, digits):
     return ''.join(random.choices(non_confusable_chars, k=length))
 
 
-def random_time(start_date: datetime, begin_day_num: int, begin_time: str, end_day_num: int, end_time: str, tz: str) -> datetime:
-    interval_start_date = start_date + timedelta(days=begin_day_num)
-    interval_end_date = start_date + timedelta(days=end_day_num)
+def random_time(signup_ts: datetime, begin_day_num: int, begin_time: str, end_day_num: int, end_time: str, tz: str) -> datetime:
+    local_day_0 = signup_ts.astimezone(pytz.timezone(tz)).date()
+    interval_start_date = local_day_0 + timedelta(days=begin_day_num)
+    interval_end_date = local_day_0 + timedelta(days=end_day_num)
     begin_time = datetime.strptime(begin_time, '%H:%M').time()
     end_time = datetime.strptime(end_time, '%H:%M').time()
     tz = pytz.timezone(tz)

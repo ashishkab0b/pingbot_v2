@@ -199,33 +199,39 @@ function StudyDashboard() {
 
       {/* Display the studies in a simplified table */}
       <section>
-      <DataTable
-        data={studies.map((study) => ({
-          ID: study.id,
-          'Public Name': study.public_name,
-          'Internal Name': study.internal_name,
-          'Signup Code': study.code,
-          'Contact Message': study.contact_message,
-        }))}
-        headers={['ID', 'Public Name', 'Internal Name', 'Signup Code', 'Contact Message']}
-        loading={loading}
-        error={error}
-        currentPage={page}
-        totalPages={totalPages}
-        onPreviousPage={handlePreviousPage}
-        onNextPage={handleNextPage}
-        actionsColumn={(row) => (
-          <button
-            onClick={(e) => {
-              e.stopPropagation(); // Prevent row click
-              handleDeleteStudy(row.ID);
-            }}
-          >
-            Delete
-          </button>
-        )}
-        onRowClick={(row) => navigate(`/studies/${row.ID}`)}
-      />
+        <DataTable
+          data={studies.map((study) => ({
+            id: study.id,
+            publicName: study.public_name,
+            internalName: study.internal_name,
+            signupCode: study.code,
+            contactMessage: study.contact_message,
+          }))}
+          columns={[
+            { label: 'ID', key: 'id' },
+            { label: 'Public Name', key: 'publicName' },
+            { label: 'Internal Name', key: 'internalName' },
+            { label: 'Signup Code', key: 'signupCode' },
+            { label: 'Contact Message', key: 'contactMessage' },
+          ]}
+          loading={loading}
+          error={error}
+          currentPage={page}
+          totalPages={totalPages}
+          onPreviousPage={handlePreviousPage}
+          onNextPage={handleNextPage}
+          actionsColumn={(row) => (
+            <button
+              onClick={(e) => {
+                e.stopPropagation(); // Prevent row click
+                handleDeleteStudy(row.id);
+              }}
+            >
+              Delete
+            </button>
+          )}
+          onRowClick={(row) => navigate(`/studies/${row.id}`)}
+        />
       </section>
     </div>
   );

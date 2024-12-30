@@ -408,23 +408,24 @@ const urlVariables = [
 
         <DataTable
           data={pingTemplates.map((pt) => ({
-            ID: pt.id,
-            Name: pt.name,
-            Message: pt.message,
-            URL: pt.url,
-            'Reminder Latency': pt.reminder_latency,
-            'Expire Latency': pt.expire_latency,
-            Schedule: JSON.stringify(pt.schedule),
+            // Update data keys to match the 'key' in columns
+            id: pt.id,
+            name: pt.name,
+            message: pt.message,
+            url: pt.url,
+            reminderLatency: pt.reminder_latency,
+            expireLatency: pt.expire_latency,
+            schedule: JSON.stringify(pt.schedule),
           }))}
-          headers={[
-            'ID',
-            'Name',
-            'Message',
-            'URL',
-            'Reminder Latency',
-            'Expire Latency',
-            'Schedule',
-          ]} // Removed 'Actions' from the headers
+          columns={[
+            { label: 'ID', key: 'id' },
+            { label: 'Name', key: 'name' },
+            { label: 'Message', key: 'message' },
+            { label: 'URL', key: 'url' },
+            { label: 'Reminder Latency', key: 'reminderLatency' },
+            { label: 'Expire Latency', key: 'expireLatency' },
+            { label: 'Schedule', key: 'schedule' },
+          ]}
           loading={loading}
           error={error}
           currentPage={page}
@@ -432,7 +433,7 @@ const urlVariables = [
           onPreviousPage={handlePreviousPage}
           onNextPage={handleNextPage}
           actionsColumn={(row) => (
-            <button onClick={() => deletePingTemplate(row.ID)}>Delete</button>
+            <button onClick={() => deletePingTemplate(row.id)}>Delete</button>
           )}
         />
       </section>

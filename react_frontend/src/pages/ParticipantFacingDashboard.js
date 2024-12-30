@@ -106,7 +106,7 @@ function ParticipantFacingDashboard() {
                 <TableCell>{enrollment.study_pid}</TableCell>
                 <TableCell>{enrollment.tz}</TableCell>
                 <TableCell>{enrollment.enrolled ? 'Yes' : 'No'}</TableCell>
-                <TableCell>{enrollment.signup_ts_local}</TableCell>
+                <TableCell>{enrollment.signup_ts}</TableCell>
                 <TableCell>{enrollment.contact_message}</TableCell>
               </TableRow>
             ))}

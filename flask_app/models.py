@@ -26,7 +26,7 @@ class Enrollment(db.Model):
     study_id = db.Column(db.Integer, db.ForeignKey('studies.id'), nullable=False)
     study_pid = db.Column(db.String(255), nullable=False)  # Participant ID in the study assigned by researcher
     enrolled = db.Column(db.Boolean, default=True, nullable=False)
-    signup_ts_local = db.Column(db.DateTime(timezone=True), nullable=False)
+    signup_ts = db.Column(db.DateTime(timezone=True), nullable=False)
     pr_completed = db.Column(db.Float, default=0.0)
     
     dashboard_otp = db.Column(db.String(255), nullable=True)
@@ -52,7 +52,7 @@ class Enrollment(db.Model):
             'study_id': self.study_id,
             'study_pid': self.study_pid,
             'enrolled': self.enrolled,
-            'signup_ts_local': self.signup_ts_local.isoformat() if self.signup_ts_local else None,
+            'signup_ts': self.signup_ts.isoformat() if self.signup_ts else None,
             'pr_completed': self.pr_completed,
             'dashboard_otp': self.dashboard_otp,
             'dashboard_otp_expire_ts': self.dashboard_otp_expire_ts.isoformat() if self.dashboard_otp_expire_ts else None,
@@ -221,16 +221,11 @@ class Ping(db.Model):
     scheduled_ts = db.Column(db.DateTime(timezone=True), nullable=False)
     expire_ts = db.Column(db.DateTime(timezone=True))
     reminder_ts = db.Column(db.DateTime(timezone=True))
-    # ping_sent = db.Column(db.Boolean, nullable=False, default=False)
     sent_ts = db.Column(db.DateTime(timezone=True), nullable=True)
     reminder_sent_ts = db.Column(db.DateTime(timezone=True), nullable=True)
-    # reminder_sent = db.Column(db.Boolean, nullable=False, default=False)
     first_clicked_ts = db.Column(db.DateTime(timezone=True))
     last_clicked_ts = db.Column(db.DateTime(timezone=True))
-    
-    # message = db.Column(db.Text, nullable=False)
-    # url = db.Column(db.String(255), nullable=True)
-    
+
     forwarding_code = db.Column(db.String(255), nullable=False, default=lambda: os.urandom(16).hex())
     created_at = db.Column(db.DateTime(timezone=True), default=func.now(), nullable=False)
     updated_at = db.Column(db.DateTime(timezone=True), onupdate=func.now())
@@ -254,10 +249,8 @@ class Ping(db.Model):
             'first_clicked_ts': self.first_clicked_ts.isoformat() if self.first_clicked_ts else None,
             'last_clicked_ts': self.last_clicked_ts.isoformat() if self.last_clicked_ts else None,
             'day_num': self.day_num,
-            # 'message': self.message,
-            # 'url': self.url,
-            'ping_sent': self.ping_sent,
-            'reminder_sent': self.reminder_sent,
+            'sent_ts': self.sent_ts.isoformat() if self.sent_ts else None,
+            'reminder_sent_ts': self.reminder_sent_ts.isoformat() if self.reminder_sent_ts else None,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None,
         }

@@ -6,8 +6,11 @@ REQUIRED FOR BASIC FUNCTION
     - study -> ping, enrollment, ping_templates
     - ping_templates -> ping
 - test ping url forwarding including reminders, expire, completed, and pr completed
+- limit late sending to an acceptable delay
 
 MID PRIORITY
+- include scheduled_ts in pings or recommend researchers do that (make sure format is good thougha)
+- include ping template id in ping table - include link to ping template and to particpant
 - prevent double enrollment of a study_pid
 - page numbers incorrect sometimes for table
 - when user changes params of study, change upcoming pings (optionally)

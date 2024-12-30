@@ -429,8 +429,8 @@ def create_enrollment(
     study_id: int,
     tz: str,
     study_pid: str,
+    signup_ts: datetime,
     enrolled: bool,
-    signup_ts_local: datetime,
     telegram_id: Optional[str] = None
 ) -> Enrollment:
     """
@@ -442,7 +442,7 @@ def create_enrollment(
         tz (str): Timezone of the participant.
         study_pid (str): Participant ID assigned by the study.
         enrolled (bool): Enrollment status.
-        signup_ts_local (datetime): Local signup timestamp.
+        signup_ts (datetime): Signup timestamp.
         telegram_id (Optional[str]): Telegram ID of the participant.
 
     Returns:
@@ -453,7 +453,7 @@ def create_enrollment(
         tz=tz,
         study_pid=study_pid,
         enrolled=enrolled,
-        signup_ts_local=signup_ts_local,
+        signup_ts=signup_ts,
         telegram_id=telegram_id
     )
     session.add(enrollment)
@@ -509,6 +509,31 @@ def get_enrollments_by_telegram_id(
     return result.scalars().all()
 
 
+def get_enrollment_by_telegram_link_code(
+    session: Session, 
+    telegram_link_code: str,
+    include_deleted: bool = False
+) -> Optional[Enrollment]:
+    """
+    Fetch an enrollments by Telegram link code, optionally including soft-deleted enrollments.
+
+    Args:
+        session (Session): The database session.
+        telegram_link_code (str): The Telegram link code to search for.
+        include_deleted (bool): Whether to include soft-deleted enrollments.
+
+    Returns:
+        List[Enrollment]: A list of Enrollment objects.
+    """
+    
+    telegram_link_code = str(telegram_link_code)
+    stmt = select(Enrollment).where(Enrollment.telegram_link_code == telegram_link_code)
+    stmt = include_deleted_records(stmt, Enrollment, include_deleted)
+
+    result = session.execute(stmt)
+    return result.scalar_one_or_none()
+
+
 def update_enrollment(
     session: Session, 
     enrollment_id: int, 
@@ -529,7 +554,7 @@ def update_enrollment(
     if not enrollment:
         return None
 
-    for field in ["telegram_id", "tz", "study_pid", "enrolled", "signup_ts_local", "pr_completed"]:
+    for field in ["telegram_id", "tz", "study_pid", "enrolled", "signup_ts", "pr_completed"]:
         if field in kwargs:
             setattr(enrollment, field, kwargs[field])
     return enrollment
@@ -813,8 +838,8 @@ def update_ping(
 
     for field in [
         "ping_template_id", "enrollment_id", "scheduled_ts", "expire_ts",
-        "reminder_ts", "day_num", 
-        "ping_sent", "reminder_sent", "first_clicked_ts", "last_clicked_ts"
+        "reminder_ts", "day_num", "ping_sent_ts", "reminder_sent_ts",
+        "first_clicked_ts", "last_clicked_ts"
     ]:
         if field in kwargs:
             setattr(ping, field, kwargs[field])
@@ -866,7 +891,7 @@ def soft_delete_all_pings_for_enrollment(
 
     pings = session.execute(stmt).scalars().all()
     if not pings:
-        return False
+        return True
     for ping in pings:
         ping.deleted_at = datetime.now(timezone.utc)
     return True

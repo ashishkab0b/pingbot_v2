@@ -9,19 +9,20 @@ class Config:
     
     BOT_SECRET_KEY=os.getenv('BOT_SECRET_KEY')
     TELEGRAM_SECRET_KEY=os.getenv('TELEGRAM_SECRET_KEY')
-    
-    FLASK_APP_BOT_BASE_URL="http://localhost:8000/api/bot"
     FRONTEND_BASE_URL="http://localhost:3000"
+    
     
 
 class DevelopmentConfig(Config):
     
     DEBUG = True
+    FLASK_APP_BOT_BASE_URL="http://localhost:8000/api/bot"
     
     
 class ProductionConfig(Config):
         
     DEBUG = False
+    FLASK_APP_BOT_BASE_URL="http://flask-backend:8000/api/bot"
         
     
     

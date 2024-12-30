@@ -106,15 +106,14 @@ def study_signup():
     # Create a new enrollment
     try:
         utc_now = datetime.now(timezone.utc)
-        local_now = utc_now.astimezone(pytz.timezone(tz))
         enrollment = Enrollment(study_id=study.id, 
                                 tz=tz,
                                 enrolled=False,  # This will be set to True once the telegram ID is linked
                                 study_pid=study_pid,
-                                signup_ts_local=local_now,
+                                signup_ts=utc_now,
                                 pr_completed=0.0,
                                 telegram_link_code=telegram_link_code,
-                                telegram_link_code_expire_ts=datetime.now(timezone.utc) + timedelta(days=current_app.config["TELEGRAM_LINK_CODE_EXPIRY_DAYS"])
+                                telegram_link_code_expire_ts=utc_now + timedelta(days=current_app.config["TELEGRAM_LINK_CODE_EXPIRY_DAYS"])
                                 )
         db.session.add(enrollment)
         db.session.commit()
@@ -145,7 +144,7 @@ def api_participant_dashboard():
     
     current_app.logger.debug("Entered participant_dashboard endpoint.")
     study_keys_to_return = ['public_name', 'contact_message']
-    enrollment_keys_to_return = ['study_pid', 'tz', 'study_id', 'enrolled', 'signup_ts_local']
+    enrollment_keys_to_return = ['study_pid', 'tz', 'study_id', 'enrolled', 'signup_ts']
     
     telegram_id = request.args.get('t')
     otp = request.args.get('otp')
@@ -163,9 +162,9 @@ def api_participant_dashboard():
             for k,v in study.items():
                 if k in study_keys_to_return:
                     en[k] = v
-            signup_date = datetime.fromisoformat(en['signup_ts_local'])
+            signup_date = datetime.fromisoformat(en['signup_ts'])
             signup_date = signup_date.astimezone(pytz.timezone(en['tz']))
-            en['signup_ts_local'] = signup_date.strftime("%Y-%m-%d")
+            en['signup_ts'] = signup_date.strftime("%Y-%m-%d")
             valid_enrollments.append(en)
             
     if not valid_enrollments:

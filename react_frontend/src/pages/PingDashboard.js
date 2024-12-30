@@ -208,37 +208,37 @@ function PingDashboard() {
       )}
 
 <section>
-        <h2>Pings</h2>
-        <DataTable
-          data={pings.map((ping) => ({
-            ID: ping.id,
-            'Participant ID': ping.pid,
-            'Enrollment ID': ping.enrollment_id,
-            'Day #': ping.day_num,
-            Scheduled: ping.scheduled_ts_local,
-            'Ping Sent?': ping.ping_sent ? 'Yes' : 'No',
-            'Reminder Sent?': ping.reminder_sent ? 'Yes' : 'No',
-          }))}
-          headers={[
-            'ID',
-            'Participant ID',
-            'Enrollment ID',
-            'Day #',
-            'Scheduled',
-            'Ping Sent?',
-            'Reminder Sent?',
-          ]}
-          loading={loading}
-          error={error}
-          currentPage={page}
-          totalPages={totalPages}
-          onPreviousPage={handlePreviousPage}
-          onNextPage={handleNextPage}
-          actionsColumn={(row) => (
-            <button onClick={() => handleDeletePing(row.ID)}>Delete</button>
-          )}
-        />
-      </section>
+      <h2>Pings</h2>
+      <DataTable
+        data={pings.map((ping) => ({
+          id: ping.id,
+          participantId: ping.pid,
+          enrollmentId: ping.enrollment_id,
+          dayNum: ping.day_num,
+          scheduled: ping.scheduled_ts_local,
+          pingSent: ping.ping_sent_ts ? 'Yes' : 'No',
+          reminderSent: ping.reminder_sent_ts ? 'Yes' : 'No',
+        }))}
+        columns={[
+          { label: 'ID', key: 'id' },
+          { label: 'Participant ID', key: 'participantId' },
+          { label: 'Enrollment ID', key: 'enrollmentId' },
+          { label: 'Day #', key: 'dayNum' },
+          { label: 'Scheduled', key: 'scheduled' },
+          { label: 'Ping Sent?', key: 'pingSent' },
+          { label: 'Reminder Sent?', key: 'reminderSent' },
+        ]}
+        loading={loading}
+        error={error}
+        currentPage={page}
+        totalPages={totalPages}
+        onPreviousPage={handlePreviousPage}
+        onNextPage={handleNextPage}
+        actionsColumn={(row) => (
+          <button onClick={() => handleDeletePing(row.id)}>Delete</button>
+        )}
+      />
+    </section>
     </div>
   );
 }

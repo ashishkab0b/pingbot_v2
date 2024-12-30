@@ -67,6 +67,8 @@ services:
       - ./bot/logs:/app/logs
     env_file:
       - ./bot/.env
+    environment:
+      - ENV_TYPE=production
     depends_on:
       - flask-backend
       - nginx

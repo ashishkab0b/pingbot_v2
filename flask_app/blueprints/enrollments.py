@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 
 from extensions import db
 from crud import (
+    get_study_by_id,
     create_enrollment,
     get_enrollment_by_id,
     update_enrollment,
@@ -94,7 +95,7 @@ class MessageConstructor:
         "<ENROLLMENT_SIGNUP_DATE>": {
             "description": "The date the participant enrolled in the study.",
             "db_table": "enrollments",
-            "db_column": "signup_ts_local",
+            "db_column": "signup_ts",
         },
         "<PR_COMPLETED>": {
             "description": "The proportion of completed pings out of sent pings (i.e., excluding future pings).",
@@ -191,7 +192,7 @@ def make_pings(enrollment_id, study_id):
     
     try:
         # Get enrollment
-        enrollment = Enrollment.query.get(enrollment_id)
+        enrollment = get_enrollment_by_id(db.session, enrollment_id)
         if not enrollment:
             current_app.logger.error(
                 f"Enrollment={enrollment_id} not found. Aborting ping creation for study={study_id}."
@@ -199,7 +200,7 @@ def make_pings(enrollment_id, study_id):
             return
         
         # Get study
-        study = Study.query.get(study_id)
+        study = get_study_by_id(db.session, study_id)
         if not study:
             current_app.logger.error(
                 f"Study={study_id} not found. Aborting ping creation for enrollment={enrollment_id}."
@@ -219,7 +220,7 @@ def make_pings(enrollment_id, study_id):
             for ping_obj in pt.schedule:
                 # Generate random time within the ping interval
                 ping_time = random_time(
-                    start_date=enrollment.signup_ts_local, 
+                    signup_ts=enrollment.signup_ts, 
                     begin_day_num=ping_obj['begin_day_num'],
                     begin_time=ping_obj['begin_time'],
                     end_day_num=ping_obj['end_day_num'], 
@@ -237,9 +238,7 @@ def make_pings(enrollment_id, study_id):
                     'scheduled_ts': ping_time,
                     'expire_ts': expire_ts,
                     'reminder_ts': reminder_ts,
-                    'day_num': ping_obj['begin_day_num'],
-                    'ping_sent': False,
-                    'reminder_sent': False 
+                    'day_num': ping_obj['begin_day_num']
                 }
                 ping_instance = Ping(**new_ping_data)
                 db.session.add(ping_instance)
@@ -284,6 +283,7 @@ def get_enrollments(study_id):
         current_app.logger.warning(f"User={user.id} does not have access to study={study_id}.")
         return jsonify({"error": f"Study={study_id} not found or no access"}), 403
 
+    # Get enrollments for the study
     stmt = (
         db.session.query(Enrollment)
         .filter_by(study_id=study_id)
@@ -301,7 +301,7 @@ def get_enrollments(study_id):
             "study_pid": en.study_pid,
             "linked_telegram": en.telegram_id is not None,
             "enrolled": en.enrolled,
-            "signup_ts_local": convert_dt_to_local(en.signup_ts_local, en.tz).strftime("%Y-%m-%d"),
+            "signup_ts": convert_dt_to_local(en.signup_ts, en.tz).strftime("%Y-%m-%d"),
         }
         for en in pagination["items"]
     ]
@@ -340,7 +340,7 @@ def create_enrollment_route(study_id):
     tz = data.get('tz')
     study_pid = data.get('study_pid')
     telegram_id = data.get('telegram_id', None)
-    signup_ts_local = data.get('signup_ts_local', datetime.now(timezone.utc))
+    signup_ts = data.get('signup_ts', datetime.now(timezone.utc))
     enrolled = bool(telegram_id)
 
     if not all([tz, study_pid]):
@@ -354,7 +354,7 @@ def create_enrollment_route(study_id):
             tz=tz,
             study_pid=study_pid,
             enrolled=enrolled,
-            signup_ts_local=signup_ts_local,
+            signup_ts=signup_ts,
             telegram_id=telegram_id
         )
         db.session.commit()
@@ -368,7 +368,7 @@ def create_enrollment_route(study_id):
                 "study_pid": new_enrollment.study_pid,
                 "telegram_id": new_enrollment.telegram_id,
                 "enrolled": new_enrollment.enrolled,
-                "signup_ts_local": new_enrollment.signup_ts_local
+                "signup_ts": new_enrollment.signup_ts
             }
         }), 201
 
