@@ -128,7 +128,7 @@ class MessageConstructor:
         This is done at the point of sending the ping and is called by construct_message.
         """
         forwarding_code = self.ping.forwarding_code
-        url = f"{current_app.config['BASE_URL']}/ping/{self.ping.id}?code={forwarding_code}"
+        url = f"{current_app.config['BASE_URL']}/api/ping/{self.ping.id}?code={forwarding_code}"
         url_text = self.ping.ping_template.url_text if self.ping.ping_template.url_text else current_app.config['PING_DEFAULT_URL_TEXT']
         self.survey_link = f"<a href='{url}'>{url_text}</a>"
         
