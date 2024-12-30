@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DataTable from '../components/DataTable';
 import axios from '../api/axios';
+import DeleteIcon from '@mui/icons-material/Delete';
+import { IconButton, Tooltip } from '@mui/material';
 
 function StudyDashboard() {
   const navigate = useNavigate();
@@ -221,14 +223,17 @@ function StudyDashboard() {
           onPreviousPage={handlePreviousPage}
           onNextPage={handleNextPage}
           actionsColumn={(row) => (
-            <button
-              onClick={(e) => {
-                e.stopPropagation(); // Prevent row click
-                handleDeleteStudy(row.id);
-              }}
-            >
-              Delete
-            </button>
+            <Tooltip title="Delete Study">
+              <IconButton
+                color="error"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDeleteStudy(row.id);
+                }}
+              >
+                <DeleteIcon />
+              </IconButton>
+            </Tooltip>
           )}
           onRowClick={(row) => navigate(`/studies/${row.id}`)}
         />

@@ -1,7 +1,16 @@
+// Navbar.js
 import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { logoutUser } from '../api/auth';
-// import './NavBar.css'; // Optional for styling
+import {
+  AppBar,
+  Toolbar,
+  Typography,
+  Button,
+  IconButton,
+  Link,
+} from '@mui/material';
+import MenuIcon from '@mui/icons-material/Menu';
 
 const NavBar = () => {
   const navigate = useNavigate();
@@ -15,7 +24,7 @@ const NavBar = () => {
     }
 
     try {
-      await logoutUser(accessToken); // Ensure the logout API uses the correct key
+      await logoutUser(accessToken);
     } catch (error) {
       console.error('Logout failed:', error);
     } finally {
@@ -26,29 +35,36 @@ const NavBar = () => {
   };
 
   return (
-    <nav className="navbar">
-      <ul className="navbar-list">
+    <AppBar position="static" color="primary">
+      <Toolbar>
+        {/* You can add a logo or icon here */}
+ 
+
+        {/* Application Title */}
+        <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+          EMA Pingbot
+        </Typography>
+
+        {/* Navigation Links */}
         {accessToken ? (
           <>
-            <li className="navbar-item">
-              <Link to="/studies">Studies</Link>
-            </li>
-            <li className="navbar-item">
-              <Link to="/account">Account</Link>
-            </li>
-            <li className="navbar-item">
-              <a href="/logout" onClick={(e) => { e.preventDefault(); handleLogout(); }}>
-                Log Out
-              </a>
-            </li>
+            <Button color="inherit" component={RouterLink} to="/studies">
+              Studies
+            </Button>
+            <Button color="inherit" component={RouterLink} to="/account">
+              Account
+            </Button>
+            <Button color="inherit" onClick={handleLogout}>
+              Log Out
+            </Button>
           </>
         ) : (
-          <li className="navbar-item">
-            <Link to="/login">Login</Link>
-          </li>
+          <Button color="inherit" component={RouterLink} to="/login">
+            Login
+          </Button>
         )}
-      </ul>
-    </nav>
+      </Toolbar>
+    </AppBar>
   );
 };
 

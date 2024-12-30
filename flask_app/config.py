@@ -55,8 +55,9 @@ class DevelopmentConfig(BaseConfig):
     REDIS_PASSWORD = None
     REDIS_URL = f"redis://{REDIS_HOST}:6379/0"
     
-    
+    # TODO: clean this up
     FRONTEND_BASE_URL = "http://localhost:3000"
+    BASE_URL = "http://localhost:3000"
     
     # Celery
     CELERY_BROKER_URL = f"redis://{REDIS_HOST}:6379/0"
@@ -71,7 +72,9 @@ class ProductionConfig(BaseConfig):
     REDIS_PASSWORD = os.getenv("REDIS_PASSWORD", None)
     REDIS_URL = f"redis://:{REDIS_PASSWORD}@{REDIS_HOST}:6379/0"
     
-    # FRONTEND_BASE_URL = "https://www.emapingbot.com"
+    # TODO: clean this up
+    FRONTEND_BASE_URL = "http://emapingbot.com"
+    BASE_URL = "http://emapingbot.com"
     
     # Celery
     CELERY_BROKER_URL= f"redis://:{REDIS_PASSWORD}@{REDIS_HOST}:6379/0"

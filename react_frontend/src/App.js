@@ -12,6 +12,21 @@ import ViewStudy from './pages/ViewStudy';
 import PrivateRoute from './components/PrivateRoute';
 import NavBar from './components/NavBar';
 import { StudyProvider } from './context/StudyContext';
+import { ThemeProvider, createTheme } from '@mui/material/styles';
+import Footer from './components/Footer';
+
+
+const theme = createTheme({
+  palette: {
+    primary: {
+      main: '#1976d2', // Customize the primary color
+    },
+    secondary: {
+      main: '#dc004e', // Customize the secondary color
+    },
+  },
+  // You can add more customizations here
+});
 
 function StudyWrapper({ children }) {
   const { studyId } = useParams();
@@ -103,9 +118,13 @@ function Layout() {
 
 function App() {
   return (
-    <Router>
-      <Layout />
-    </Router>
+    <ThemeProvider theme={theme}>
+      <Router>
+        <Layout />
+      </Router>
+
+      <Footer />
+    </ThemeProvider>
   );
 }
 

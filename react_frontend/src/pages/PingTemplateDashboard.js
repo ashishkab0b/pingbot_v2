@@ -7,6 +7,8 @@ import { useStudy } from '../context/StudyContext';
 import PingScheduleForm from '../components/PingScheduleForm';
 import VariableAutoCompleteTextarea from '../components/VariableAutoCompleteTextarea';
 import DataTable from '../components/DataTable';
+import DeleteIcon from '@mui/icons-material/Delete';
+import { IconButton, Tooltip } from '@mui/material';
 
 
 function PingTemplateDashboard() {
@@ -225,8 +227,10 @@ const urlVariables = [
 
   return (
     <div style={{ margin: '2rem' }}>
+
+      <h1>Study: {study.internal_name}</h1>
       <StudyNav />
-      <h1>Ping Templates for {study?.internal_name || 'Loading...'}</h1>
+      {/* <h1>Ping Templates for {study?.internal_name || 'Loading...'}</h1> */}
 
       <button
         style={{ marginBottom: '1rem' }}
@@ -404,7 +408,7 @@ const urlVariables = [
 
       {/* List existing Ping Templates */}
       <section>
-        <h2>Ping Templates</h2>
+        {/* <h2>Ping Templates</h2> */}
 
         <DataTable
           data={pingTemplates.map((pt) => ({
@@ -433,7 +437,18 @@ const urlVariables = [
           onPreviousPage={handlePreviousPage}
           onNextPage={handleNextPage}
           actionsColumn={(row) => (
-            <button onClick={() => deletePingTemplate(row.id)}>Delete</button>
+            
+              <Tooltip title="Delete Ping Template">
+              <IconButton
+                color="error"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  deletePingTemplate(row.id);
+                }}
+              >
+                <DeleteIcon />
+              </IconButton>
+            </Tooltip>
           )}
         />
       </section>

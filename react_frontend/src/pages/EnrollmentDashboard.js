@@ -4,6 +4,10 @@ import StudyNav from '../components/StudyNav';
 import { useStudy } from '../context/StudyContext';
 import axios from '../api/axios';
 import DataTable from '../components/DataTable';
+import { IconButton, Tooltip, Box } from '@mui/material';
+import DeleteIcon from '@mui/icons-material/Delete';
+import PersonAddIcon from '@mui/icons-material/PersonAdd';
+import PersonRemoveIcon from '@mui/icons-material/PersonRemove';
 
 function EnrollmentDashboard() {
   const { studyId } = useParams();
@@ -153,8 +157,10 @@ function EnrollmentDashboard() {
   // ------------------------------------------------
   return (
     <div style={{ margin: '2rem' }}>
+
+      <h1>Study: {study.internal_name}</h1>
       <StudyNav />
-      <h1>Participants for {study?.internal_name || 'Loading...'}</h1>
+      {/* <h1>Participants for {study?.internal_name || 'Loading...'}</h1> */}
 
       {/* <button
         style={{ marginBottom: '1rem' }}
@@ -222,7 +228,7 @@ function EnrollmentDashboard() {
       )}
 
 <section>
-        <h2>Participants</h2>
+        {/* <h2>Participants</h2> */}
         <DataTable
           data={participants.map((participant) => ({
             id: participant.id,
@@ -248,22 +254,35 @@ function EnrollmentDashboard() {
           onNextPage={handleNextPage}
           actionsColumn={(row) => (
             <>
+            <Box display="flex">
               {/* Enroll/Unenroll button */}
-              <button
-                onClick={() =>
-                  handleToggleEnrollment(row.id, row.enrolled === 'Yes')
-                }
-              >
-                {row.enrolled === 'Yes' ? 'Unenroll' : 'Enroll'}
-              </button>
+              <Tooltip title={row.enrolled === 'Yes' ? 'Unenroll Participant' : 'Enroll Participant'}>
+                <IconButton
+                  color="primary"
+                  aria-label={row.enrolled === 'Yes' ? 'Unenroll Participant' : 'Enroll Participant'}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleToggleEnrollment(row.id, row.enrolled === 'Yes');
+                  }}
+                >
+                  {row.enrolled === 'Yes' ? <PersonRemoveIcon /> : <PersonAddIcon />}
+                </IconButton>
+              </Tooltip>
 
               {/* Delete button */}
-              <button
-                style={{ marginLeft: '0.5rem' }}
-                onClick={() => handleDeleteParticipant(row.id)}
-              >
-                Delete
-              </button>
+              <Tooltip title="Delete Participant">
+                <IconButton
+                  color="error"
+                  aria-label="Delete Participant"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteParticipant(row.id);
+                  }}
+                >
+                  <DeleteIcon />
+                </IconButton>
+              </Tooltip>
+            </Box>
             </>
           )}
         />

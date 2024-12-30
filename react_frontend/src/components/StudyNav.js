@@ -1,17 +1,57 @@
-
+// StudyNav.js
 import React from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link as RouterLink, useParams, useMatch } from 'react-router-dom';
+import { Tabs, Tab } from '@mui/material';
 
 function StudyNav() {
   const { studyId } = useParams();
 
+  // Define your navigation items
+  const navItems = [
+    { label: 'Study Overview', path: `/studies/${studyId}` },
+    { label: 'Ping Templates', path: `/studies/${studyId}/ping_templates` },
+    { label: 'Pings', path: `/studies/${studyId}/pings` },
+    { label: 'Participants', path: `/studies/${studyId}/participants` },
+  ];
+
+  // Use useMatch to check for route matches
+  const matchStudyOverview = useMatch({ path: `/studies/${studyId}`, end: true });
+  const matchPingTemplates = useMatch({ path: `/studies/${studyId}/ping_templates/*` });
+  const matchPings = useMatch({ path: `/studies/${studyId}/pings/*` });
+  const matchParticipants = useMatch({ path: `/studies/${studyId}/participants/*` });
+
+  // Determine the current active tab index
+  let currentTab = false; // Default to no tab selected
+
+  if (matchStudyOverview) {
+    currentTab = 0;
+  } else if (matchPingTemplates) {
+    currentTab = 1;
+  } else if (matchPings) {
+    currentTab = 2;
+  } else if (matchParticipants) {
+    currentTab = 3;
+  }
+
   return (
-    <nav>
-      <Link to={`/studies/${studyId}`}>Study Overview</Link> | 
-      <Link to={`/studies/${studyId}/ping_templates`}>Ping Templates</Link> | 
-      <Link to={`/studies/${studyId}/pings`}>Pings</Link> | 
-      <Link to={`/studies/${studyId}/participants`}>Participants</Link> | 
-    </nav>
+    <Tabs
+      value={currentTab}
+      indicatorColor="primary"
+      textColor="primary"
+      variant="scrollable"
+      scrollButtons="auto"
+      aria-label="Study Navigation Tabs"
+      sx={{ marginBottom: 2 }}
+    >
+      {navItems.map((item, index) => (
+        <Tab
+          key={index}
+          label={item.label}
+          component={RouterLink}
+          to={item.path}
+        />
+      ))}
+    </Tabs>
   );
 }
 

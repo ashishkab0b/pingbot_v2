@@ -4,6 +4,8 @@ import StudyNav from '../components/StudyNav';
 import axios from '../api/axios';
 import { useStudy } from '../context/StudyContext';
 import DataTable from '../components/DataTable';
+import DeleteIcon from '@mui/icons-material/Delete';
+import { IconButton, Tooltip } from '@mui/material';
 
 function PingDashboard() {
   const { studyId } = useParams();
@@ -137,8 +139,10 @@ function PingDashboard() {
   // -----------------------------------------
   return (
     <div style={{ margin: '2rem' }}>
+
+      <h1>Study: {study.internal_name}</h1>
       <StudyNav />
-      <h1>Pings for {study?.internal_name || 'Loading...'}</h1>
+      {/* <h1>Pings for {study?.internal_name || 'Loading...'}</h1> */}
 
       {/* <button
         style={{ marginBottom: '1rem' }}
@@ -208,7 +212,7 @@ function PingDashboard() {
       )}
 
 <section>
-      <h2>Pings</h2>
+      {/* <h2>Pings</h2> */}
       <DataTable
         data={pings.map((ping) => ({
           id: ping.id,
@@ -235,7 +239,17 @@ function PingDashboard() {
         onPreviousPage={handlePreviousPage}
         onNextPage={handleNextPage}
         actionsColumn={(row) => (
-          <button onClick={() => handleDeletePing(row.id)}>Delete</button>
+            <Tooltip title="Delete Ping">
+            <IconButton
+              color="error"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDeletePing(row.id);
+              }}
+            >
+              <DeleteIcon />
+            </IconButton>
+          </Tooltip>
         )}
       />
     </section>
