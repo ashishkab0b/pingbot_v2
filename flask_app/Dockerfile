@@ -1,24 +1,29 @@
 # Use the official Python image
 FROM python:3.11-slim
 
-# Create a non-root user and group first
-RUN groupadd -r appuser && useradd -r -g appuser appuser
+# Set build-time variables for UID and GID
+ARG UID=1000
+ARG GID=1000
+
+# Create a non-root user and group with the specified UID and GID
+RUN groupadd -g $GID appuser && \
+    useradd -m -u $UID -g app user appuser
 
 # Set the working directory
 WORKDIR /app
 
 # Copy the requirements file and install dependencies
 COPY requirements.txt .
-
-# Install dependencies as root
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the application code to /app
+# Copy the application code
 COPY . .
 
-# Create the logs directory and set proper permissions
-RUN mkdir -p /app/logs \
-    && chown -R appuser:appuser /app
+# Create the logs directory and set permissions
+RUN mkdir -p /app/logs
+
+# Change ownership to the appuser
+RUN chown -R appuser:appuser /app
 
 # Switch to the non-root user
 USER appuser
@@ -26,5 +31,5 @@ USER appuser
 # Expose port 8000 for Gunicorn
 EXPOSE 8000
 
-# Start the Flask app with Gunicorn
+# Command to run the application
 CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:8000", "run:app"]

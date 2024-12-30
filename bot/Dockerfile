@@ -1,6 +1,10 @@
 # bot/Dockerfile
 FROM python:3.11-slim
 
+# Set build-time variables for UID and GID
+ARG UID=1000
+ARG GID=1000
+
 # Set the working directory
 WORKDIR /app
 
