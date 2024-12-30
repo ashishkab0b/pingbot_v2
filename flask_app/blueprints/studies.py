@@ -18,7 +18,11 @@ from crud import (
     get_user_study_relation,
     get_study_by_id,
     update_study,
-    soft_delete_study
+    soft_delete_study,
+    soft_delete_enrollment,
+    soft_delete_ping,
+    soft_delete_ping_template
+    
 )
 from permissions import get_current_user, user_has_study_permission
 from utils import generate_non_confusable_code  # custom code generator
@@ -212,11 +216,13 @@ def update_study_route(study_id):
 def delete_study_route(study_id):
     current_app.logger.debug(f"Entered delete_study route for study={study_id}.")
     
+    # Get the current user
     user = get_current_user()
     if not user:
         current_app.logger.warning("User not found while attempting to delete a study.")
         return jsonify({"error": "User not found"}), 404
 
+    # Check if the user has permission to delete the study
     study = user_has_study_permission(user_id=user.id, study_id=study_id, minimum_role="editor")
     if not study:
         current_app.logger.warning(
@@ -225,16 +231,21 @@ def delete_study_route(study_id):
         return jsonify({"error": f"Study={study_id} not found or no access"}), 404
 
     try:
+        # Attempt to soft-delete the study
         if not soft_delete_study(db.session, study.id):
             current_app.logger.warning(
                 f"Failed to soft-delete study={study_id}. Possibly doesn't exist."
             )
             return jsonify({"error": f"Could not delete study={study_id}"}), 404
-        db.session.commit()
+        
     except Exception as e:
         current_app.logger.error(f"Error deleting study={study_id}")
         current_app.logger.exception(e)
+        db.session.rollback()
         return jsonify({"error": "Internal server error"}), 500
-    else:
-        current_app.logger.info(f"User={user.email} deleted study={study_id}.")
-        return jsonify({"message": f"Study {study_id} deleted successfully."}), 200
+
+
+    db.session.commit()
+    current_app.logger.info(f"User={user.email} deleted study={study_id}.")
+    return jsonify({"message": f"Study {study_id} deleted successfully."}), 200
+    
