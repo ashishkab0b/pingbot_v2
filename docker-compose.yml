@@ -1,5 +1,39 @@
 services:
 
+  celery-worker:
+    build:
+      context: ./flask_app
+      dockerfile: Dockerfile
+    command: celery -A celery_app.celery worker --loglevel=info
+    volumes:
+      - ./flask_app:/app
+    env_file:
+      - ./flask_app/.env
+    environment:
+      - FLASK_ENV=production
+      - PYTHONPATH=/app
+    working_dir: /app
+    depends_on:
+      - redis
+      - flask-backend
+
+  celery-beat:
+    build:
+      context: ./flask_app
+      dockerfile: Dockerfile
+    command: celery -A celery_app.celery beat --loglevel=info
+    volumes:
+      - ./flask_app:/app
+    env_file:
+      - ./flask_app/.env
+    environment:
+      - FLASK_ENV=production
+      - PYTHONPATH=/app
+    working_dir: /app
+    depends_on:
+      - redis
+      - flask-backend
+
   redis:
     image: redis:latest
     container_name: "redis_db"
@@ -16,7 +50,6 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ./flask_app:/app
       - ./flask_app/logs:/app/logs
     env_file:
       - ./flask_app/.env
@@ -24,7 +57,6 @@ services:
       - FLASK_ENV=production
     depends_on:
       - redis
-
 
   telegram-bot:
     build:

@@ -19,7 +19,7 @@ import redis
 
 from config import CurrentConfig
 from models import User
-from extensions import db, jwt
+from extensions import db, jwt, redis_client
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -29,7 +29,6 @@ def check_if_token_is_blacklisted(jwt_header, jwt_payload):
     Check if the given JWT is blacklisted (logged out).
     """
     jti = jwt_payload["jti"]
-    redis_client = current_app.redis
     entry = redis_client.get(f"blacklisted_{jti}")
     return entry is not None
 
@@ -63,7 +62,6 @@ def register():
         current_app.logger.error(f"Error registering user: {email}, error: {e}")
         return jsonify({'message': 'Registration failed'}), 500
 
-
 @auth_bp.route('/login', methods=['POST'])
 def login():
     data = request.get_json()
@@ -80,16 +78,14 @@ def login():
     if user and user.check_password(password):
         access_token = create_access_token(identity=str(user.id))
         refresh_token = create_refresh_token(identity=str(user.id))
+        # Update last_login timestamp in user table
+        user.last_login = datetime.now()
+        db.session.commit()
         current_app.logger.info(f"User logged in successfully: {email}")
         return jsonify({
             'access_token': access_token,
             'refresh_token': refresh_token
         }), 200
-        
-    # Update last_login timestamp in user table
-    user.last_login = datetime.now()
-    db.session.commit()
-    
 
     current_app.logger.warning(f"Invalid login attempt for email: {email}")
     return jsonify({'message': 'Invalid credentials'}), 401
@@ -107,7 +103,7 @@ def refresh():
     except Exception as e:
         current_app.logger.error(f"Error refreshing token: {e}")
         return jsonify({'message': 'Token refresh failed'}), 500
-    
+
 @auth_bp.route('/logout', methods=['POST'])
 @jwt_required()
 def logout():
@@ -115,11 +111,17 @@ def logout():
     Blacklist the current JWT so that it cannot be used again.
     """
     jti = get_jwt()['jti']  # Unique identifier for JWT
-    # You can store other info like 'exp' in the token if you want to set a shorter TTL.
-    current_app.logger.info(f"Blacklisting token with jti: {jti}")
+    jwt_type = get_jwt()['type']  # 'access' or 'refresh'
+    current_app.logger.info(f"Blacklisting {jwt_type} token with jti: {jti}")
+
+    if jwt_type == "access":
+        expires = current_app.config["JWT_ACCESS_TOKEN_EXPIRES"]
+    elif jwt_type == "refresh":
+        expires = current_app.config["JWT_REFRESH_TOKEN_EXPIRES"]
+    else:
+        expires = timedelta(hours=1)  # Default to 1 hour if type is unknown
 
     # Add to Redis with an expiration time. 
-    # It's recommended to match or exceed the JWT_ACCESS_TOKEN_EXPIRES time.
-    current_app.redis.setex(f"blacklisted_{jti}", current_app.config["JWT_ACCESS_TOKEN_EXPIRES"], "true")
+    current_app.redis.setex(f"blacklisted_{jti}", expires, "true")
 
     return jsonify({"message": "Successfully logged out"}), 200

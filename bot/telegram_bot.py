@@ -31,8 +31,8 @@ COMMAND_DESCRIPTIONS = {
     'start': 'Show this message',
     'enroll': 'Enroll in a new study',
     'dashboard': 'View the online dashboard',
-    'unenroll': 'Unenroll from a study',
-    'timezone': 'Set your time zone',
+    # 'unenroll': 'Unenroll from a study',
+    # 'timezone': 'Set your time zone',
 }
 
 # Define the conversation handler functions
@@ -124,7 +124,7 @@ def main() -> None:
         entry_points=[
             CommandHandler('enroll', enroll),
             CommandHandler('dashboard', dashboard),
-            CommandHandler('unenroll', dashboard),
+            # CommandHandler('unenroll', dashboard),
         ],
         states={
             ENTERING_LINK_CODE: [MessageHandler(filters.TEXT & ~filters.COMMAND, entering_link_code)],

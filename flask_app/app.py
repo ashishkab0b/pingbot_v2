@@ -1,15 +1,13 @@
-# app.py
 
-import os
-import redis
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
 from werkzeug.exceptions import HTTPException
 from logger_setup import setup_logger
 from sqlalchemy.orm import Session
 
-# Import extensions from extensions.py
-from extensions import db, migrate, jwt, swagger, cors
+# Import extensions
+from extensions import db, migrate, jwt, swagger, cors, redis_client, init_extensions
+from config import CurrentConfig
 
 def create_app(config):
     # Load environment variables
@@ -24,20 +22,12 @@ def create_app(config):
     app.logger = logger
 
     # Initialize Flask extensions
-    db.init_app(app)
-    migrate.init_app(app, db)
-    jwt.init_app(app)
-    swagger.init_app(app)
-    cors.init_app(app)
-
-    # Initialize Redis
-    app.redis = redis.StrictRedis(
-        host=app.config['REDIS_HOST'],
-        port=app.config['REDIS_PORT'],
-        db=app.config['REDIS_DB'],
-        password=app.config['REDIS_PASSWORD'],
-        decode_responses=True
-    )
+    init_extensions(app)
+    
+    # Initialize Celery
+    from celery_factory import make_celery
+    celery = make_celery(app)
+    app.celery = celery # Add celery to app context    
 
     # Import models AFTER db is set up
     from models import User, Study, PingTemplate, UserStudy, Ping, Enrollment, Support
@@ -72,7 +62,19 @@ def create_app(config):
     #     logger.info(f"{request.method} {request.url}")
         
 
-    # Error Handlers
+    # Error Handlers    
+    @jwt.unauthorized_loader
+    def custom_unauthorized_response(callback):
+        return jsonify({
+            'error': 'Unauthorized access'
+        }), 401
+
+    @jwt.expired_token_loader
+    def custom_expired_token_response(jwt_header, jwt_payload):
+        return jsonify({
+            'error': 'Token expired'
+        }), 401
+        
     @app.errorhandler(404)
     def not_found_error(e):
         logger.warning(f"404 Not Found: {request.method} {request.url}")
@@ -85,12 +87,7 @@ def create_app(config):
 
     @app.errorhandler(Exception)
     def handle_exception(e):
-        logger.exception(f"Unhandled Exception: {e} at {request.method} {request.url}")
+        logger.exception(f"Unhandled Exception at {request.method} {request.url}")
         return {'error': 'Internal server error'}, 500
-    
-    # TODO: DO I NEED THIS??
-    # @app.teardown_request
-    # def remove_session(exception=None):
-    #     Session.remove()
 
     return app

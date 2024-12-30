@@ -2,10 +2,11 @@ import os
 from datetime import timedelta
 from dotenv import load_dotenv
 from sqlalchemy.engine.url import URL
+from celery.schedules import crontab
 
 load_dotenv()
 
-class Config:
+class BaseConfig:
     
     JWT_SECRET_KEY= os.environ['JWT_SECRET_KEY']
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=1)
@@ -25,6 +26,13 @@ class Config:
     
     SQLALCHEMY_DATABASE_URI = os.environ['SQLALCHEMY_DATABASE_URI']
     SQLALCHEMY_ENGINE_OPTIONS = {'connect_args': {'options': '-csearch_path=public'}}
+    
+    CELERY_BEAT_SCHEDULE = {
+        'check_and_send_pings': {
+            'task': 'tasks.check_and_send_pings',
+            'schedule': crontab(minute='*/1'),  # Every minute
+        },
+    }
 
     
     TELEGRAM_LINK_CODE_EXPIRY_DAYS = 1
@@ -39,22 +47,35 @@ class Config:
     PING_DEFAULT_URL_TEXT = "Click here to take the survey."
     PING_EXPIRED_MESSAGE = "This ping has expired. Please be sure to take the survey as soon as possible after receiving."
 
-class DevelopmentConfig(Config):
+class DevelopmentConfig(BaseConfig):
     
     DEBUG = True
     
     REDIS_HOST = "localhost"
     REDIS_PASSWORD = None
+    REDIS_URL = f"redis://{REDIS_HOST}:6379/0"
+    
+    
     FRONTEND_BASE_URL = "http://localhost:3000"
     
+    # Celery
+    CELERY_BROKER_URL = f"redis://{REDIS_HOST}:6379/0"
+    CELERY_RESULT_BACKEND = f"redis://{REDIS_HOST}:6379/0"
+    
 
-class ProductionConfig(Config):
+class ProductionConfig(BaseConfig):
     
     DEBUG = False
     
     REDIS_HOST = "redis"
     REDIS_PASSWORD = os.getenv("REDIS_PASSWORD", None)
-    # FRONTEND_BASE_URL = "https://www.surveyping.com"
+    REDIS_URL = f"redis://:{REDIS_PASSWORD}@{REDIS_HOST}:6379/0"
+    
+    # FRONTEND_BASE_URL = "https://www.emapingbot.com"
+    
+    # Celery
+    CELERY_BROKER_URL= f"redis://:{REDIS_PASSWORD}@{REDIS_HOST}:6379/0"
+    CELERY_RESULT_BACKEND = f"redis://:{REDIS_PASSWORD}@{REDIS_HOST}:6379/0"
     
     
 
@@ -64,4 +85,4 @@ config_map = {
 }
 
 current_env = os.getenv("FLASK_ENV", "development")
-CurrentConfig = config_map.get(current_env, Config)
+CurrentConfig = config_map.get(current_env, DevelopmentConfig)

@@ -6,15 +6,14 @@ from flask_jwt_extended import JWTManager
 from flasgger import Swagger
 from flask_cors import CORS
 from sqlalchemy.orm import Query
+from flask_redis import FlaskRedis
 
-#
-# OPTIONAL: Custom Query Class to handle soft deletes
-# 
+
 class SoftDeleteQuery(Query):
     """
     A custom query class that automatically excludes rows
     where deleted_at is not null, unless explicitly stated.
-    
+
     To include soft-deleted rows, use the with_deleted() method.
     MyModel.query.with_deleted().all()
     """
@@ -30,7 +29,7 @@ class SoftDeleteQuery(Query):
         """
         self._with_deleted = True
         return self
-    
+
     def _apply_deleted_criteria(self):
         """
         Add filters to exclude rows whose deleted_at is not null
@@ -53,8 +52,18 @@ class SoftDeleteQuery(Query):
 
 # Create the global Flask extensions
 db = SQLAlchemy(query_class=SoftDeleteQuery)
-# db = SQLAlchemy(session_options={"query_cls": SoftDeleteQuery})
 migrate = Migrate()
 jwt = JWTManager()
 swagger = Swagger()
 cors = CORS()
+redis_client = FlaskRedis()
+
+def init_extensions(app):
+    global celery
+
+    db.init_app(app)
+    migrate.init_app(app, db)
+    jwt.init_app(app)
+    cors.init_app(app)
+    swagger.init_app(app)
+    redis_client.init_app(app)

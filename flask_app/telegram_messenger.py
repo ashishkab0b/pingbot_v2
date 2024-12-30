@@ -5,12 +5,10 @@ from telegram.error import TelegramError
 import asyncio
 
 from logger_setup import setup_logger
-from dotenv import load_dotenv
 from flask import request, jsonify, Blueprint, current_app
 from extensions import db
 from models import Ping, PingTemplate, Study, Enrollment
 
-load_dotenv()
 
 logger = setup_logger()
 

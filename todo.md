@@ -13,6 +13,8 @@ MID PRIORITY
 - when user changes params of study, change upcoming pings (optionally)
 - otp links are not clickable
 - form validation (esp ping templates)
+- switch from using localstorage to store access tokens to using httponly
+- sanitize all input of javascript.
 
 LOWER PRIORITY
 - account.js

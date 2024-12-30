@@ -168,8 +168,6 @@ def api_participant_dashboard():
             en['signup_ts_local'] = signup_date.strftime("%Y-%m-%d")
             valid_enrollments.append(en)
             
-    
-            
     if not valid_enrollments:
         return jsonify({"error": "Invalid OTP"}), 400
     

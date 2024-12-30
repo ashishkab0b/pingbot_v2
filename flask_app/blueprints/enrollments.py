@@ -124,7 +124,7 @@ class MessageConstructor:
     def construct_ping_link(self):
         """
         Construct an HTML link for the ping. 
-        This is done at the point of sending the ping.
+        This is done at the point of sending the ping and is called by construct_message.
         """
         forwarding_code = self.ping.forwarding_code
         url = f"{current_app.config['BASE_URL']}/ping/{self.ping.id}?code={forwarding_code}"
@@ -136,7 +136,7 @@ class MessageConstructor:
     def construct_message(self):
         """
         Construct a message with a URL.
-        This is done at the point of sending the ping.
+        This is done at the point of sending the ping and is called by the task that is sending the ping.
         """
         message = self.ping.ping_template.message
         survey_link = self.construct_ping_link() if self.ping.ping_template.url else None
@@ -178,6 +178,11 @@ class MessageConstructor:
         
         self.url = url
         return url
+    
+    def construct_reminder(self):
+        message = "Reminder:\n" + self.construct_message()
+        self.message = message
+        return message
     
 
 

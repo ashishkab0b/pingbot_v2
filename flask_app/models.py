@@ -1,14 +1,13 @@
 import os
 from datetime import datetime, timezone
-from dotenv import load_dotenv
 from werkzeug.security import generate_password_hash, check_password_hash
 
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy import Interval
 from sqlalchemy.orm import Query
+from sqlalchemy.sql import func
 from extensions import db
 
-load_dotenv()
 
 # ------------------------------------------------
 # Enrollments Table
@@ -34,8 +33,8 @@ class Enrollment(db.Model):
     dashboard_otp_expire_ts = db.Column(db.DateTime(timezone=True), nullable=True)
     dashboard_otp_used = db.Column(db.Boolean, default=False, nullable=False)
     
-    created_at = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
-    updated_at = db.Column(db.DateTime(timezone=True), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = db.Column(db.DateTime(timezone=True), default=func.now(), nullable=False)
+    updated_at = db.Column(db.DateTime(timezone=True), onupdate=func.now())
     deleted_at = db.Column(db.DateTime(timezone=True), nullable=True)
 
     # Relationships
@@ -73,8 +72,8 @@ class UserStudy(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     study_id = db.Column(db.Integer, db.ForeignKey('studies.id'), nullable=False)
     role = db.Column(db.String(255), nullable=False)  # e.g. 'owner': sharing + editing + viewing, 'editor': editing + viewing, 'viewer': viewing only
-    created_at = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
-    updated_at = db.Column(db.DateTime(timezone=True), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = db.Column(db.DateTime(timezone=True), default=func.now(), nullable=False)
+    updated_at = db.Column(db.DateTime(timezone=True), onupdate=func.now())
     deleted_at = db.Column(db.DateTime(timezone=True), nullable=True)
 
     # Relationships
@@ -104,9 +103,9 @@ class User(db.Model):
     last_name = db.Column(db.String(100))
     institution = db.Column(db.String(255))
     prolific_token = db.Column(db.String(255))
-    last_login = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    created_at = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
-    updated_at = db.Column(db.DateTime(timezone=True), onupdate=lambda: datetime.now(timezone.utc))
+    last_login = db.Column(db.DateTime(timezone=True), default=func.now())
+    created_at = db.Column(db.DateTime(timezone=True), default=func.now(), nullable=False)
+    updated_at = db.Column(db.DateTime(timezone=True), onupdate=func.now())
     deleted_at = db.Column(db.DateTime(timezone=True), nullable=True)
 
     support = db.relationship("Support", back_populates="user", cascade="all, delete-orphan")
@@ -148,8 +147,8 @@ class Study(db.Model):
     internal_name = db.Column(db.String(255), nullable=False)
     code = db.Column(db.String(255), nullable=False, unique=True)
     contact_message = db.Column(db.Text)  # e.g., "Please contact the study team for any questions or concerns by emailing ashm@stanford.edu."
-    created_at = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
-    updated_at = db.Column(db.DateTime(timezone=True), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = db.Column(db.DateTime(timezone=True), default=func.now(), nullable=False)
+    updated_at = db.Column(db.DateTime(timezone=True), onupdate=func.now())
     deleted_at = db.Column(db.DateTime(timezone=True), nullable=True)
 
     # Relationships
@@ -184,8 +183,8 @@ class PingTemplate(db.Model):
     reminder_latency = db.Column(Interval)  # e.g., '1 hour', '30 minutes'
     expire_latency = db.Column(Interval)    # e.g., '24 hours'
     schedule = db.Column(JSONB, nullable=True)  # e.g.,  [{"begin_day_num": 1, "begin_time": "09:00", "end_day_num": 1, "end_time": "10:00"}, {"day_num": 2, "begin_time": "09:00", "end_time": "10:00"}]
-    created_at = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
-    updated_at = db.Column(db.DateTime(timezone=True), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = db.Column(db.DateTime(timezone=True), default=func.now(), nullable=False)
+    updated_at = db.Column(db.DateTime(timezone=True), onupdate=func.now())
     deleted_at = db.Column(db.DateTime(timezone=True), nullable=True)
 
     # Relationships
@@ -222,8 +221,10 @@ class Ping(db.Model):
     scheduled_ts = db.Column(db.DateTime(timezone=True), nullable=False)
     expire_ts = db.Column(db.DateTime(timezone=True))
     reminder_ts = db.Column(db.DateTime(timezone=True))
-    ping_sent = db.Column(db.Boolean, nullable=False, default=False)
-    reminder_sent = db.Column(db.Boolean, nullable=False, default=False)
+    # ping_sent = db.Column(db.Boolean, nullable=False, default=False)
+    sent_ts = db.Column(db.DateTime(timezone=True), nullable=True)
+    reminder_sent_ts = db.Column(db.DateTime(timezone=True), nullable=True)
+    # reminder_sent = db.Column(db.Boolean, nullable=False, default=False)
     first_clicked_ts = db.Column(db.DateTime(timezone=True))
     last_clicked_ts = db.Column(db.DateTime(timezone=True))
     
@@ -231,8 +232,8 @@ class Ping(db.Model):
     # url = db.Column(db.String(255), nullable=True)
     
     forwarding_code = db.Column(db.String(255), nullable=False, default=lambda: os.urandom(16).hex())
-    created_at = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
-    updated_at = db.Column(db.DateTime(timezone=True), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = db.Column(db.DateTime(timezone=True), default=func.now(), nullable=False)
+    updated_at = db.Column(db.DateTime(timezone=True), onupdate=func.now())
     deleted_at = db.Column(db.DateTime(timezone=True), nullable=True)
 
     # Relationships
@@ -276,14 +277,12 @@ class Support(db.Model):
     query_type = db.Column(db.String(255), nullable=False)
     resolved = db.Column(db.Boolean, default=False, nullable=False)
     notes = db.Column(db.Text)
-    created_at = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
-    updated_at = db.Column(db.DateTime(timezone=True), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = db.Column(db.DateTime(timezone=True), default=func.now(), nullable=False)
+    updated_at = db.Column(db.DateTime(timezone=True), onupdate=func.now())
     deleted_at = db.Column(db.DateTime(timezone=True), nullable=True)
     
     user = db.relationship("User", back_populates="support")
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    
-    __table_args__ = (db.UniqueConstraint('email', 'messages', name='unique_support_query'),)
     
     
     
