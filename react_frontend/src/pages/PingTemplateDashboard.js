@@ -1,3 +1,5 @@
+// PingTemplateDashboard.js
+
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useForm, FormProvider, Controller } from 'react-hook-form';
@@ -76,7 +78,9 @@ function PingTemplateDashboard() {
     },
   });
 
-  const { handleSubmit, reset } = methods;
+  const { handleSubmit, reset, watch } = methods;
+
+  const studyLength = watch('studyLength');
 
   // Fetch existing Ping Templates
   useEffect(() => {
@@ -122,7 +126,7 @@ function PingTemplateDashboard() {
   // Build schedule JSON for submission
   const buildScheduleJSON = (data) => {
     if (data.scheduleMode === 'everyDay') {
-      const totalDays = data.studyLength + 1;
+      const totalDays = parseInt(data.studyLength, 10) + 1;
       const scheduleArray = [];
       const startingDayNum = 1;
       for (let day = startingDayNum; day < totalDays; day++) {
@@ -207,6 +211,63 @@ function PingTemplateDashboard() {
     return <div>Error: Missing studyId in the URL.</div>;
   }
 
+  // Function to format the schedule for display
+  const formatSchedule = (schedule) => {
+    if (!schedule || schedule.length === 0) {
+      return 'No schedule';
+    }
+
+    // Check if the schedule is the same every day
+    const uniqueDays = [...new Set(schedule.map((entry) => entry.begin_day_num))];
+    const uniqueTimes = [
+      ...new Set(
+        schedule.map(
+          (entry) =>
+            `${entry.begin_time} - ${entry.end_time}${
+              entry.end_day_num !== entry.begin_day_num ? ' (Next Day)' : ''
+            }`
+        )
+      ),
+    ];
+
+    if (uniqueDays.length === parseInt(studyLength, 10) && uniqueTimes.length === 1) {
+      // Schedule applies to every day with the same time
+      return `Every day: ${uniqueTimes[0]}`;
+    } else {
+      // List individual days (limit to first 3 for brevity)
+      return (
+        schedule
+          .slice(0, 3)
+          .map((entry) => {
+            const dayString = `Day ${entry.begin_day_num}: ${entry.begin_time} - ${entry.end_time}`;
+            return entry.end_day_num !== entry.begin_day_num
+              ? `${dayString} (ends Day ${entry.end_day_num})`
+              : dayString;
+          })
+          .join('; ') + (schedule.length > 3 ? ' ...' : '')
+      );
+    }
+  };
+
+  // Function to format detailed schedule for tooltip
+  const formatDetailedSchedule = (schedule) => {
+    if (!schedule || schedule.length === 0) {
+      return 'No schedule';
+    }
+
+    return schedule
+      .map((entry) => {
+        const { begin_day_num, begin_time, end_day_num, end_time } = entry;
+        let detail = `Day ${begin_day_num}`;
+        if (begin_day_num !== end_day_num) {
+          detail += ` to Day ${end_day_num}`;
+        }
+        detail += `: ${begin_time} - ${end_time}`;
+        return detail;
+      })
+      .join('\n');
+  };
+
   return (
     <div style={{ margin: '2rem' }}>
       <Typography variant="h4" gutterBottom>
@@ -289,7 +350,9 @@ function PingTemplateDashboard() {
                           required
                           error={!!error}
                           helperText={
-                            error ? error.message : 'Enter the text that will be displayed for the URL.'
+                            error
+                              ? error.message
+                              : 'Enter the text that will be displayed for the URL.'
                           }
                         />
                       )}
@@ -303,7 +366,7 @@ function PingTemplateDashboard() {
                     name="message"
                     control={methods.control}
                     rules={{ required: 'Message is required' }}
-                    render={({ field }) => (
+                    render={({ field, fieldState: { error } }) => (
                       <VariableAutoCompleteTextarea
                         {...field}
                         label="Message"
@@ -428,7 +491,7 @@ function PingTemplateDashboard() {
             url: pt.url,
             reminderLatency: pt.reminder_latency,
             expireLatency: pt.expire_latency,
-            schedule: JSON.stringify(pt.schedule),
+            scheduleData: pt.schedule, // Keep raw schedule data
           }))}
           columns={[
             { label: 'ID', key: 'id' },
@@ -437,7 +500,15 @@ function PingTemplateDashboard() {
             { label: 'URL', key: 'url' },
             { label: 'Reminder Latency', key: 'reminderLatency' },
             { label: 'Expire Latency', key: 'expireLatency' },
-            { label: 'Schedule', key: 'schedule' },
+            {
+              label: 'Schedule',
+              key: 'schedule',
+              renderCell: (row) => (
+                <Tooltip title={formatDetailedSchedule(row.scheduleData)}>
+                  <span>{formatSchedule(row.scheduleData)}</span>
+                </Tooltip>
+              ),
+            },
           ]}
           loading={loading}
           error={error}

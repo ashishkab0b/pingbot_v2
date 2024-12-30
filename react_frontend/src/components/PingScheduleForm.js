@@ -11,6 +11,7 @@ import {
   Typography,
   Paper,
   Box,
+  Tooltip,
 } from '@mui/material';
 
 /**
@@ -25,6 +26,7 @@ function PingScheduleForm() {
     watch,
     setValue,
     control,
+    formState: { errors },
   } = useFormContext();
 
   const scheduleMode = watch('scheduleMode');
@@ -123,6 +125,18 @@ function PingScheduleForm() {
   };
 
   /**
+   * Time validation
+   */
+  const validateTime = (value) => {
+    // Simple validation to check if the time is in correct format
+    const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)$/;
+    if (!value || !timeRegex.test(value)) {
+      return 'Please enter a valid time in 24-hour format (e.g., 14:00 for 2:00 PM)';
+    }
+    return true;
+  };
+
+  /**
    * RENDER
    */
   return (
@@ -139,7 +153,11 @@ function PingScheduleForm() {
                 onChange={() => handleSwitchMode('everyDay')}
               />
             }
-            label="Every Day"
+            label={
+              <Tooltip title="Apply the same schedule to every day of the study starting on the day after the participant signs up.">
+                <span>Every Day</span>
+              </Tooltip>
+            }
           />
           <FormControlLabel
             control={
@@ -148,7 +166,11 @@ function PingScheduleForm() {
                 onChange={() => handleSwitchMode('perDay')}
               />
             }
-            label="Per Day"
+            label={
+              <Tooltip title="Customize the schedule for each day of the study for more granular control.">
+                <span>Per Day</span>
+              </Tooltip>
+            }
           />
         </Grid>
       </Grid>
@@ -156,6 +178,15 @@ function PingScheduleForm() {
       {/* Every Day Mode */}
       {scheduleMode === 'everyDay' && (
         <Box sx={{ padding: 2, border: '1px solid #ddd', marginTop: 2 }}>
+          <Typography
+            variant="body2"
+            color="textSecondary"
+            gutterBottom
+            sx={{ marginBottom: 2 }}
+          >
+            This schedule will apply to every day of the study starting on the day after the participant signs up.
+          </Typography>
+
           <Grid container spacing={2}>
             <Grid item xs={12}>
               <TextField
@@ -179,6 +210,14 @@ function PingScheduleForm() {
                       arr[i].beginTime = e.target.value;
                       setValue('everyDayPings', arr);
                     }}
+                    onBlur={(e) => {
+                      if (!e.target.value) {
+                        const arr = [...everyDayPings];
+                        arr[i].beginTime = '00:00';
+                        setValue('everyDayPings', arr);
+                      }
+                    }}
+                    helperText="24-hour format (e.g., 14:00 for 2:00 PM)"
                     fullWidth
                   />
                 </Grid>
@@ -192,6 +231,14 @@ function PingScheduleForm() {
                       arr[i].endTime = e.target.value;
                       setValue('everyDayPings', arr);
                     }}
+                    onBlur={(e) => {
+                      if (!e.target.value) {
+                        const arr = [...everyDayPings];
+                        arr[i].endTime = '23:59';
+                        setValue('everyDayPings', arr);
+                      }
+                    }}
+                    helperText="24-hour format (e.g., 14:00 for 2:00 PM)"
                     fullWidth
                   />
                 </Grid>
@@ -207,7 +254,11 @@ function PingScheduleForm() {
                         }}
                       />
                     }
-                    label="Next Day?"
+                    label={
+                      <Tooltip title="Select if 'End Time' value refers to the next day following 'Start Time'">
+                        <span>Next Day?</span>
+                      </Tooltip>
+                    }
                   />
                 </Grid>
               </React.Fragment>
@@ -219,6 +270,16 @@ function PingScheduleForm() {
       {/* Per Day Mode */}
       {scheduleMode === 'perDay' && (
         <Box sx={{ padding: 2, border: '1px solid #ddd', marginTop: 2 }}>
+
+          <Typography
+            variant="body2"
+            color="textSecondary"
+            gutterBottom
+            sx={{ marginBottom: 2 }}
+          >
+            Customize the schedule for each day of the study for more granular control.
+          </Typography>
+
           {perDaySchedule.map((dayObj, idx) => (
             <Paper key={idx} sx={{ padding: 2, marginBottom: 2 }}>
               <FormControlLabel
@@ -253,6 +314,14 @@ function PingScheduleForm() {
                               newSched[idx].pings[pingIndex].beginTime = e.target.value;
                               setValue('perDaySchedule', newSched);
                             }}
+                            onBlur={(e) => {
+                              if (!e.target.value) {
+                                const newSched = [...perDaySchedule];
+                                newSched[idx].pings[pingIndex].beginTime = '00:00';
+                                setValue('perDaySchedule', newSched);
+                              }
+                            }}
+                            helperText="24-hour format (e.g., 14:00 for 2:00 PM)"
                             fullWidth
                           />
                         </Grid>
@@ -266,6 +335,14 @@ function PingScheduleForm() {
                               newSched[idx].pings[pingIndex].endTime = e.target.value;
                               setValue('perDaySchedule', newSched);
                             }}
+                            onBlur={(e) => {
+                              if (!e.target.value) {
+                                const newSched = [...perDaySchedule];
+                                newSched[idx].pings[pingIndex].endTime = '23:59';
+                                setValue('perDaySchedule', newSched);
+                              }
+                            }}
+                            helperText="24-hour format (e.g., 14:00 for 2:00 PM)"
                             fullWidth
                           />
                         </Grid>
@@ -282,7 +359,11 @@ function PingScheduleForm() {
                                 }}
                               />
                             }
-                            label="Next Day?"
+                            label={
+                              <Tooltip title="Select if 'End Time' value refers to the next day following 'Start Time'">
+                                <span>Next Day?</span>
+                              </Tooltip>
+                            }
                           />
                         </Grid>
                         <Grid item xs={12} sm={3}>

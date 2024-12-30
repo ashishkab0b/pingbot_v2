@@ -1,3 +1,5 @@
+// DataTable.js
+
 import React, { useState, useMemo, useEffect } from 'react';
 import {
   Table,
@@ -35,13 +37,13 @@ function DataTable({
   // State variables for sorting
   const [sortColumn, setSortColumn] = useState(null);
   const [sortDirection, setSortDirection] = useState('asc');
-  
+
   // State variables for search
   const [searchQuery, setSearchQuery] = useState('');
-  
+
   // State variables for column visibility
   const [visibleColumns, setVisibleColumns] = useState(columns);
-  
+
   // State for column visibility menu
   const [anchorEl, setAnchorEl] = useState(null);
 
@@ -58,12 +60,12 @@ function DataTable({
   // Handle changes in column visibility
   const handleColumnVisibilityChange = (key) => {
     setVisibleColumns((prevVisibleColumns) => {
-      if (prevVisibleColumns.find(col => col.key === key)) {
+      if (prevVisibleColumns.find((col) => col.key === key)) {
         // Hide the column
-        return prevVisibleColumns.filter(col => col.key !== key);
+        return prevVisibleColumns.filter((col) => col.key !== key);
       } else {
         // Show the column
-        const newColumn = columns.find(col => col.key === key);
+        const newColumn = columns.find((col) => col.key === key);
         return [...prevVisibleColumns, newColumn];
       }
     });
@@ -169,9 +171,7 @@ function DataTable({
 
   // Render empty data state
   if (!data.length) {
-    return (
-      <Typography sx={{ padding: '1rem' }}>No data found.</Typography>
-    );
+    return <Typography sx={{ padding: '1rem' }}>No data found.</Typography>;
   }
 
   // Main render
@@ -213,9 +213,7 @@ function DataTable({
                 <FormControlLabel
                   control={
                     <Checkbox
-                      checked={
-                        !!visibleColumns.find((vc) => vc.key === col.key)
-                      }
+                      checked={!!visibleColumns.find((vc) => vc.key === col.key)}
                       onChange={() => handleColumnVisibilityChange(col.key)}
                     />
                   }
@@ -259,7 +257,9 @@ function DataTable({
                 sx={{ cursor: onRowClick ? 'pointer' : 'default' }}
               >
                 {visibleColumns.map((col, cellIndex) => (
-                  <TableCell key={cellIndex}>{row[col.key]}</TableCell>
+                  <TableCell key={cellIndex}>
+                    {col.renderCell ? col.renderCell(row) : row[col.key]}
+                  </TableCell>
                 ))}
                 {actionsColumn && (
                   <TableCell>{actionsColumn(row)}</TableCell>
