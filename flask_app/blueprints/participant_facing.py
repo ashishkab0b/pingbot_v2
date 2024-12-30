@@ -45,7 +45,7 @@ def ping_forwarder(ping_id):
     # Update the ping with click timestamps
     try:
         # First clicked timestamp
-        if not ping.first_clicked_ts:
+        if not hasattr(ping, 'first_clicked_ts') or not ping.first_clicked_ts:
             ping.first_clicked_ts = datetime.now(timezone.utc)
             
         # Last clicked timestamp
@@ -60,7 +60,7 @@ def ping_forwarder(ping_id):
         return jsonify({"error": "Internal server error."}), 500
     
     # Check if expired and return message if so
-    if ping.expiry_ts and ping.expiry_ts < datetime.now(timezone.utc):
+    if hasattr(ping, 'expiry_ts') and ping.expiry_ts < datetime.now(timezone.utc):
         current_app.logger.info(f"Ping {ping.id} has expired.")
         return current_app.config["PING_EXPIRED_MESSAGE"], 200
     
