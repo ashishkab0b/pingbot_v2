@@ -7,7 +7,7 @@ ARG GID=1000
 
 # Create a non-root user and group with the specified UID and GID
 RUN groupadd -g $GID appuser && \
-    useradd -m -u $UID -g app user appuser
+    useradd -m -u $UID -g appuser appuser
 
 # Set the working directory
 WORKDIR /app
