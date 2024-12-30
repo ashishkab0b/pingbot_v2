@@ -51,9 +51,9 @@ const NavBar = () => {
             <Button color="inherit" component={RouterLink} to="/studies">
               Studies
             </Button>
-            <Button color="inherit" component={RouterLink} to="/account">
+            {/* <Button color="inherit" component={RouterLink} to="/account">
               Account
-            </Button>
+            </Button> */}
             <Button color="inherit" onClick={handleLogout}>
               Log Out
             </Button>
