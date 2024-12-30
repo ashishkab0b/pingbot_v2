@@ -1,39 +1,5 @@
 services:
 
-  celery-worker:
-    build:
-      context: ./flask_app
-      dockerfile: Dockerfile
-    command: celery -A celery_app.celery worker --loglevel=info
-    volumes:
-      - ./flask_app:/app
-    env_file:
-      - ./flask_app/.env
-    environment:
-      - FLASK_ENV=production
-      - PYTHONPATH=/app
-    working_dir: /app
-    depends_on:
-      - redis
-      - flask-backend
-
-  celery-beat:
-    build:
-      context: ./flask_app
-      dockerfile: Dockerfile
-    command: celery -A celery_app.celery beat --loglevel=info
-    volumes:
-      - ./flask_app:/app
-    env_file:
-      - ./flask_app/.env
-    environment:
-      - FLASK_ENV=production
-      - PYTHONPATH=/app
-    working_dir: /app
-    depends_on:
-      - redis
-      - flask-backend
-
   redis:
     image: redis:latest
     container_name: "redis_db"
@@ -50,7 +16,7 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ./flask_app/logs:/app/logs
+      - ./logs/flask:/app/logs
     env_file:
       - ./flask_app/.env
     environment:
@@ -58,13 +24,52 @@ services:
     depends_on:
       - redis
 
+  celery-worker:
+    build:
+      context: ./flask_app
+      dockerfile: Dockerfile
+      args:
+        UID: ${APP_UID}
+        GID: ${APP_GID}
+    command: celery -A celery_app.celery worker --loglevel=info
+    volumes:
+      - ./logs/celery:/app/logs
+    env_file:
+      - ./flask_app/.env
+    environment:
+      - FLASK_ENV=production
+      - PYTHONPATH=/app
+    working_dir: /app
+    depends_on:
+      - redis
+      - flask-backend
+
+  celery-beat:
+    build:
+      context: ./flask_app
+      dockerfile: Dockerfile
+      args:
+        UID: ${APP_UID}
+        GID: ${APP_GID}
+    command: celery -A celery_app.celery beat --loglevel=info
+    volumes:
+      - ./logs/celery:/app/logs
+    env_file:
+      - ./flask_app/.env
+    environment:
+      - FLASK_ENV=production
+      - PYTHONPATH=/app
+    working_dir: /app
+    depends_on:
+      - redis
+      - flask-backend
+
   telegram-bot:
     build:
       context: ./bot
       dockerfile: Dockerfile
     volumes:
-      - ./bot:/app
-      - ./bot/logs:/app/logs
+      - ./logs/bot:/app/logs
     env_file:
       - ./bot/.env
     environment:
@@ -75,12 +80,12 @@ services:
 
   nginx:
     build:
-      context: .
-      dockerfile: ./nginx/Dockerfile
+      context: ./nginx
+      dockerfile: Dockerfile
     ports:
       - "80:80"
     volumes:
-      - ./nginx/logs:/var/log/nginx
+      - ./logs/nginx:/var/log/nginx
     depends_on:
       - flask-backend
 
