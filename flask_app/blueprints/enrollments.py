@@ -107,7 +107,7 @@ class MessageConstructor:
     MESSAGE_VARIABLES = URL_VARIABLES | {
         "<URL>": {
             "description": "The URL to include in the message.",
-            "db_table": "pings",
+            "db_table": "ping_templates",
             "db_column": "url",
         },
     }
