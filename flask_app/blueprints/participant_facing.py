@@ -72,7 +72,7 @@ def ping_forwarder(ping_id):
 
 
     
-@particpant_facing_bp.route('/api/signup', methods=['POST'])
+@particpant_facing_bp.route('/signup', methods=['POST'])
 def study_signup():
     '''
     This endpoint is used to collect the timezone of a participant and enroll them in a study.
@@ -136,7 +136,7 @@ def study_signup():
     }), 200
 
 
-@particpant_facing_bp.route('/api/participant_dashboard', methods=['GET'])
+@particpant_facing_bp.route('/participant_dashboard', methods=['GET'])
 def api_participant_dashboard():
     '''
     This endpoint is used to provide data to render the participant dashboard.

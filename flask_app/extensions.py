@@ -64,6 +64,17 @@ def init_extensions(app):
     db.init_app(app)
     migrate.init_app(app, db)
     jwt.init_app(app)
-    cors.init_app(app)
+    cors.init_app(app, resources={
+        r"/api/*": {
+            "origins": [
+                "http://emapingbot.com",
+                "https://emapingbot.com",  # Include both HTTP and HTTPS
+                "http://localhost:3000",  # Allow localhost for local testing
+            ],
+            "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+            "allow_headers": ["Authorization", "Content-Type"],
+            "supports_credentials": True,  # Include this if you need credentials like cookies
+        }
+    })
     swagger.init_app(app)
     redis_client.init_app(app)

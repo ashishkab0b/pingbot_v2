@@ -9,20 +9,21 @@ class Config:
     
     BOT_SECRET_KEY=os.getenv('BOT_SECRET_KEY')
     TELEGRAM_SECRET_KEY=os.getenv('TELEGRAM_SECRET_KEY')
-    FRONTEND_BASE_URL="http://localhost:3000"
     
     
 
 class DevelopmentConfig(Config):
     
     DEBUG = True
+    FRONTEND_BASE_URL="http://localhost:3000"
     FLASK_APP_BOT_BASE_URL="http://localhost:8000/api/bot"
     
     
 class ProductionConfig(Config):
         
     DEBUG = False
-    FLASK_APP_BOT_BASE_URL="http://flask-backend:8000/api/bot"
+    FRONTEND_BASE_URL="http://emapingbot.com"
+    FLASK_APP_BOT_BASE_URL="http://emapingbot.com/api/bot"
         
     
     

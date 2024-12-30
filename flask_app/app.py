@@ -49,7 +49,7 @@ def create_app(config):
     app.register_blueprint(ping_templates_bp, url_prefix='/api')
     app.register_blueprint(enrollments_bp, url_prefix='/api')
     app.register_blueprint(pings_bp, url_prefix='/api')
-    app.register_blueprint(particpant_facing_bp, url_prefix='/')
+    app.register_blueprint(particpant_facing_bp, url_prefix='/api')
 
     # Health Check
     @app.route('/health', methods=['GET'])
