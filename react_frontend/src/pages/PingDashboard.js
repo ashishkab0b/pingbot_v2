@@ -6,6 +6,7 @@ import { useStudy } from '../context/StudyContext';
 import DataTable from '../components/DataTable';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { IconButton, Tooltip } from '@mui/material';
+import { Typography } from '@mui/material';
 
 function PingDashboard() {
   const { studyId } = useParams();
@@ -140,7 +141,10 @@ function PingDashboard() {
   return (
     <div style={{ margin: '2rem' }}>
 
-      <h1>Study: {study.internal_name}</h1>
+      
+      <Typography variant="h4" gutterBottom>
+        Study: {study?.internal_name || 'Loading...'}
+      </Typography>
       <StudyNav />
       {/* <h1>Pings for {study?.internal_name || 'Loading...'}</h1> */}
 

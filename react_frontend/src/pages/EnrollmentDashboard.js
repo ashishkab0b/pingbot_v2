@@ -8,6 +8,7 @@ import { IconButton, Tooltip, Box } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import PersonRemoveIcon from '@mui/icons-material/PersonRemove';
+import Typography from '@mui/material/Typography';
 
 function EnrollmentDashboard() {
   const { studyId } = useParams();
@@ -158,7 +159,10 @@ function EnrollmentDashboard() {
   return (
     <div style={{ margin: '2rem' }}>
 
-      <h1>Study: {study.internal_name}</h1>
+      
+      <Typography variant="h4" gutterBottom>
+        Study: {study?.internal_name || 'Loading...'}
+      </Typography>
       <StudyNav />
       {/* <h1>Participants for {study?.internal_name || 'Loading...'}</h1> */}
 

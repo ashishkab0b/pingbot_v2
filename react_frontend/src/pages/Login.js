@@ -1,10 +1,19 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import { loginUser } from '../api/auth';
+import {
+  TextField,
+  Button,
+  Typography,
+  Box,
+  Link,
+  Alert,
+} from '@mui/material';
 
 function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState(null); // For handling login errors
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -18,40 +27,70 @@ function Login() {
       navigate('/studies');
     } catch (error) {
       console.error(error);
-      alert('Invalid credentials. Please try again.');
+      setError('Invalid credentials. Please try again.');
     }
   };
 
   return (
-    <div style={{ margin: '2rem' }}>
-      <h1>Login</h1>
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label>Email:</label><br />
-          <input 
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)} 
-            required
-          />
-        </div>
-        <div>
-          <label>Password:</label><br />
-          <input 
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)} 
-            required
-          />
-        </div>
-        <button style={{ marginTop: '1rem' }} type="submit">
+    <Box
+      sx={{
+        maxWidth: 400,
+        margin: '2rem auto',
+        padding: '2rem',
+        borderRadius: '8px',
+        boxShadow: 3,
+        backgroundColor: '#fff',
+      }}
+    >
+      <Typography variant="h4" component="h1" gutterBottom align="center">
+        Login
+      </Typography>
+
+      {error && (
+        <Alert severity="error" sx={{ marginBottom: '1rem' }}>
+          {error}
+        </Alert>
+      )}
+
+      <Box component="form" onSubmit={handleSubmit} noValidate>
+        <TextField
+          label="Email"
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+          fullWidth
+          margin="normal"
+        />
+
+        <TextField
+          label="Password"
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+          fullWidth
+          margin="normal"
+        />
+
+        <Button
+          type="submit"
+          variant="contained"
+          color="primary"
+          fullWidth
+          sx={{ marginTop: '1rem' }}
+        >
           Login
-        </button>
-        <div>
-          <p>Don't have an account? <a href="/register">Register</a></p>
-        </div>
-      </form>
-    </div>
+        </Button>
+
+        <Typography variant="body2" align="center" sx={{ marginTop: '1rem' }}>
+          Don't have an account?{' '}
+          <Link component={RouterLink} to="/register">
+            Register
+          </Link>
+        </Typography>
+      </Box>
+    </Box>
   );
 }
 

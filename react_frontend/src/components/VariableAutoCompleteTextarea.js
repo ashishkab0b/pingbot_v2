@@ -1,6 +1,16 @@
+// VariableAutoCompleteTextarea.js
 import React, { useState, useRef } from 'react';
+import { TextField, Paper, List, ListItem, ListItemText } from '@mui/material';
 
-const VariableAutoCompleteTextarea = ({ value, onChange, variableOptions }) => {
+const VariableAutoCompleteTextarea = ({
+  value,
+  onChange,
+  variableOptions,
+  label,
+  error,
+  helperText,
+  variant = 'outlined',
+}) => {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [filteredOptions, setFilteredOptions] = useState([]);
   const [cursorPosition, setCursorPosition] = useState(null);
@@ -46,53 +56,60 @@ const VariableAutoCompleteTextarea = ({ value, onChange, variableOptions }) => {
     }
   };
 
+  const handleBlur = () => {
+    // Delay hiding suggestions to allow click event to register
+    setTimeout(() => setShowSuggestions(false), 100);
+  };
+
   return (
     <div style={{ position: 'relative' }}>
-      {/* Textarea for typing */}
-      <textarea
-        ref={textareaRef}
-        rows={3}
-        style={{ width: '100%' }}
+      <TextField
+        label={label}
+        multiline
+        minRows={3}
+        variant={variant}
+        fullWidth
+        inputRef={textareaRef}
         value={value}
         onChange={handleInputChange}
         onClick={(e) => setCursorPosition(e.target.selectionStart)}
         onKeyDown={(e) => setCursorPosition(e.target.selectionStart)}
-        onBlur={() => setTimeout(() => setShowSuggestions(false), 200)} // Delay to allow suggestion clicks
+        onBlur={handleBlur}
+        error={error}
+        helperText={helperText}
       />
 
       {/* Suggestions dropdown */}
       {showSuggestions && (
-        <div
+        <Paper
           style={{
             position: 'absolute',
-            top: '100%',
+            top: textareaRef.current?.offsetHeight || 0,
             left: 0,
-            background: '#fff',
-            border: '1px solid #ccc',
-            width: '100%',
+            right: 0,
             zIndex: 999,
             maxHeight: '150px',
             overflowY: 'auto',
           }}
         >
-          {filteredOptions.length > 0 ? (
-            filteredOptions.map((option, index) => (
-              <div
-                key={index}
-                style={{
-                  padding: '0.5rem',
-                  cursor: 'pointer',
-                  borderBottom: '1px solid #eee',
-                }}
-                onMouseDown={() => handleSuggestionClick(option)}
-              >
-                {option}
-              </div>
-            ))
-          ) : (
-            <div style={{ padding: '0.5rem', color: '#999' }}>No suggestions</div>
-          )}
-        </div>
+          <List dense>
+            {filteredOptions.length > 0 ? (
+              filteredOptions.map((option, index) => (
+                <ListItem
+                  button
+                  key={index}
+                  onMouseDown={() => handleSuggestionClick(option)}
+                >
+                  <ListItemText primary={option} />
+                </ListItem>
+              ))
+            ) : (
+              <ListItem>
+                <ListItemText primary="No suggestions" />
+              </ListItem>
+            )}
+          </List>
+        </Paper>
       )}
     </div>
   );

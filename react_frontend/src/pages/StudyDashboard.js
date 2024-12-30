@@ -3,7 +3,15 @@ import { useNavigate } from 'react-router-dom';
 import DataTable from '../components/DataTable';
 import axios from '../api/axios';
 import DeleteIcon from '@mui/icons-material/Delete';
-import { IconButton, Tooltip } from '@mui/material';
+import {
+  IconButton,
+  Tooltip,
+  Button,
+  TextField,
+  Typography,
+  Box,
+  Grid,
+} from '@mui/material';
 
 function StudyDashboard() {
   const navigate = useNavigate();
@@ -22,12 +30,11 @@ function StudyDashboard() {
   const [perPage] = useState(5);
   const [totalPages, setTotalPages] = useState(1);
 
-  // -----------------------------------------
   // Fields for creating a new study
-  // -----------------------------------------
   const [publicName, setPublicName] = useState('');
   const [internalName, setInternalName] = useState('');
   const [contactMessage, setContactMessage] = useState('');
+  const [errors, setErrors] = useState({}); // For validation errors
 
   // Track whether `internalName` was manually edited
   const [internalNameEdited, setInternalNameEdited] = useState(false);
@@ -50,17 +57,13 @@ function StudyDashboard() {
   // Toggle whether the "Create Study" form is shown
   const [showCreateForm, setShowCreateForm] = useState(false);
 
-  // -----------------------------------------
   // Fetch studies on mount or when page changes
-  // -----------------------------------------
   useEffect(() => {
     fetchStudies(page, perPage);
     // eslint-disable-next-line
   }, [page]);
 
-  // -----------------------------------------
   // API: GET /studies
-  // -----------------------------------------
   const fetchStudies = async (currentPage, itemsPerPage) => {
     setLoading(true);
     setError(null);
@@ -78,11 +81,10 @@ function StudyDashboard() {
     }
   };
 
-  // -----------------------------------------
   // API: POST /studies (create study)
-  // -----------------------------------------
   const handleCreateStudy = async (e) => {
     e.preventDefault();
+    setErrors({}); // Reset errors
     try {
       await axios.post('/studies', {
         public_name: publicName,
@@ -101,30 +103,30 @@ function StudyDashboard() {
       // Refresh the studies list
       fetchStudies(page, perPage);
     } catch (err) {
-      console.error(err);
-      setError('Error creating study');
+      if (err.response && err.response.status === 400) {
+        setErrors(err.response.data.errors || {});
+      } else {
+        console.error(err);
+        setError('Error creating study');
+      }
     }
   };
 
-    // -----------------------------------------
-    // API: DELETE /studies/:id
-    // -----------------------------------------
-    const handleDeleteStudy = async (studyId) => {
-      if (!window.confirm('Are you sure you want to delete this study?')) return;
+  // API: DELETE /studies/:id
+  const handleDeleteStudy = async (studyId) => {
+    if (!window.confirm('Are you sure you want to delete this study?')) return;
 
-      try {
-        await axios.delete(`/studies/${studyId}`);
-        // Refresh studies after deletion
-        fetchStudies(page, perPage);
-      } catch (err) {
-        console.error(err);
-        setError('Error deleting study');
-      }
-    };
+    try {
+      await axios.delete(`/studies/${studyId}`);
+      // Refresh studies after deletion
+      fetchStudies(page, perPage);
+    } catch (err) {
+      console.error(err);
+      setError('Error deleting study');
+    }
+  };
 
-  // -----------------------------------------
   // Pagination
-  // -----------------------------------------
   const handlePreviousPage = () => {
     if (page > 1) setPage((prev) => prev - 1);
   };
@@ -133,70 +135,98 @@ function StudyDashboard() {
     if (page < totalPages) setPage((prev) => prev + 1);
   };
 
-  // -----------------------------------------
   // Render
-  // -----------------------------------------
   return (
     <div style={{ margin: '2rem' }}>
-      <h1>Studies Dashboard</h1>
+      <Typography variant="h4" gutterBottom>
+        Studies Dashboard
+      </Typography>
 
-      <button
-        style={{ marginBottom: '1rem' }}
+      <Button
+        variant="contained"
+        color={showCreateForm ? 'secondary' : 'primary'}
         onClick={() => setShowCreateForm(!showCreateForm)}
+        sx={{ marginBottom: '1rem' }}
       >
         {showCreateForm ? 'Cancel' : 'Create New Study'}
-      </button>
+      </Button>
 
       {/* Conditionally render the "Create Study" form */}
       {showCreateForm && (
-        <section style={{ marginBottom: '2rem' }}>
-          <h2>Create a New Study</h2>
-          <form onSubmit={handleCreateStudy} style={{ maxWidth: '400px' }}>
-            <div style={{ marginBottom: '1rem' }}>
-              <label htmlFor="publicName">Public Name</label><br />
-              <span className="form-description">
-                This label will be used to identify the study to participants.
-              </span><br />
-              <input
-                id="publicName"
-                type="text"
-                value={publicName}
-                onChange={handlePublicNameChange}
-                required
-              />
-            </div>
+        <Box component="section" sx={{ marginBottom: '2rem' }}>
+          <Typography variant="h5" gutterBottom>
+            Create a New Study
+          </Typography>
+          <Box
+            component="form"
+            onSubmit={handleCreateStudy}
+            sx={{ maxWidth: 600 }}
+            noValidate
+            autoComplete="off"
+          >
+            <Grid container spacing={2}>
+              {/* Public Name */}
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  id="publicName"
+                  label="Public Name"
+                  value={publicName}
+                  onChange={handlePublicNameChange}
+                  required
+                  helperText={
+                    errors.public_name ||
+                    'This label will be used to identify the study to participants.'
+                  }
+                  error={Boolean(errors.public_name)}
+                />
+              </Grid>
 
-            <div style={{ marginBottom: '1rem' }}>
-              <label htmlFor="internalName">Internal Name</label><br />
-              <span className="form-description">
-                This label will be used to identify the study internally.
-              </span><br />
-              <input
-                id="internalName"
-                type="text"
-                value={internalName}
-                onChange={handleInternalNameChange}
-                required
-              />
-            </div>
+              {/* Internal Name */}
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  id="internalName"
+                  label="Internal Name"
+                  value={internalName}
+                  onChange={handleInternalNameChange}
+                  required
+                  helperText={
+                    errors.internal_name ||
+                    'This label will be used to identify the study internally.'
+                  }
+                  error={Boolean(errors.internal_name)}
+                />
+              </Grid>
 
-            <div style={{ marginBottom: '1rem' }}>
-              <label htmlFor="contactMessage">Contact Message</label><br />
-              <span className="form-description">
-                This is a message that can be accessed by participants in order to find information on how they should contact you.<br />
-              </span><br />
-              <textarea
-                id="contactMessage"
-                placeholder={`For questions or concerns about the study, please email the researchers at ${userEmail || '...'}`}
-                rows="4"
-                value={contactMessage}
-                onChange={(e) => setContactMessage(e.target.value)}
-              />
-            </div>
+              {/* Contact Message */}
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  id="contactMessage"
+                  label="Contact Message"
+                  value={contactMessage}
+                  onChange={(e) => setContactMessage(e.target.value)}
+                  placeholder={`For questions or concerns about the study, please email the researchers at ${userEmail || '...'}`}
+                  multiline
+                  rows={4}
+                  helperText={
+                    errors.contact_message ||
+                    'This message provides participants information on how to contact you.'
+                  }
+                  error={Boolean(errors.contact_message)}
+                />
+              </Grid>
 
-            <button type="submit">Create Study</button>
-          </form>
-        </section>
+              {/* Submit Button */}
+              <Grid item xs={12}>
+                <Button type="submit" variant="contained" color="primary">
+                  Create Study
+                </Button>
+              </Grid>
+            </Grid>
+          </Box>
+        </Box>
       )}
 
       {/* Display the studies in a simplified table */}

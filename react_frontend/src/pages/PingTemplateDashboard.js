@@ -1,50 +1,51 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useForm, FormProvider, Controller } from 'react-hook-form';
-import axios from '../api/axios'; 
+import axios from '../api/axios';
 import StudyNav from '../components/StudyNav';
 import { useStudy } from '../context/StudyContext';
 import PingScheduleForm from '../components/PingScheduleForm';
 import VariableAutoCompleteTextarea from '../components/VariableAutoCompleteTextarea';
 import DataTable from '../components/DataTable';
 import DeleteIcon from '@mui/icons-material/Delete';
-import { IconButton, Tooltip } from '@mui/material';
-
+import {
+  IconButton,
+  Tooltip,
+  Button,
+  TextField,
+  Typography,
+  Checkbox,
+  FormControlLabel,
+  Box,
+  Grid,
+} from '@mui/material';
 
 function PingTemplateDashboard() {
+  const { studyId } = useParams();
+  const study = useStudy();
 
-
-  const [message, setMessage] = useState('');
-  const [url, setUrl] = useState('');
-
-// Variables for each field
-const urlVariables = [
-  '<PING_ID>', 
-  '<REMINDER_TIME>', 
-  '<SCHEDULED_TIME>', 
-  '<EXPIRE_TIME>', 
-  '<DAY_NUM>', 
-  '<PING_TEMPLATE_ID>', 
-  '<PING_TEMPLATE_NAME>', 
-  '<STUDY_ID>', 
-  '<STUDY_PUBLIC_NAME>', 
-  '<STUDY_INTERNAL_NAME>', 
-  '<STUDY_CONTACT_MSG>', 
-  '<PID>',
-  '<ENROLLMENT_ID>', 
-  '<ENROLLMENT_START_DATE>', 
-  '<PR_COMPLETED>'
-];
+  // Variables for each field
+  const urlVariables = [
+    '<PING_ID>',
+    '<REMINDER_TIME>',
+    '<SCHEDULED_TIME>',
+    '<EXPIRE_TIME>',
+    '<DAY_NUM>',
+    '<PING_TEMPLATE_ID>',
+    '<PING_TEMPLATE_NAME>',
+    '<STUDY_ID>',
+    '<STUDY_PUBLIC_NAME>',
+    '<STUDY_INTERNAL_NAME>',
+    '<STUDY_CONTACT_MSG>',
+    '<PID>',
+    '<ENROLLMENT_ID>',
+    '<ENROLLMENT_START_DATE>',
+    '<PR_COMPLETED>',
+  ];
   const messageOnlyVariables = ['<URL>'];
   const messageVariables = [...urlVariables, ...messageOnlyVariables];
 
-  
-  
-  // -----------------------------------------
-  // URL param, state for listing
-  // -----------------------------------------
-  const { studyId } = useParams();
-  const study = useStudy();
+  // State for listing
   const [pingTemplates, setPingTemplates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -54,9 +55,7 @@ const urlVariables = [
   const [totalPages, setTotalPages] = useState(1);
   const [showCreateForm, setShowCreateForm] = useState(false);
 
-  // -----------------------------------------
-  // React Hook Form: Use "FormProvider" to share context
-  // -----------------------------------------
+  // React Hook Form
   const methods = useForm({
     defaultValues: {
       name: '',
@@ -69,24 +68,17 @@ const urlVariables = [
       expireEnabled: false,
       expireHours: 0,
       expireMinutes: 0,
-
-      // Fields for scheduling
       studyLength: 7,
       scheduleMode: 'everyDay',
-
       everyDayPingsCount: 1,
-      everyDayPings: [
-        { beginTime: '09:00', endTime: '17:00', nextDay: false }
-      ],
-      perDaySchedule: []
-    }
+      everyDayPings: [{ beginTime: '09:00', endTime: '17:00', nextDay: false }],
+      perDaySchedule: [],
+    },
   });
 
   const { handleSubmit, reset } = methods;
 
-  // -----------------------------------------
   // Fetch existing Ping Templates
-  // -----------------------------------------
   useEffect(() => {
     if (studyId) {
       fetchPingTemplates(studyId, page, perPage);
@@ -113,25 +105,21 @@ const urlVariables = [
     }
   };
 
-  // -----------------------------------------
   // Delete a Ping Template
-  // -----------------------------------------
   const deletePingTemplate = async (templateId) => {
-    if (!window.confirm("Are you sure you want to delete this ping template?")) return;
-  
+    if (!window.confirm('Are you sure you want to delete this ping template?')) return;
+
     try {
       await axios.delete(`/studies/${studyId}/ping_templates/${templateId}`);
-      alert("Ping template deleted successfully.");
+      alert('Ping template deleted successfully.');
       fetchPingTemplates(studyId, page, perPage); // Refresh the list after deletion
     } catch (err) {
       console.error(err);
-      alert("Error deleting ping template.");
+      alert('Error deleting ping template.');
     }
   };
 
-  // -----------------------------------------
   // Build schedule JSON for submission
-  // -----------------------------------------
   const buildScheduleJSON = (data) => {
     if (data.scheduleMode === 'everyDay') {
       const totalDays = data.studyLength + 1;
@@ -143,7 +131,7 @@ const urlVariables = [
             begin_day_num: day,
             begin_time: ping.beginTime,
             end_day_num: ping.nextDay ? day + 1 : day,
-            end_time: ping.endTime
+            end_time: ping.endTime,
           });
         });
       }
@@ -158,7 +146,7 @@ const urlVariables = [
             begin_day_num: dayObj.day,
             begin_time: ping.beginTime,
             end_day_num: ping.nextDay ? dayObj.day + 1 : dayObj.day,
-            end_time: ping.endTime
+            end_time: ping.endTime,
           });
         });
       });
@@ -166,9 +154,7 @@ const urlVariables = [
     }
   };
 
-  // -----------------------------------------
   // Build reminder/expire strings
-  // -----------------------------------------
   const buildLatencyString = (hours, minutes) => {
     const h = parseInt(hours, 10);
     const m = parseInt(minutes, 10);
@@ -179,9 +165,7 @@ const urlVariables = [
     return parts.join(' ');
   };
 
-  // -----------------------------------------
   // On Submit
-  // -----------------------------------------
   const onSubmit = async (formData) => {
     try {
       const scheduleJSON = buildScheduleJSON(formData);
@@ -199,7 +183,7 @@ const urlVariables = [
         url_text: formData.url_text,
         reminder_latency: reminderLatency,
         expire_latency: expireLatency,
-        schedule: scheduleJSON
+        schedule: scheduleJSON,
       });
 
       reset();
@@ -211,9 +195,7 @@ const urlVariables = [
     }
   };
 
-  // -----------------------------------------
   // Pagination
-  // -----------------------------------------
   const handlePreviousPage = () => {
     if (page > 1) setPage((prev) => prev - 1);
   };
@@ -227,192 +209,219 @@ const urlVariables = [
 
   return (
     <div style={{ margin: '2rem' }}>
-
-      <h1>Study: {study.internal_name}</h1>
+      <Typography variant="h4" gutterBottom>
+        Study: {study?.internal_name || 'Loading...'}
+      </Typography>
       <StudyNav />
-      {/* <h1>Ping Templates for {study?.internal_name || 'Loading...'}</h1> */}
 
-      <button
-        style={{ marginBottom: '1rem' }}
+      <Button
+        variant="contained"
+        color={showCreateForm ? 'secondary' : 'primary'}
         onClick={() => setShowCreateForm(!showCreateForm)}
+        sx={{ marginBottom: '1rem' }}
       >
         {showCreateForm ? 'Cancel' : 'Create New Ping Template'}
-      </button>
+      </Button>
 
       {showCreateForm && (
-        <section style={{ marginBottom: '2rem' }}>
-          <h2>Create a New Ping Template</h2>
+        <Box component="section" sx={{ marginBottom: '2rem' }}>
+          <Typography variant="h5" gutterBottom>
+            Create a New Ping Template
+          </Typography>
 
-          {/* Provide form context to children */}
           <FormProvider {...methods}>
-            <form onSubmit={handleSubmit(onSubmit)} style={{ maxWidth: '600px' }}>
-              {/* NAME */}
-              <div style={{ marginBottom: '1rem' }}>
-                <label>Name (required)</label>
-                <br />
-                <input
-                  type="text"
-                  style={{ width: '100%' }}
-                  {...methods.register('name', { required: 'Name is required' })}
-                />
-                {methods.formState.errors.name && (
-                  <p style={{ color: 'red' }}>
-                    {methods.formState.errors.name.message}
-                  </p>
-                )}
-              </div>
-
-              {/* URL with autocomplete */}
-              <div style={{ marginBottom: '1rem' }}>
-              <label>URL (optional)</label>
-              <Controller
-                name="url"
-                control={methods.control}
-                render={({ field }) => (
-                  <VariableAutoCompleteTextarea
-                    value={url}
-                    onChange={(value) => {
-                      setUrl(value);
-                      field.onChange(value); // Ensure React Hook Form updates the value
-                    }}
-                    variableOptions={urlVariables}
+            <Box
+              component="form"
+              onSubmit={handleSubmit(onSubmit)}
+              noValidate
+              sx={{ maxWidth: 600 }}
+            >
+              <Grid container spacing={2}>
+                {/* NAME */}
+                <Grid item xs={12}>
+                  <Controller
+                    name="name"
+                    control={methods.control}
+                    rules={{ required: 'Name is required' }}
+                    render={({ field, fieldState: { error } }) => (
+                      <TextField
+                        {...field}
+                        label="Name"
+                        fullWidth
+                        required
+                        error={!!error}
+                        helperText={
+                          error ? error.message : 'Enter the name of the ping template.'
+                        }
+                      />
+                    )}
                   />
-                )}
-              />
-            </div>
+                </Grid>
 
-            {/* URL TEXT */}
-            {methods.watch('url') && (
-              <div style={{ marginBottom: '1rem' }}>
-                <label>URL Text (required with URL)</label>
-                <br />
-                <input
-                  type="text"
-                  style={{ width: '100%' }}
-                  {...methods.register('url_text')}
-                />
-                {methods.formState.errors.url_text && (
-                  <p style={{ color: 'red' }}>
-                    {methods.formState.errors.url_text.message}
-                  </p>
-                )}
-              </div>
-            )}
-
-            {/* MESSAGE with autocomplete */}
-            <div style={{ marginBottom: '1rem' }}>
-              <label>Message (required)</label>
-              <Controller
-                name="message"
-                control={methods.control}
-                rules={{ required: 'Message is required' }}
-                render={({ field }) => (
-                  <VariableAutoCompleteTextarea
-                    value={field.value} // Use the value from React Hook Form
-                    onChange={(value) => {
-                      setMessage(value); // Update local state
-                      field.onChange(value); // Notify React Hook Form
-                    }}
-                    variableOptions={messageVariables}
+                {/* URL with autocomplete */}
+                <Grid item xs={12}>
+                  <Controller
+                    name="url"
+                    control={methods.control}
+                    render={({ field }) => (
+                      <VariableAutoCompleteTextarea
+                        {...field}
+                        label="URL (optional)"
+                        variableOptions={urlVariables}
+                        onChange={(value) => field.onChange(value)}
+                      />
+                    )}
                   />
-                )}
-              />
-              {methods.formState.errors.message && (
-                <p style={{ color: 'red' }}>
-                  {methods.formState.errors.message.message}
-                </p>
-              )}
-            </div>
-            
+                </Grid>
 
-              {/* REMINDER CHECKBOX */}
-              <div style={{ marginBottom: '1rem' }}>
-                <label>
-                  <input type="checkbox" {...methods.register('reminderEnabled')} />
-                  Enable Reminder
-                </label>
+                {/* URL TEXT */}
+                {methods.watch('url') && (
+                  <Grid item xs={12}>
+                    <Controller
+                      name="url_text"
+                      control={methods.control}
+                      rules={{ required: 'URL Text is required when URL is provided' }}
+                      render={({ field, fieldState: { error } }) => (
+                        <TextField
+                          {...field}
+                          label="URL Text"
+                          fullWidth
+                          required
+                          error={!!error}
+                          helperText={
+                            error ? error.message : 'Enter the text that will be displayed for the URL.'
+                          }
+                        />
+                      )}
+                    />
+                  </Grid>
+                )}
+
+                {/* MESSAGE with autocomplete */}
+                <Grid item xs={12}>
+                  <Controller
+                    name="message"
+                    control={methods.control}
+                    rules={{ required: 'Message is required' }}
+                    render={({ field }) => (
+                      <VariableAutoCompleteTextarea
+                        {...field}
+                        label="Message"
+                        variableOptions={messageVariables}
+                        error={!!error}
+                        helperText={error ? error.message : ''}
+                        onChange={(value) => field.onChange(value)}
+                      />
+                    )}
+                  />
+                </Grid>
+
+                {/* REMINDER CHECKBOX */}
+                <Grid item xs={12}>
+                  <Controller
+                    name="reminderEnabled"
+                    control={methods.control}
+                    render={({ field }) => (
+                      <FormControlLabel
+                        control={<Checkbox {...field} checked={field.value} />}
+                        label="Enable Reminder"
+                      />
+                    )}
+                  />
+                </Grid>
+
                 {methods.watch('reminderEnabled') && (
-                  <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem' }}>
-                    <div>
-                      <label>Hours</label>
-                      <input
+                  <>
+                    <Grid item xs={6}>
+                      <TextField
+                        label="Reminder Hours"
                         type="number"
-                        min="0"
-                        style={{ width: '60px' }}
+                        inputProps={{ min: 0 }}
+                        fullWidth
                         {...methods.register('reminderHours')}
                       />
-                    </div>
-                    <div>
-                      <label>Minutes</label>
-                      <input
+                    </Grid>
+                    <Grid item xs={6}>
+                      <TextField
+                        label="Reminder Minutes"
                         type="number"
-                        min="0"
-                        max="59"
-                        style={{ width: '60px' }}
+                        inputProps={{ min: 0, max: 59 }}
+                        fullWidth
                         {...methods.register('reminderMinutes')}
                       />
-                    </div>
-                  </div>
+                    </Grid>
+                  </>
                 )}
-              </div>
 
-              {/* EXPIRE CHECKBOX */}
-              <div style={{ marginBottom: '1rem' }}>
-                <label>
-                  <input type="checkbox" {...methods.register('expireEnabled')} />
-                  Enable Expire
-                </label>
+                {/* EXPIRE CHECKBOX */}
+                <Grid item xs={12}>
+                  <Controller
+                    name="expireEnabled"
+                    control={methods.control}
+                    render={({ field }) => (
+                      <FormControlLabel
+                        control={<Checkbox {...field} checked={field.value} />}
+                        label="Enable Expire"
+                      />
+                    )}
+                  />
+                </Grid>
+
                 {methods.watch('expireEnabled') && (
-                  <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem' }}>
-                    <div>
-                      <label>Hours</label>
-                      <input
+                  <>
+                    <Grid item xs={6}>
+                      <TextField
+                        label="Expire Hours"
                         type="number"
-                        min="0"
-                        style={{ width: '60px' }}
+                        inputProps={{ min: 0 }}
+                        fullWidth
                         {...methods.register('expireHours')}
                       />
-                    </div>
-                    <div>
-                      <label>Minutes</label>
-                      <input
+                    </Grid>
+                    <Grid item xs={6}>
+                      <TextField
+                        label="Expire Minutes"
                         type="number"
-                        min="0"
-                        max="59"
-                        style={{ width: '60px' }}
+                        inputProps={{ min: 0, max: 59 }}
+                        fullWidth
                         {...methods.register('expireMinutes')}
                       />
-                    </div>
-                  </div>
+                    </Grid>
+                  </>
                 )}
-              </div>
 
-              {/* STUDY LENGTH */}
-              <div style={{ marginBottom: '1rem' }}>
-                <label>Study Length (in days)</label>
-                <input
-                  type="number"
-                  style={{ marginLeft: '0.5rem', width: '80px' }}
-                  {...methods.register('studyLength', { min: 0 })}
-                />
-              </div>
+                {/* STUDY LENGTH */}
+                <Grid item xs={12}>
+                  <TextField
+                    label="Study Length (in days)"
+                    type="number"
+                    inputProps={{ min: 0 }}
+                    fullWidth
+                    {...methods.register('studyLength', { min: 0 })}
+                  />
+                </Grid>
 
-              {/* SCHEDULE FORM */}
-              <PingScheduleForm />
+                {/* SCHEDULE FORM */}
+                <Grid item xs={12}>
+                  <PingScheduleForm />
+                </Grid>
 
-              <button type="submit">Create Ping Template</button>
-            </form>
+                {/* SUBMIT BUTTON */}
+                <Grid item xs={12}>
+                  <Button type="submit" variant="contained" color="primary">
+                    Create Ping Template
+                  </Button>
+                </Grid>
+              </Grid>
+            </Box>
           </FormProvider>
-        </section>
+        </Box>
       )}
 
       {/* List existing Ping Templates */}
       <section>
-        {/* <h2>Ping Templates</h2> */}
-
         <DataTable
           data={pingTemplates.map((pt) => ({
-            // Update data keys to match the 'key' in columns
             id: pt.id,
             name: pt.name,
             message: pt.message,
@@ -437,8 +446,7 @@ const urlVariables = [
           onPreviousPage={handlePreviousPage}
           onNextPage={handleNextPage}
           actionsColumn={(row) => (
-            
-              <Tooltip title="Delete Ping Template">
+            <Tooltip title="Delete Ping Template">
               <IconButton
                 color="error"
                 onClick={(e) => {

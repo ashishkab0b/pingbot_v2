@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import StudyNav from '../components/StudyNav';
 import axios from '../api/axios';
+import { Typography } from '@mui/material';
 
 function ViewStudy() {
   const { studyId } = useParams();
@@ -36,11 +37,17 @@ function ViewStudy() {
 
   return (
     <div style={{ margin: '2rem' }}>
-      <h1>Study: {study.internal_name}</h1>
+      
+      <Typography variant="h4" gutterBottom>
+        Study: {study?.internal_name || 'Loading...'}
+      </Typography>
       <StudyNav studyId={studyId} />
       {/* Display some basic details about the study */}
       <section style={{ marginBottom: '2rem' }}>
-        <h2>Overview</h2>
+        
+        {/* <Typography variant="h5" gutterBottom>
+          Overview
+        </Typography> */}
         <p><strong>Public Name:</strong> {study.public_name}</p>
         <p><strong>Internal Name:</strong> {study.internal_name}</p>
         <p><strong>Contact Message:</strong> {study.contact_message}</p>

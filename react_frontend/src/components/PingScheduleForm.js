@@ -1,9 +1,21 @@
+// PingScheduleForm.js
+
 import React, { useEffect } from 'react';
 import { useFormContext } from 'react-hook-form';
+import {
+  Grid,
+  TextField,
+  Checkbox,
+  FormControlLabel,
+  Button,
+  Typography,
+  Paper,
+  Box,
+} from '@mui/material';
 
 /**
  * PingScheduleForm
- * Handles the UI for "every day" vs. "per day" scheduling,
+ * Handles the UI for "Every Day" vs. "Per Day" scheduling,
  * including multiple ping blocks per day.
  */
 function PingScheduleForm() {
@@ -12,7 +24,7 @@ function PingScheduleForm() {
     register,
     watch,
     setValue,
-    // You might also need getValues or other methods from useFormContext
+    control,
   } = useFormContext();
 
   const scheduleMode = watch('scheduleMode');
@@ -25,20 +37,13 @@ function PingScheduleForm() {
   const getDefaultPingBlock = () => ({
     beginTime: '09:00',
     endTime: '17:00',
-    nextDay: false
-  });
-
-  // Utility: create default day object
-  const getDefaultDayObj = (dayIndex) => ({
-    day: dayIndex,
-    active: false,
-    pings: [getDefaultPingBlock()]
+    nextDay: false,
   });
 
   // Handle dynamic array sizing for EVERY DAY pings
   useEffect(() => {
     if (scheduleMode !== 'everyDay') return;
-  
+
     let newPings = [...everyDayPings];
     while (newPings.length < everyDayPingsCount) {
       newPings.push(getDefaultPingBlock());
@@ -46,70 +51,53 @@ function PingScheduleForm() {
     if (newPings.length > everyDayPingsCount) {
       newPings = newPings.slice(0, everyDayPingsCount);
     }
-  
+
     // Only update if the new value is different
     if (JSON.stringify(newPings) !== JSON.stringify(everyDayPings)) {
       setValue('everyDayPings', newPings);
     }
-  }, [everyDayPingsCount, everyDayPings, scheduleMode, setValue]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [everyDayPingsCount, scheduleMode]);
 
   // Handle dynamic array sizing for PER DAY schedule
   useEffect(() => {
     if (scheduleMode !== 'perDay') return;
-  
+
     const numericStudyLength = parseInt(studyLength, 10) || 0;
     const desiredLength = Math.max(1, numericStudyLength + 1);
-  
+
     let updatedSchedule = [...perDaySchedule];
     while (updatedSchedule.length < desiredLength) {
       updatedSchedule.push({
         day: updatedSchedule.length,
         active: false,
-        pings: [{ beginTime: '09:00', endTime: '17:00', nextDay: false }]
+        pings: [getDefaultPingBlock()],
       });
     }
     if (updatedSchedule.length > desiredLength) {
       updatedSchedule = updatedSchedule.slice(0, desiredLength);
     }
-  
-    updatedSchedule = updatedSchedule.map((dayObj, index) => {
+
+    updatedSchedule = updatedSchedule.map((dayObj) => {
       if (!dayObj.active) {
         return {
           ...dayObj,
-          pings: [{ beginTime: '09:00', endTime: '17:00', nextDay: false }]
+          pings: [getDefaultPingBlock()],
         };
       }
       return dayObj;
     });
-  
+
     // Only update if the new value is different
     if (JSON.stringify(updatedSchedule) !== JSON.stringify(perDaySchedule)) {
       setValue('perDaySchedule', updatedSchedule);
     }
-  }, [studyLength, scheduleMode, perDaySchedule, setValue]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [studyLength, scheduleMode]);
 
-  // Switch from everyDay to perDay
-  const handleSwitchToPerDay = () => {
-    // Optional: copy just day 0 or do some minimal logic
-    // Or do nothing except set scheduleMode
-    setValue('scheduleMode', 'perDay');
-  };
-
-  // Switch from perDay back to everyDay, auto-populate from day 0
-  const handleSwitchToEveryDay = () => {
-    const day0 = perDaySchedule[0];
-    if (day0 && day0.active) {
-      if (day0.pings.length !== everyDayPingsCount) {
-        setValue('everyDayPingsCount', day0.pings.length);
-      }
-      if (JSON.stringify(day0.pings) !== JSON.stringify(everyDayPings)) {
-        setValue(
-          'everyDayPings',
-          day0.pings.map((p) => ({ ...p }))
-        );
-      }
-    }
-    setValue('scheduleMode', 'everyDay');
+  // Switch between modes
+  const handleSwitchMode = (mode) => {
+    setValue('scheduleMode', mode);
   };
 
   // Add a new ping to a specific day
@@ -126,7 +114,7 @@ function PingScheduleForm() {
     setValue('perDaySchedule', newSched);
   };
 
-  // Clear a day’s pings (instead of removing the day entirely)
+  // Clear a day’s pings
   const handleClearDay = (dayIndex) => {
     const newSched = [...perDaySchedule];
     newSched[dayIndex].pings = [getDefaultPingBlock()];
@@ -138,190 +126,203 @@ function PingScheduleForm() {
    * RENDER
    */
   return (
-    <div style={{ border: '1px solid #ccc', padding: '1rem', marginBottom: '1rem' }}>
-      <p>
-        <strong>Schedule Mode:</strong> {scheduleMode}
-      </p>
+    <Box sx={{ border: '1px solid #ccc', padding: 2, marginBottom: 2 }}>
+      <Typography variant="h6">Schedule</Typography>
 
-      {/* =============== EVERY DAY MODE =============== */}
+      {/* Schedule Mode Selection */}
+      <Grid container spacing={2}>
+        <Grid item xs={12}>
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={scheduleMode === 'everyDay'}
+                onChange={() => handleSwitchMode('everyDay')}
+              />
+            }
+            label="Every Day"
+          />
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={scheduleMode === 'perDay'}
+                onChange={() => handleSwitchMode('perDay')}
+              />
+            }
+            label="Per Day"
+          />
+        </Grid>
+      </Grid>
+
+      {/* Every Day Mode */}
       {scheduleMode === 'everyDay' && (
-        <div style={{ padding: '1rem', border: '1px solid #ddd' }}>
-          <div style={{ marginBottom: '1rem' }}>
-            <label>Number of pings per day:</label>
-            <input
-              type="number"
-              style={{ width: '60px', marginLeft: '0.5rem' }}
-              {...register('everyDayPingsCount', { min: 1 })}
-            />
-          </div>
+        <Box sx={{ padding: 2, border: '1px solid #ddd', marginTop: 2 }}>
+          <Grid container spacing={2}>
+            <Grid item xs={12}>
+              <TextField
+                label="Number of pings per day"
+                type="number"
+                inputProps={{ min: 1 }}
+                {...register('everyDayPingsCount', { min: 1 })}
+                fullWidth
+              />
+            </Grid>
 
-          {everyDayPings.map((ping, i) => (
-            <div
-              key={i}
-              style={{ border: '1px solid #eee', padding: '0.5rem', marginBottom: '0.5rem' }}
-            >
-              <div style={{ marginBottom: '0.5rem' }}>
-                <label>Begin Time</label>
-                <input
-                  type="time"
-                  style={{ marginLeft: '0.5rem' }}
-                  value={ping.beginTime}
-                  onChange={(e) => {
-                    const arr = [...everyDayPings];
-                    arr[i].beginTime = e.target.value;
-                    setValue('everyDayPings', arr);
-                  }}
-                />
-              </div>
-              <div>
-                <label>End Time</label>
-                <input
-                  type="time"
-                  style={{ marginLeft: '0.5rem' }}
-                  value={ping.endTime}
-                  onChange={(e) => {
-                    const arr = [...everyDayPings];
-                    arr[i].endTime = e.target.value;
-                    setValue('everyDayPings', arr);
-                  }}
-                />
-                <label style={{ marginLeft: '0.5rem' }}>
-                  <input
-                    type="checkbox"
-                    checked={ping.nextDay}
+            {everyDayPings.map((ping, i) => (
+              <React.Fragment key={i}>
+                <Grid item xs={12} sm={4}>
+                  <TextField
+                    label={`Ping ${i + 1} - Begin Time`}
+                    type="time"
+                    value={ping.beginTime}
                     onChange={(e) => {
                       const arr = [...everyDayPings];
-                      arr[i].nextDay = e.target.checked;
+                      arr[i].beginTime = e.target.value;
                       setValue('everyDayPings', arr);
                     }}
+                    fullWidth
                   />
-                  Next Day?
-                </label>
-              </div>
-            </div>
-          ))}
-
-          <button type="button" onClick={handleSwitchToPerDay}>
-            Switch to Per Day
-          </button>
-        </div>
+                </Grid>
+                <Grid item xs={12} sm={4}>
+                  <TextField
+                    label={`Ping ${i + 1} - End Time`}
+                    type="time"
+                    value={ping.endTime}
+                    onChange={(e) => {
+                      const arr = [...everyDayPings];
+                      arr[i].endTime = e.target.value;
+                      setValue('everyDayPings', arr);
+                    }}
+                    fullWidth
+                  />
+                </Grid>
+                <Grid item xs={12} sm={4}>
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={ping.nextDay}
+                        onChange={(e) => {
+                          const arr = [...everyDayPings];
+                          arr[i].nextDay = e.target.checked;
+                          setValue('everyDayPings', arr);
+                        }}
+                      />
+                    }
+                    label="Next Day?"
+                  />
+                </Grid>
+              </React.Fragment>
+            ))}
+          </Grid>
+        </Box>
       )}
 
-      {/* =============== PER DAY MODE =============== */}
+      {/* Per Day Mode */}
       {scheduleMode === 'perDay' && (
-        <div style={{ padding: '1rem', border: '1px solid #ddd' }}>
-          <button type="button" onClick={handleSwitchToEveryDay}>
-            Switch to Every Day
-          </button>
-
+        <Box sx={{ padding: 2, border: '1px solid #ddd', marginTop: 2 }}>
           {perDaySchedule.map((dayObj, idx) => (
-            <div
-              key={idx}
-              style={{
-                border: '1px solid #eee',
-                padding: '0.5rem',
-                marginTop: '1rem'
-              }}
-            >
-              <label>
-                <input
-                  type="checkbox"
-                  checked={dayObj.active}
-                  onChange={(e) => {
-                    const newSched = [...perDaySchedule];
-                    newSched[idx].active = e.target.checked;
-                    setValue('perDaySchedule', newSched);
-                  }}
-                />
-                Day {dayObj.day}
-                {dayObj.day === 0 && ' (Day of participant signup)'}
-              </label>
+            <Paper key={idx} sx={{ padding: 2, marginBottom: 2 }}>
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={dayObj.active}
+                    onChange={(e) => {
+                      const newSched = [...perDaySchedule];
+                      newSched[idx].active = e.target.checked;
+                      setValue('perDaySchedule', newSched);
+                    }}
+                  />
+                }
+                label={
+                  `Day ${dayObj.day}` +
+                  (dayObj.day === 0 ? ' (Day of participant signup)' : '')
+                }
+              />
 
               {dayObj.active && (
                 <>
                   {dayObj.pings.map((ping, pingIndex) => (
-                    <div
-                      key={pingIndex}
-                      style={{
-                        border: '1px solid #ddd',
-                        padding: '0.5rem',
-                        margin: '0.5rem 0'
-                      }}
-                    >
-                      <div style={{ marginBottom: '0.5rem' }}>
-                        <label>Start Time</label>
-                        <input
-                          type="time"
-                          style={{ marginLeft: '0.5rem' }}
-                          value={ping.beginTime}
-                          onChange={(e) => {
-                            const newSched = [...perDaySchedule];
-                            newSched[idx].pings[pingIndex].beginTime =
-                              e.target.value;
-                            setValue('perDaySchedule', newSched);
-                          }}
-                        />
-                      </div>
-
-                      <div>
-                        <label>End Time</label>
-                        <input
-                          type="time"
-                          style={{ marginLeft: '0.5rem' }}
-                          value={ping.endTime}
-                          onChange={(e) => {
-                            const newSched = [...perDaySchedule];
-                            newSched[idx].pings[pingIndex].endTime =
-                              e.target.value;
-                            setValue('perDaySchedule', newSched);
-                          }}
-                        />
-                        <label style={{ marginLeft: '0.5rem' }}>
-                          <input
-                            type="checkbox"
-                            checked={ping.nextDay}
+                    <Paper key={pingIndex} sx={{ padding: 2, marginBottom: 2 }}>
+                      <Grid container spacing={2} alignItems="center">
+                        <Grid item xs={12} sm={3}>
+                          <TextField
+                            label="Start Time"
+                            type="time"
+                            value={ping.beginTime}
                             onChange={(e) => {
                               const newSched = [...perDaySchedule];
-                              newSched[idx].pings[pingIndex].nextDay =
-                                e.target.checked;
+                              newSched[idx].pings[pingIndex].beginTime = e.target.value;
                               setValue('perDaySchedule', newSched);
                             }}
+                            fullWidth
                           />
-                          Next Day?
-                        </label>
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={() => handleRemovePingFromDay(idx, pingIndex)}
-                        style={{ marginTop: '0.5rem' }}
-                      >
-                        Remove Ping
-                      </button>
-                    </div>
+                        </Grid>
+                        <Grid item xs={12} sm={3}>
+                          <TextField
+                            label="End Time"
+                            type="time"
+                            value={ping.endTime}
+                            onChange={(e) => {
+                              const newSched = [...perDaySchedule];
+                              newSched[idx].pings[pingIndex].endTime = e.target.value;
+                              setValue('perDaySchedule', newSched);
+                            }}
+                            fullWidth
+                          />
+                        </Grid>
+                        <Grid item xs={12} sm={3}>
+                          <FormControlLabel
+                            control={
+                              <Checkbox
+                                checked={ping.nextDay}
+                                onChange={(e) => {
+                                  const newSched = [...perDaySchedule];
+                                  newSched[idx].pings[pingIndex].nextDay =
+                                    e.target.checked;
+                                  setValue('perDaySchedule', newSched);
+                                }}
+                              />
+                            }
+                            label="Next Day?"
+                          />
+                        </Grid>
+                        <Grid item xs={12} sm={3}>
+                          <Button
+                            variant="outlined"
+                            color="secondary"
+                            onClick={() => handleRemovePingFromDay(idx, pingIndex)}
+                            fullWidth
+                          >
+                            Remove Ping
+                          </Button>
+                        </Grid>
+                      </Grid>
+                    </Paper>
                   ))}
 
-                  <button
-                    type="button"
+                  <Button
+                    variant="contained"
+                    color="primary"
                     onClick={() => handleAddPingToDay(idx)}
+                    sx={{ marginTop: 1 }}
                   >
                     + Add Another Ping
-                  </button>
-                  <br />
-                  <button
-                    type="button"
+                  </Button>
+
+                  <Button
+                    variant="outlined"
+                    color="secondary"
                     onClick={() => handleClearDay(idx)}
-                    style={{ marginTop: '0.5rem' }}
+                    sx={{ marginLeft: 1, marginTop: 1 }}
                   >
                     Clear This Day
-                  </button>
+                  </Button>
                 </>
               )}
-            </div>
+            </Paper>
           ))}
-        </div>
+        </Box>
       )}
-    </div>
+    </Box>
   );
 }
 
