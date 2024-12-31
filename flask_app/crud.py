@@ -776,12 +776,14 @@ def get_pings_to_send(
     stmt = (
         select(Ping)
         .join(Enrollment, Ping.enrollment_id == Enrollment.id)  # Explicit join condition
+        .join(Study, Enrollment.study_id == Study.id)  # Explicit join condition
         .where(
             Ping.sent_ts.is_(None),
             Ping.scheduled_ts <= now,
             or_(Ping.expire_ts.is_(None), Ping.expire_ts > now),
             Ping.deleted_at.is_(None),
-            Enrollment.deleted_at.is_(None)
+            Enrollment.deleted_at.is_(None),
+            Study.deleted_at.is_(None)
         )
     )
     return session.execute(stmt).scalars().all()
@@ -803,6 +805,7 @@ def get_pings_for_reminder(
     stmt = (
         select(Ping)
         .join(Enrollment, Ping.enrollment_id == Enrollment.id)  # Explicit join condition
+        .join(Study, Enrollment.study_id == Study.id)  # Explicit join condition
         .where(
             Ping.sent_ts.isnot(None),
             Ping.reminder_sent_ts.is_(None),
@@ -810,7 +813,8 @@ def get_pings_for_reminder(
             or_(Ping.expire_ts.is_(None), Ping.expire_ts > now),
             Ping.first_clicked_ts.is_(None),
             Ping.deleted_at.is_(None),
-            Enrollment.deleted_at.is_(None)
+            Enrollment.deleted_at.is_(None),
+            Study.deleted_at.is_(None)
         )
     )
     return session.execute(stmt).scalars().all()
