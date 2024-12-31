@@ -53,10 +53,57 @@ function ViewStudy() {
 
   const handleCopyLink = () => {
     const linkToCopy = `${enrollmentLinkBase}${participantId}`;
-    navigator.clipboard.writeText(linkToCopy).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(linkToCopy).then(
+        () => {
+          setCopied(true);
+          setTimeout(() => setCopied(false), 2000);
+        },
+        (err) => {
+          console.error('Copy failed', err);
+          fallbackCopyTextToClipboard(linkToCopy);
+        }
+      );
+    } else {
+      fallbackCopyTextToClipboard(linkToCopy);
+    }
+  };
+
+  const fallbackCopyTextToClipboard = (text) => {
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+
+    // Avoid scrolling to bottom
+    textArea.style.position = 'fixed';
+    textArea.style.top = 0;
+    textArea.style.left = 0;
+    textArea.style.width = '2em';
+    textArea.style.height = '2em';
+    textArea.style.padding = 0;
+    textArea.style.border = 'none';
+    textArea.style.outline = 'none';
+    textArea.style.boxShadow = 'none';
+    textArea.style.background = 'transparent';
+
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+
+    try {
+      const successful = document.execCommand('copy');
+      if (successful) {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      } else {
+        alert('Failed to copy the link');
+      }
+    } catch (err) {
+      console.error('Fallback: Could not copy text', err);
+      alert('Failed to copy the link');
+    }
+
+    document.body.removeChild(textArea);
   };
 
   if (loading)
@@ -160,7 +207,8 @@ function ViewStudy() {
                 sx={{ display: 'block', marginTop: '0.5rem' }}
               >
                 Send this link to participants to enroll them in the study.
-                Remember to replace the <em>Participant ID</em> with the actual participant's ID.
+                Remember to replace the{' '}
+                <em>Participant ID</em> with the actual participant's ID.
               </Typography>
             </Box>
           </Grid>
