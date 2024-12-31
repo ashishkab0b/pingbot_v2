@@ -236,14 +236,12 @@ function StudyDashboard() {
             id: study.id,
             publicName: study.public_name,
             internalName: study.internal_name,
-            signupCode: study.code,
             contactMessage: study.contact_message,
           }))}
           columns={[
             { label: 'ID', key: 'id' },
             { label: 'Public Name', key: 'publicName' },
             { label: 'Internal Name', key: 'internalName' },
-            { label: 'Signup Code', key: 'signupCode' },
             { label: 'Contact Message', key: 'contactMessage' },
           ]}
           loading={loading}
