@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import jwt_required
 from datetime import datetime
 from pytz import UTC, timezone
+from sqlalchemy import select
 
 from extensions import db
 from crud import (
@@ -12,8 +13,8 @@ from crud import (
     get_enrollment_by_id,
 )
 from permissions import get_current_user, user_has_study_permission
-from utils import paginate_statement, convert_dt_to_local
-from models import Ping
+from utils import convert_dt_to_local, paginate_statement
+from models import Ping, PingTemplate, Enrollment
 
 pings_bp = Blueprint('pings', __name__)
 
@@ -32,61 +33,92 @@ def prepare_requested_ping(ping):
         participant_tz = enrollment.tz
         local_ts = convert_dt_to_local(ping.scheduled_ts, participant_tz).strftime("%Y-%m-%d %H:%M:%S %Z")
         ping_dict['scheduled_ts_local'] = local_ts
-        
+
         # Add study pid
         ping_dict['pid'] = enrollment.study_pid
-    
-    return ping_dict
 
+    # Handle possible NoneType for ping_template
+    if ping.ping_template:
+        ping_dict['ping_template_name'] = ping.ping_template.name
+    else:
+        ping_dict['ping_template_name'] = None
+
+    return ping_dict
 
 @pings_bp.route('/studies/<int:study_id>/pings', methods=['GET'])
 @jwt_required()
-def get_pings(study_id=None):
+def get_pings(study_id):
     current_app.logger.debug(f"Entered get_pings route for study={study_id}.")
     user = get_current_user()
     if not user:
         current_app.logger.warning("User not found while fetching pings.")
         return jsonify({"error": "User not found"}), 404
 
+    # Get pagination parameters
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 10, type=int)
 
+    # Get sorting parameters
+    sort_by = request.args.get('sort_by', 'id')
+    sort_order = request.args.get('sort_order', 'asc')
+
+    # Get search query
+    search_query = request.args.get('search', None)
+
     try:
-        if study_id:
-            study = user_has_study_permission(user_id=user.id, study_id=study_id, minimum_role="viewer")
-            if not study:
-                current_app.logger.warning(
-                    f"User={user.email} does not have access to study {study_id}."
-                )
-                return jsonify({"error": f"No access to study {study_id}"}), 403
+        # Validate user permissions
+        study = user_has_study_permission(user_id=user.id, study_id=study_id, minimum_role="viewer")
+        if not study:
+            return jsonify({"error": f"No access to study {study_id}"}), 403
 
-            query = db.session.query(Ping).filter_by(study_id=study.id, deleted_at=None)
+        # Build base query with join
+        stmt = (select(Ping)
+            .join(Enrollment, Ping.enrollment_id == Enrollment.id)
+            .join(PingTemplate, Ping.ping_template_id == PingTemplate.id)
+            .where(
+            Ping.study_id == study.id,
+            Ping.deleted_at.is_(None)
+        ))
+
+        # Apply search filter
+        if search_query:
+            stmt = stmt.where(Enrollment.study_pid.ilike(f'%{search_query}%'))
+
+        # Apply sorting
+        valid_sort_columns = {
+            'id': Ping.id,
+            'scheduled': Ping.scheduled_ts,
+            'dayNum': Ping.day_num,
+            'participantId': Enrollment.study_pid,
+            'pingTemplate': PingTemplate.name,
+        }
+        sort_column = valid_sort_columns.get(sort_by, Ping.id)
+
+        if sort_order.lower() == 'desc':
+            stmt = stmt.order_by(sort_column.desc())
         else:
-            current_app.logger.error("Pings across all studies are not supported in this route.")
-            return jsonify({"error": "Study ID is required"}), 400
+            stmt = stmt.order_by(sort_column.asc())
 
-        pagination = paginate_statement(db.session, query.statement, page=page, per_page=per_page)
+        # Paginate
+        pagination = paginate_statement(session=db.session, stmt=stmt, page=page, per_page=per_page)
+        items = [prepare_requested_ping(ping) for ping in pagination['items']]
 
-        # Prepare pings for response by converting UTC to participant local time
-        items = [prepare_requested_ping(p) for p in pagination["items"]]
-
-        current_app.logger.info(f"User={user.email} fetched {len(items)} pings for study={study_id}.")
         return jsonify({
             "data": items,
             "meta": {
-                "page": pagination["page"],
-                "per_page": pagination["per_page"],
-                "total": pagination["total"],
-                "pages": pagination["pages"]
+                "page": pagination['page'],
+                "per_page": pagination['per_page'],
+                "total": pagination['total'],
+                "pages": pagination['pages'],
             }
         }), 200
 
     except Exception as e:
-        current_app.logger.error(f"Error fetching pings for study={study_id}.")
+        current_app.logger.error(f"Error fetching pings for study={study_id}: {e}")
         current_app.logger.exception(e)
         return jsonify({"error": "Internal server error"}), 500
-
-
+    
+    
 @pings_bp.route('/studies/<int:study_id>/pings', methods=['POST'])
 @jwt_required()
 def create_ping_route(study_id):

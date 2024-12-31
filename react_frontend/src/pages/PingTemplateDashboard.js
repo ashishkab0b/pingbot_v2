@@ -56,7 +56,7 @@ function PingTemplateDashboard() {
   const [page, setPage] = useState(1);
   const [perPage] = useState(5);
   const [totalPages, setTotalPages] = useState(1);
-  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [showCreateForm, setShowCreateForm] = useState(false);const [totalRows, setTotalRows] = useState(0);
 
   // React Hook Form
   const methods = useForm({
@@ -101,13 +101,16 @@ function PingTemplateDashboard() {
     setLoading(true);
     setError(null);
     try {
-      const response = await axios.get(
-        `/studies/${studyIdParam}/ping_templates?page=${currentPage}&per_page=${itemsPerPage}`
-      );
+      const response = await axios.get(`/studies/${studyIdParam}/ping_templates`, {
+        params: {
+          page: currentPage,
+          per_page: itemsPerPage,
+        },
+      });
       const { data, meta } = response.data;
       setPingTemplates(data);
       setPage(meta.page);
-      setTotalPages(meta.pages);
+      setTotalRows(meta.total);
     } catch (err) {
       console.error(err);
       setError('Error fetching ping templates');
@@ -209,11 +212,8 @@ function PingTemplateDashboard() {
   };
 
   // Pagination
-  const handlePreviousPage = () => {
-    if (page > 1) setPage((prev) => prev - 1);
-  };
-  const handleNextPage = () => {
-    if (page < totalPages) setPage((prev) => prev + 1);
+  const handlePageChange = (newPage) => {
+    setPage(newPage);
   };
 
   if (!studyId) {
@@ -522,9 +522,9 @@ function PingTemplateDashboard() {
           loading={loading}
           error={error}
           currentPage={page}
-          totalPages={totalPages}
-          onPreviousPage={handlePreviousPage}
-          onNextPage={handleNextPage}
+          perPage={perPage}
+          totalRows={totalRows}
+          onPageChange={handlePageChange}
           actionsColumn={(row) => (
             <Tooltip title="Delete Ping Template">
               <IconButton

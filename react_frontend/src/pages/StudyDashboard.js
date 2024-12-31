@@ -29,6 +29,7 @@ function StudyDashboard() {
   const [page, setPage] = useState(1);
   const [perPage] = useState(5);
   const [totalPages, setTotalPages] = useState(1);
+  const [totalRows, setTotalRows] = useState(0);
 
   // Fields for creating a new study
   const [publicName, setPublicName] = useState('');
@@ -68,11 +69,17 @@ function StudyDashboard() {
     setLoading(true);
     setError(null);
     try {
-      const res = await axios.get(`/studies?page=${currentPage}&per_page=${itemsPerPage}`);
+      const res = await axios.get(`/studies`, {
+        params: {
+          page: currentPage,
+          per_page: itemsPerPage,
+        },
+      });
       const { data, meta } = res.data;
       setStudies(data);
       setPage(meta.page);
-      setTotalPages(meta.pages);
+      // Update totalRows with the total number of studies
+      setTotalRows(meta.total);
     } catch (err) {
       console.error(err);
       setError('Error fetching studies');
@@ -127,12 +134,8 @@ function StudyDashboard() {
   };
 
   // Pagination
-  const handlePreviousPage = () => {
-    if (page > 1) setPage((prev) => prev - 1);
-  };
-
-  const handleNextPage = () => {
-    if (page < totalPages) setPage((prev) => prev + 1);
+  const handlePageChange = (newPage) => {
+    setPage(newPage);
   };
 
   // Render
@@ -230,7 +233,7 @@ function StudyDashboard() {
       )}
 
       {/* Display the studies in a simplified table */}
-      <section>
+      {/* <section>
         <DataTable
           data={studies.map((study) => ({
             id: study.id,
@@ -262,6 +265,42 @@ function StudyDashboard() {
                 <DeleteIcon />
               </IconButton>
             </Tooltip>
+          )}
+          onRowClick={(row) => navigate(`/studies/${row.id}`)}
+        />
+      </section> */}
+      <section>
+        <DataTable
+          data={studies.map((study) => ({
+            id: study.id,
+            publicName: study.public_name,
+            internalName: study.internal_name,
+            contactMessage: study.contact_message,
+          }))}
+          columns={[
+            { label: 'ID', key: 'id' },
+            { label: 'Public Name', key: 'publicName' },
+            { label: 'Internal Name', key: 'internalName' },
+            { label: 'Contact Message', key: 'contactMessage' },
+          ]}
+          loading={loading}
+          error={error}
+          currentPage={page}
+          perPage={perPage}
+          totalRows={totalRows}
+          onPageChange={handlePageChange}
+          actionsColumn={(row) => (
+            <Tooltip title="Delete Study">
+            <IconButton
+              color="error"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDeleteStudy(row.id);
+              }}
+            >
+              <DeleteIcon />
+            </IconButton>
+          </Tooltip>
           )}
           onRowClick={(row) => navigate(`/studies/${row.id}`)}
         />

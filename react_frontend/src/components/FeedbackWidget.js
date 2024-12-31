@@ -129,7 +129,7 @@ function FeedbackWidget() {
               />
 
               <TextField
-                label="Your Feedback"
+                placeholder="Message"
                 multiline
                 rows={4}
                 fullWidth

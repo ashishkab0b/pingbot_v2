@@ -30,17 +30,56 @@ def generate_non_confusable_code(length, lowercase, uppercase, digits):
     return ''.join(random.choices(non_confusable_chars, k=length))
 
 
-def random_time(signup_ts: datetime, begin_day_num: int, begin_time: str, end_day_num: int, end_time: str, tz: str) -> datetime:
-    local_day_0 = signup_ts.astimezone(pytz.timezone(tz)).date()
+import pytz
+from datetime import datetime, timedelta
+from random import randint
+
+def random_time(
+    signup_ts: datetime, 
+    begin_day_num: int, 
+    begin_time: str, 
+    end_day_num: int, 
+    end_time: str, 
+    tz: str
+) -> datetime:
+    """
+    Generate a random timestamp within a specified interval.
+
+    Args:
+        signup_ts (datetime): The signup timestamp (in UTC).
+        begin_day_num (int): Start day offset from signup date.
+        begin_time (str): Start time in 'HH:MM' format.
+        end_day_num (int): End day offset from signup date.
+        end_time (str): End time in 'HH:MM' format.
+        tz (str): Timezone string (e.g., 'America/New_York').
+
+    Returns:
+        datetime: Random timestamp within the specified interval, adjusted for timezone.
+    """
+    timezone = pytz.timezone(tz)
+    local_day_0 = signup_ts.astimezone(timezone).date()
+    
+    # Compute interval start and end dates
     interval_start_date = local_day_0 + timedelta(days=begin_day_num)
     interval_end_date = local_day_0 + timedelta(days=end_day_num)
-    begin_time = datetime.strptime(begin_time, '%H:%M').time()
-    end_time = datetime.strptime(end_time, '%H:%M').time()
-    tz = pytz.timezone(tz)
-    interval_start_ts = datetime.combine(interval_start_date, begin_time, tzinfo=tz)
-    interval_end_ts = datetime.combine(interval_end_date, end_time, tzinfo=tz)
+    
+    # Parse time strings
+    begin_time_obj = datetime.strptime(begin_time, '%H:%M').time()
+    end_time_obj = datetime.strptime(end_time, '%H:%M').time()
+    
+    # Combine dates and times into full datetime objects
+    interval_start_ts = datetime.combine(interval_start_date, begin_time_obj, tzinfo=timezone)
+    interval_end_ts = datetime.combine(interval_end_date, end_time_obj, tzinfo=timezone)
+    
+    # Ensure valid interval
+    if interval_start_ts >= interval_end_ts:
+        raise ValueError("The start of the interval must be before the end.")
+    
+    # Calculate a random time within the interval
     ping_interval_length = interval_end_ts - interval_start_ts
-    ping_time = interval_start_ts + timedelta(seconds=randint(0, int(ping_interval_length.total_seconds())))
+    random_seconds = randint(0, int(ping_interval_length.total_seconds()))
+    ping_time = interval_start_ts + timedelta(seconds=random_seconds)
+    
     return ping_time
 
 # def convert_dt_to_local(dt_obj, participant_tz):
@@ -113,13 +152,8 @@ def paginate_statement(
       - pages: total number of pages
     """
 
-    # Get total count excluding soft deleted rows
-    # count_subquery = stmt.with_only_columns(func.count()).order_by(None)
-    count_subquery = (
-        stmt.filter(stmt.selected_columns.deleted_at.is_(None))
-        .with_only_columns(func.count())
-        .order_by(None)
-    )
+    # Get total count
+    count_subquery = select(func.count()).select_from(stmt.subquery())
     total = session.scalar(count_subquery)
 
     # Paginate
@@ -129,7 +163,7 @@ def paginate_statement(
     items = results.scalars().all()
 
     # Calculate total pages
-    pages = (total + per_page - 1) // per_page if total else 1
+    pages = (total + per_page - 1) // per_page if per_page > 0 else 1
 
     return {
         "items": items,

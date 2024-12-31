@@ -12,13 +12,29 @@ from crud import (
 )
 from utils import paginate_statement
 from models import PingTemplate
+from sqlalchemy import select
 
 ping_templates_bp = Blueprint('ping_templates', __name__)
-
 
 @ping_templates_bp.route('/studies/<int:study_id>/ping_templates', methods=['GET'])
 @jwt_required()
 def get_ping_templates(study_id):
+    """
+    Get a list of ping templates for a given study, with pagination, sorting, and searching.
+
+    Args:
+        study_id (int): The ID of the study.
+
+    Query Parameters:
+        page (int): The page number (default: 1).
+        per_page (int): The number of items per page (default: 10).
+        sort_by (str): The field to sort by (default: 'id').
+        sort_order (str): The sort order, 'asc' or 'desc' (default: 'asc').
+        search (str): A search query to filter ping templates by name.
+
+    Returns:
+        JSON response containing the list of ping templates and pagination metadata.
+    """
     current_app.logger.debug(f"Entered get_ping_templates route for study_id={study_id}.")
 
     user = get_current_user()
@@ -26,54 +42,73 @@ def get_ping_templates(study_id):
         current_app.logger.warning("User not found while attempting to fetch ping templates.")
         return jsonify({"error": "User not found"}), 404
 
-    study = user_has_study_permission(user.id, study_id, minimum_role="viewer")
-    if not study:
-        current_app.logger.warning(
-            f"User {user.id} lacks 'viewer' permission for study_id={study_id}."
-        )
-        return jsonify({"error": f"No access to study {study_id}"}), 403
-
+    # Get pagination parameters
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 10, type=int)
 
-    stmt = (
-        db.session.query(PingTemplate)
-        .filter_by(study_id=study_id)
-        .filter(PingTemplate.deleted_at.is_(None))
-        .order_by(PingTemplate.id.asc())
-        .statement
-    )
+    # Get sorting parameters
+    sort_by = request.args.get('sort_by', 'id')
+    sort_order = request.args.get('sort_order', 'asc')
 
-    pagination = paginate_statement(db.session, stmt, page=page, per_page=per_page)
+    # Get search query
+    search_query = request.args.get('search', None)
 
-    ping_templates = [
-        {
-            "id": pt.id,
-            "name": pt.name,
-            "message": pt.message,
-            "url": pt.url,
-            "url_text": pt.url_text,
-            "reminder_latency": str(pt.reminder_latency) if pt.reminder_latency else None,
-            "expire_latency": str(pt.expire_latency) if pt.expire_latency else None,
-            "schedule": pt.schedule,
+    try:
+        # Validate user permissions
+        study = user_has_study_permission(user.id, study_id, minimum_role="viewer")
+        if not study:
+            current_app.logger.warning(
+                f"User {user.id} lacks 'viewer' permission for study_id={study_id}."
+            )
+            return jsonify({"error": f"No access to study {study_id}"}), 403
+
+        # Build base query
+        stmt = select(PingTemplate).where(
+            PingTemplate.study_id == study_id,
+            PingTemplate.deleted_at.is_(None)
+        )
+
+        # Apply search filter
+        if search_query:
+            stmt = stmt.where(PingTemplate.name.ilike(f'%{search_query}%'))
+
+        # Apply sorting
+        valid_sort_columns = {
+            'id': PingTemplate.id,
+            'name': PingTemplate.name,
+            'message': PingTemplate.message,
+            # Add more fields if needed
         }
-        for pt in pagination["items"]
-    ]
+        sort_column = valid_sort_columns.get(sort_by, PingTemplate.id)
 
-    current_app.logger.info(
-        f"User={user.id} fetched {len(ping_templates)} ping templates for study={study_id} "
-        f"on page {page}/{pagination['pages']}."
-    )
+        if sort_order.lower() == 'desc':
+            stmt = stmt.order_by(sort_column.desc())
+        else:
+            stmt = stmt.order_by(sort_column.asc())
 
-    return jsonify({
-        "data": ping_templates,
-        "meta": {
-            "page": pagination["page"],
-            "per_page": pagination["per_page"],
-            "total": pagination["total"],
-            "pages": pagination["pages"]
-        }
-    }), 200
+        # Paginate
+        pagination = paginate_statement(session=db.session, stmt=stmt, page=page, per_page=per_page)
+        items = [pt.to_dict() for pt in pagination['items']]
+
+        current_app.logger.info(
+            f"User={user.id} fetched {len(items)} ping templates for study={study_id} "
+            f"on page {pagination['page']}/{pagination['pages']}."
+        )
+
+        return jsonify({
+            "data": items,
+            "meta": {
+                "page": pagination['page'],
+                "per_page": pagination['per_page'],
+                "total": pagination['total'],
+                "pages": pagination['pages']
+            }
+        }), 200
+
+    except Exception as e:
+        current_app.logger.error(f"Error fetching ping templates for study_id={study_id}: {e}")
+        current_app.logger.exception(e)
+        return jsonify({"error": "Internal server error"}), 500
 
 
 @ping_templates_bp.route('/studies/<int:study_id>/ping_templates', methods=['POST'])

@@ -6,6 +6,15 @@ REQUIRED FOR BASIC FUNCTION
 - feedbackwidget
 - add userstudy to cascading deletes
 - send email on updating support db
+- ping send time is wrong. i chose it to be 5am to 5:01 and it's showing 4:53 am
+
+- make instructions
+    - first make a study using the study dashboard
+    - public name will be seen by the participants, internal name is for you in case you want to include things like study numbers and other details about the study (gpt: add to this)
+    - contact message can be found in the study dashboard that participants have access to. here you can leave a message with instructions for the participants to contact you if they have any questions or issues with the study
+    - click the study to open up the study interface. here you can find a link that you can give to participants that will allow them to enroll in the study
+    - you must include a unique participant Id in the link. if you are using a survey platform like qualtrics, you will put in a variable (link to this https://www.qualtrics.com/support/fr/survey-platform/survey-module/survey-flow/standard-elements/embedded-data/#SettingValuesFromTheSurveyURL)
+    - 
 
 MID PRIORITY
 - include scheduled_ts in pings or recommend researchers do that (make sure format is good thougha)

@@ -1,10 +1,12 @@
+// EnrollmentDashboard.js
+
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import StudyNav from '../components/StudyNav';
 import { useStudy } from '../context/StudyContext';
 import axios from '../api/axios';
 import DataTable from '../components/DataTable';
-import { IconButton, Tooltip, Box } from '@mui/material';
+import { IconButton, Tooltip, Box, Button, TextField, Checkbox, FormControlLabel, Grid } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import PersonRemoveIcon from '@mui/icons-material/PersonRemove';
@@ -23,8 +25,8 @@ function EnrollmentDashboard() {
 
   // Pagination
   const [page, setPage] = useState(1);
-  const [perPage] = useState(5);
-  const [totalPages, setTotalPages] = useState(1);
+  const perPage = 10; // Adjust as needed
+  const [totalRows, setTotalRows] = useState(0);
 
   // Create form fields (matching enrollments table)
   // Required fields for enrollment: tz, study_pid
@@ -42,25 +44,29 @@ function EnrollmentDashboard() {
   // ------------------------------------------------
   useEffect(() => {
     if (studyId) {
-      fetchParticipants(studyId, page, perPage);
+      fetchParticipants();
     }
     // eslint-disable-next-line
   }, [studyId, page]);
 
-  const fetchParticipants = async (studyId, currentPage, itemsPerPage) => {
+  const fetchParticipants = async () => {
     setLoading(true);
     setError(null);
 
     try {
       // GET /studies/<study_id>/enrollments
-      const response = await axios.get(
-        `/studies/${studyId}/enrollments?page=${currentPage}&per_page=${itemsPerPage}`
-      );
+      const response = await axios.get(`/studies/${studyId}/enrollments`, {
+        params: {
+          page: page,
+          per_page: perPage,
+          // Add sorting and searching if needed
+        },
+      });
       const { data, meta } = response.data;
 
       setParticipants(data);
       setPage(meta.page);
-      setTotalPages(meta.pages);
+      setTotalRows(meta.total);
     } catch (err) {
       console.error(err);
       setError('Error fetching participants.');
@@ -80,7 +86,7 @@ function EnrollmentDashboard() {
         tz,
         study_pid: studyPid,
         enrolled,
-        // Optional: start_date, telegram_id, etc.
+        // Optional: telegram_id, etc.
       });
       // Reset form fields
       setTz('');
@@ -91,7 +97,7 @@ function EnrollmentDashboard() {
       setShowCreateForm(false);
 
       // Refresh the table
-      fetchParticipants(studyId, page, perPage);
+      fetchParticipants();
     } catch (err) {
       console.error(err);
       setError('Error creating participant.');
@@ -107,7 +113,7 @@ function EnrollmentDashboard() {
     try {
       await axios.delete(`/studies/${studyId}/enrollments/${enrollmentId}`);
       // Refresh participants list
-      fetchParticipants(studyId, page, perPage);
+      fetchParticipants();
     } catch (err) {
       console.error(err);
       setError('Error deleting participant.');
@@ -124,7 +130,7 @@ function EnrollmentDashboard() {
         enrolled: !currentStatus,
       });
       // Refresh participants list
-      fetchParticipants(studyId, page, perPage);
+      fetchParticipants();
     } catch (err) {
       console.error(err);
       setError('Error updating enrollment status.');
@@ -132,18 +138,10 @@ function EnrollmentDashboard() {
   };
 
   // ------------------------------------------------
-  // Simple pagination
+  // Pagination Handler
   // ------------------------------------------------
-  const handlePreviousPage = () => {
-    if (page > 1) {
-      setPage((prev) => prev - 1);
-    }
-  };
-
-  const handleNextPage = () => {
-    if (page < totalPages) {
-      setPage((prev) => prev + 1);
-    }
+  const handlePageChange = (newPage) => {
+    setPage(newPage);
   };
 
   // ------------------------------------------------
@@ -158,81 +156,85 @@ function EnrollmentDashboard() {
   // ------------------------------------------------
   return (
     <div style={{ margin: '2rem' }}>
-
-      
       <Typography variant="h4" gutterBottom>
         Study: {study?.internal_name || 'Loading...'}
       </Typography>
       <StudyNav />
-      {/* <h1>Participants for {study?.internal_name || 'Loading...'}</h1> */}
 
-      {/* <button
-        style={{ marginBottom: '1rem' }}
+      <Button
+        variant="contained"
+        color={showCreateForm ? 'secondary' : 'primary'}
         onClick={() => setShowCreateForm(!showCreateForm)}
+        sx={{ marginBottom: '1rem' }}
       >
         {showCreateForm ? 'Cancel' : 'Create New Participant'}
-      </button> */}
+      </Button>
 
       {showCreateForm && (
-        <section style={{ marginBottom: '2rem' }}>
-          <h2>Create a New Participant</h2>
-          <form onSubmit={handleCreateParticipant} style={{ maxWidth: '400px' }}>
-            <div style={{ marginBottom: '1rem' }}>
-              <label htmlFor="tz">Time Zone</label>
-              <br />
-              <input
-                id="tz"
-                type="text"
-                value={tz}
-                onChange={(e) => setTz(e.target.value)}
-                placeholder="e.g., America/Los_Angeles"
-                required
-              />
-            </div>
+        <Box component="section" sx={{ marginBottom: '2rem' }}>
+          <Typography variant="h5" gutterBottom>
+            Create a New Participant
+          </Typography>
+          <Box
+            component="form"
+            onSubmit={handleCreateParticipant}
+            sx={{ maxWidth: 600 }}
+            noValidate
+            autoComplete="off"
+          >
+            <Grid container spacing={2}>
+              {/* Time Zone */}
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  id="tz"
+                  label="Time Zone"
+                  value={tz}
+                  onChange={(e) => setTz(e.target.value)}
+                  required
+                  helperText="e.g., America/Los_Angeles"
+                />
+              </Grid>
 
-            <div style={{ marginBottom: '1rem' }}>
-              <label htmlFor="studyPid">Study Participant ID</label>
-              <br />
-              <input
-                id="studyPid"
-                type="text"
-                value={studyPid}
-                onChange={(e) => setStudyPid(e.target.value)}
-                required
-              />
-            </div>
+              {/* Study Participant ID */}
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  id="studyPid"
+                  label="Study Participant ID"
+                  value={studyPid}
+                  onChange={(e) => setStudyPid(e.target.value)}
+                  required
+                  helperText="Enter the participant ID assigned in the study."
+                />
+              </Grid>
 
-            <div style={{ marginBottom: '1rem' }}>
-              <label htmlFor="enrolled">Enrolled?</label>
-              <br />
-              <input
-                id="enrolled"
-                type="checkbox"
-                checked={enrolled}
-                onChange={(e) => setEnrolled(e.target.checked)}
-              />
-            </div>
+              {/* Enrolled Checkbox */}
+              <Grid item xs={12}>
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={enrolled}
+                      onChange={(e) => setEnrolled(e.target.checked)}
+                      color="primary"
+                    />
+                  }
+                  label="Enrolled?"
+                />
+              </Grid>
 
-            {/*
-            <div style={{ marginBottom: '1rem' }}>
-              <label htmlFor="telegramId">Telegram ID</label>
-              <br />
-              <input
-                id="telegramId"
-                type="text"
-                value={telegramId}
-                onChange={(e) => setTelegramId(e.target.value)}
-              />
-            </div>
-            */}
-
-            <button type="submit">Create Participant</button>
-          </form>
-        </section>
+              {/* Submit Button */}
+              <Grid item xs={12}>
+                <Button type="submit" variant="contained" color="primary">
+                  Create Participant
+                </Button>
+              </Grid>
+            </Grid>
+          </Box>
+        </Box>
       )}
 
-<section>
-        {/* <h2>Participants</h2> */}
+      <section>
         <DataTable
           data={participants.map((participant) => ({
             id: participant.id,
@@ -253,11 +255,10 @@ function EnrollmentDashboard() {
           loading={loading}
           error={error}
           currentPage={page}
-          totalPages={totalPages}
-          onPreviousPage={handlePreviousPage}
-          onNextPage={handleNextPage}
+          perPage={perPage}
+          totalRows={totalRows}
+          onPageChange={handlePageChange}
           actionsColumn={(row) => (
-            <>
             <Box display="flex">
               {/* Enroll/Unenroll button */}
               <Tooltip title={row.enrolled === 'Yes' ? 'Unenroll Participant' : 'Enroll Participant'}>
@@ -287,7 +288,6 @@ function EnrollmentDashboard() {
                 </IconButton>
               </Tooltip>
             </Box>
-            </>
           )}
         />
       </section>

@@ -17,6 +17,7 @@ from permissions import get_current_user, user_has_study_permission
 from utils import paginate_statement, random_time, convert_dt_to_local
 
 from models import Enrollment, Study, Ping
+from sqlalchemy import select
 
 
 
@@ -266,115 +267,104 @@ enrollments_bp = Blueprint('enrollments', __name__)
 @enrollments_bp.route('/studies/<int:study_id>/enrollments', methods=['GET'])
 @jwt_required()
 def get_enrollments(study_id):
+    """
+    Get a list of enrollments for a given study, with pagination, sorting, and searching.
+
+    Args:
+        study_id (int): The ID of the study.
+
+    Query Parameters:
+        page (int): The page number (default: 1).
+        per_page (int): The number of items per page (default: 10).
+        sort_by (str): The field to sort by (default: 'id').
+        sort_order (str): The sort order, 'asc' or 'desc' (default: 'asc').
+        search (str): A search query to filter enrollments by study_pid.
+
+    Returns:
+        JSON response containing the list of enrollments and pagination metadata.
+    """
     current_app.logger.debug("Entered get_enrollments route.")
-    
+
     user = get_current_user()
     if not user:
         current_app.logger.warning("Attempted to fetch enrollments but user not found.")
         return jsonify({"error": "User not found"}), 404
 
     current_app.logger.info(f"User={user.email} requested enrollments for study={study_id}.")
-    
+
+    # Get pagination parameters
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 10, type=int)
 
-    study = user_has_study_permission(user_id=user.id, study_id=study_id, minimum_role="viewer")
-    if not study:
-        current_app.logger.warning(f"User={user.id} does not have access to study={study_id}.")
-        return jsonify({"error": f"Study={study_id} not found or no access"}), 403
+    # Get sorting parameters
+    sort_by = request.args.get('sort_by', 'id')
+    sort_order = request.args.get('sort_order', 'asc')
 
-    # Get enrollments for the study
-    stmt = (
-        db.session.query(Enrollment)
-        .filter_by(study_id=study_id)
-        .filter(Enrollment.deleted_at.is_(None))
-        .order_by(Enrollment.id.asc())
-        .statement
-    )
-
-    pagination = paginate_statement(db.session, stmt, page=page, per_page=per_page)
-
-    enrollments_list = [
-        {
-            "id": en.id,
-            "tz": en.tz,
-            "study_pid": en.study_pid,
-            "linked_telegram": en.telegram_id is not None,
-            "enrolled": en.enrolled,
-            "signup_ts": convert_dt_to_local(en.signup_ts, en.tz).strftime("%Y-%m-%d"),
-        }
-        for en in pagination["items"]
-    ]
-
-    current_app.logger.info(
-        f"User={user.email} fetched {len(enrollments_list)} enrollments on page {page}/{pagination['pages']}."
-    )
-
-    return jsonify({
-        "data": enrollments_list,
-        "meta": {
-            "page": pagination["page"],
-            "per_page": pagination["per_page"],
-            "total": pagination["total"],
-            "pages": pagination["pages"]
-        }
-    }), 200
-
-
-@enrollments_bp.route('/studies/<int:study_id>/enrollments', methods=['POST'])
-@jwt_required()
-def create_enrollment_route(study_id):
-    current_app.logger.debug("Entered create_enrollment route.")
-    
-    user = get_current_user()
-    if not user:
-        current_app.logger.warning("User not found while trying to create an enrollment.")
-        return jsonify({"error": "User not found"}), 404
-
-    study = user_has_study_permission(user_id=user.id, study_id=study_id, minimum_role="editor")
-    if not study:
-        current_app.logger.warning(f"User={user.id} does not have editor access to study={study_id}.")
-        return jsonify({"error": f"Study={study_id} not found or no access"}), 403
-
-    data = request.get_json()
-    tz = data.get('tz')
-    study_pid = data.get('study_pid')
-    telegram_id = data.get('telegram_id', None)
-    signup_ts = data.get('signup_ts', datetime.now(timezone.utc))
-    enrolled = bool(telegram_id)
-
-    if not all([tz, study_pid]):
-        current_app.logger.warning(f"Missing required fields in create_enrollment with data={data}.")
-        return jsonify({"error": "Missing required fields: tz, study_pid"}), 400
+    # Get search query
+    search_query = request.args.get('search', None)
 
     try:
-        new_enrollment = create_enrollment(
-            db.session,
-            study_id=study_id,
-            tz=tz,
-            study_pid=study_pid,
-            enrolled=enrolled,
-            signup_ts=signup_ts,
-            telegram_id=telegram_id
-        )
-        db.session.commit()
+        # Validate user permissions
+        study = user_has_study_permission(user_id=user.id, study_id=study_id, minimum_role="viewer")
+        if not study:
+            current_app.logger.warning(f"User={user.id} does not have access to study={study_id}.")
+            return jsonify({"error": f"Study={study_id} not found or no access"}), 403
 
-        current_app.logger.info(f"User={user.email} created a new enrollment={new_enrollment.id} in study={study_id}.")
-        return jsonify({
-            "message": "Enrollment created successfully",
-            "enrollment": {
-                "id": new_enrollment.id,
-                "tz": new_enrollment.tz,
-                "study_pid": new_enrollment.study_pid,
-                "telegram_id": new_enrollment.telegram_id,
-                "enrolled": new_enrollment.enrolled,
-                "signup_ts": new_enrollment.signup_ts
+        # Build base query
+        stmt = select(Enrollment).where(
+            Enrollment.study_id == study_id,
+            Enrollment.deleted_at.is_(None)
+        )
+
+        # Apply search filter
+        if search_query:
+            stmt = stmt.where(Enrollment.study_pid.ilike(f'%{search_query}%'))
+
+        # Apply sorting
+        valid_sort_columns = {
+            'id': Enrollment.id,
+            'study_pid': Enrollment.study_pid,
+            'signup_ts': Enrollment.signup_ts,
+            'enrolled': Enrollment.enrolled,
+            # Add more fields if needed
+        }
+        sort_column = valid_sort_columns.get(sort_by, Enrollment.id)
+
+        if sort_order.lower() == 'desc':
+            stmt = stmt.order_by(sort_column.desc())
+        else:
+            stmt = stmt.order_by(sort_column.asc())
+
+        # Paginate
+        pagination = paginate_statement(db.session, stmt, page=page, per_page=per_page)
+        items = []
+        for en in pagination['items']:
+            item = {
+                "id": en.id,
+                "tz": en.tz,
+                "study_pid": en.study_pid,
+                "linked_telegram": en.telegram_id is not None,
+                "enrolled": en.enrolled,
+                "signup_ts": convert_dt_to_local(en.signup_ts, en.tz).strftime("%Y-%m-%d"),
             }
-        }), 201
+            items.append(item)
+
+        current_app.logger.info(
+            f"User={user.email} fetched {len(items)} enrollments on page {pagination['page']}/{pagination['pages']}."
+        )
+
+        return jsonify({
+            "data": items,
+            "meta": {
+                "page": pagination['page'],
+                "per_page": pagination['per_page'],
+                "total": pagination['total'],
+                "pages": pagination['pages']
+            }
+        }), 200
 
     except Exception as e:
-        db.session.rollback()
-        current_app.logger.error(f"Error creating enrollment in study={study_id} with data={data}.")
+        current_app.logger.error(f"Error fetching enrollments for study={study_id}: {e}")
         current_app.logger.exception(e)
         return jsonify({"error": "Internal server error"}), 500
 

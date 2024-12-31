@@ -5,7 +5,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from extensions import db
 from datetime import datetime, timezone
 
-from models import Study
+from models import Study, UserStudy
 from utils import paginate_statement
 from crud import (
     # user
@@ -26,12 +26,27 @@ from crud import (
 )
 from permissions import get_current_user, user_has_study_permission
 from utils import generate_non_confusable_code  # custom code generator
+from sqlalchemy import select
+
 
 studies_bp = Blueprint('studies', __name__)
 
 @studies_bp.route('/studies', methods=['GET'])
 @jwt_required()
 def get_studies_route():
+    """
+    Get a list of studies accessible by the current user, with pagination, sorting, and searching.
+
+    Query Parameters:
+        page (int): The page number (default: 1).
+        per_page (int): The number of items per page (default: 10).
+        sort_by (str): The field to sort by (default: 'id').
+        sort_order (str): The sort order, 'asc' or 'desc' (default: 'asc').
+        search (str): A search query to filter studies by name.
+
+    Returns:
+        JSON response containing the list of studies and pagination metadata.
+    """
     current_app.logger.debug("Entered get_studies route.")
     
     user = get_current_user()
@@ -41,45 +56,82 @@ def get_studies_route():
 
     current_app.logger.info(f"User={user.email} requested list of their studies.")
 
+    # Get pagination parameters
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 10, type=int)
 
-    # Build a statement that fetches all of this user's studies
-    stmt = (
-        db.session.query(Study)
-        .join(Study.user_studies)
-        .filter_by(user_id=user.id)
-        .filter(Study.deleted_at.is_(None))
-        .order_by(Study.id.asc())
-        .statement
-    )
+    # Get sorting parameters
+    sort_by = request.args.get('sort_by', 'id')
+    sort_order = request.args.get('sort_order', 'asc')
 
-    pagination = paginate_statement(db.session, stmt, page=page, per_page=per_page)
+    # Get search query
+    search_query = request.args.get('search', None)
 
-    studies_list = [
-        {
-            "id": st.id, 
-            "public_name": st.public_name, 
-            "internal_name": st.internal_name,
-            "contact_message": st.contact_message,
-            "code": st.code
+    try:
+        # Build base query
+        stmt = (
+            select(Study)
+            .join(UserStudy, UserStudy.study_id == Study.id)
+            .where(
+                UserStudy.user_id == user.id,
+                Study.deleted_at.is_(None)
+            )
+        )
+
+        # Apply search filter
+        if search_query:
+            stmt = stmt.where(
+                (Study.public_name.ilike(f'%{search_query}%')) |
+                (Study.internal_name.ilike(f'%{search_query}%'))
+            )
+
+        # Apply sorting
+        valid_sort_columns = {
+            'id': Study.id,
+            'public_name': Study.public_name,
+            'internal_name': Study.internal_name,
+            'code': Study.code,
+            # Add more fields if needed
         }
-        for st in pagination["items"]
-    ]
+        sort_column = valid_sort_columns.get(sort_by, Study.id)
 
-    current_app.logger.info(
-        f"User={user.email} fetched {len(studies_list)} studies on page {page}/{pagination['pages']}."
-    )
+        if sort_order.lower() == 'desc':
+            stmt = stmt.order_by(sort_column.desc())
+        else:
+            stmt = stmt.order_by(sort_column.asc())
 
-    return jsonify({
-        "data": studies_list,
-        "meta": {
-            "page": pagination["page"],
-            "per_page": pagination["per_page"],
-            "total": pagination["total"],
-            "pages": pagination["pages"]
-        }
-    }), 200
+        # Paginate
+        pagination = paginate_statement(db.session, stmt, page=page, per_page=per_page)
+
+        studies_list = [
+            {
+                "id": st.id, 
+                "public_name": st.public_name, 
+                "internal_name": st.internal_name,
+                "contact_message": st.contact_message,
+                "code": st.code
+            }
+            for st in pagination["items"]
+        ]
+
+        current_app.logger.info(
+            f"User={user.email} fetched {len(studies_list)} studies on page {pagination['page']}/{pagination['pages']}."
+        )
+
+        return jsonify({
+            "data": studies_list,
+            "meta": {
+                "page": pagination['page'],
+                "per_page": pagination['per_page'],
+                "total": pagination['total'],
+                "pages": pagination['pages']
+            }
+        }), 200
+
+    except Exception as e:
+        current_app.logger.error(f"Error fetching studies: {e}")
+        current_app.logger.exception(e)
+        return jsonify({"error": "Internal server error"}), 500
 
 @studies_bp.route('/studies', methods=['POST'])
 @jwt_required()

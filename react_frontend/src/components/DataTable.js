@@ -1,6 +1,7 @@
 // DataTable.js
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React from 'react';
+import PropTypes from 'prop-types';
 import {
   Table,
   TableBody,
@@ -12,13 +13,12 @@ import {
   CircularProgress,
   Typography,
   TablePagination,
-  TextField,
-  Checkbox,
-  FormControlLabel,
-  Menu,
-  MenuItem,
   IconButton,
   Tooltip,
+  Menu,
+  MenuItem,
+  FormControlLabel,
+  Checkbox,
 } from '@mui/material';
 import { ArrowUpward, ArrowDownward, FilterList } from '@mui/icons-material';
 
@@ -28,24 +28,20 @@ function DataTable({
   loading = false,
   error = null,
   currentPage = 1,
-  totalPages = 1,
-  onPreviousPage,
-  onNextPage,
+  perPage = 10,
+  totalRows = 0,
+  onPageChange,
+  onSortChange,
+  sortBy,
+  sortOrder,
   onRowClick = null,
   actionsColumn = null,
 }) {
-  // State variables for sorting
-  const [sortColumn, setSortColumn] = useState(null);
-  const [sortDirection, setSortDirection] = useState('asc');
-
-  // State variables for search
-  const [searchQuery, setSearchQuery] = useState('');
-
   // State variables for column visibility
-  const [visibleColumns, setVisibleColumns] = useState(columns);
+  const [visibleColumns, setVisibleColumns] = React.useState(columns);
 
   // State for column visibility menu
-  const [anchorEl, setAnchorEl] = useState(null);
+  const [anchorEl, setAnchorEl] = React.useState(null);
 
   // Handle opening of column visibility menu
   const handleToggleColumnsMenu = (event) => {
@@ -66,88 +62,34 @@ function DataTable({
       } else {
         // Show the column
         const newColumn = columns.find((col) => col.key === key);
-        return [...prevVisibleColumns, newColumn];
+        // Insert the column back to its original position
+        const updatedColumns = [...prevVisibleColumns];
+        const insertIndex = columns.findIndex((col) => col.key === key);
+        updatedColumns.splice(insertIndex, 0, newColumn);
+        return updatedColumns;
       }
     });
   };
 
   // Handle sorting when a column header is clicked
-  const handleSort = (columnKey) => {
-    if (sortColumn === columnKey) {
-      // Toggle sort direction
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
-    } else {
-      // Set new sort column and default to ascending
-      setSortColumn(columnKey);
-      setSortDirection('asc');
+  const handleSort = (columnKey, sortable) => {
+    if (!sortable) return;
+    if (onSortChange) {
+      onSortChange(columnKey);
     }
   };
-
-  // Update search query state
-  const handleSearchInputChange = (event) => {
-    setSearchQuery(event.target.value);
-  };
-
-  // Reset visible columns when columns prop changes
-  useEffect(() => {
-    setVisibleColumns(columns);
-  }, [columns]);
-
-  // Filter data based on search query
-  const filteredData = useMemo(() => {
-    if (!searchQuery) return data;
-
-    const lowerCaseQuery = searchQuery.toLowerCase();
-    return data.filter((row) =>
-      visibleColumns.some((col) => {
-        const cellValue = row[col.key];
-        return (
-          cellValue &&
-          cellValue.toString().toLowerCase().includes(lowerCaseQuery)
-        );
-      })
-    );
-  }, [data, searchQuery, visibleColumns]);
-
-  // Sort data based on sortColumn and sortDirection
-  const sortedData = useMemo(() => {
-    if (!sortColumn) return filteredData;
-
-    const sorted = [...filteredData].sort((a, b) => {
-      const aValue = a[sortColumn];
-      const bValue = b[sortColumn];
-
-      if (aValue == null) return 1;
-      if (bValue == null) return -1;
-
-      if (aValue < bValue) {
-        return sortDirection === 'asc' ? -1 : 1;
-      } else if (aValue > bValue) {
-        return sortDirection === 'asc' ? 1 : -1;
-      }
-      return 0;
-    });
-
-    return sorted;
-  }, [filteredData, sortColumn, sortDirection]);
-
-  // Pagination setup
-  const perPage = 10;
-  const totalRows = sortedData.length;
-  const totalPageCount = Math.ceil(totalRows / perPage);
-  const currentPageData = sortedData.slice(
-    (currentPage - 1) * perPage,
-    currentPage * perPage
-  );
 
   // Handle page change action
   const handleChangePage = (event, newPage) => {
-    if (newPage + 1 > currentPage) {
-      onNextPage && onNextPage();
-    } else {
-      onPreviousPage && onPreviousPage();
+    if (onPageChange) {
+      onPageChange(newPage + 1); // Material-UI uses zero-based page index
     }
   };
+
+  // Reset visible columns when columns prop changes
+  React.useEffect(() => {
+    setVisibleColumns(columns);
+  }, [columns]);
 
   // Render loading state
   if (loading) {
@@ -177,52 +119,32 @@ function DataTable({
   // Main render
   return (
     <Paper sx={{ width: '100%', padding: '1rem' }}>
-      {/* Top Bar with Search and Column Visibility Toggle */}
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          marginBottom: '1rem',
-          flexWrap: 'wrap',
-        }}
-      >
-        {/* Search Input */}
-        <TextField
-          label="Search"
-          variant="outlined"
-          size="small"
-          value={searchQuery}
-          onChange={handleSearchInputChange}
-          sx={{ width: '300px', marginBottom: '0.5rem' }}
-        />
-
-        {/* Column Visibility Toggle */}
-        <div>
-          <Tooltip title="Show/Hide Columns">
-            <IconButton onClick={handleToggleColumnsMenu}>
-              <FilterList />
-            </IconButton>
-          </Tooltip>
-          <Menu
-            anchorEl={anchorEl}
-            open={Boolean(anchorEl)}
-            onClose={handleCloseColumnsMenu}
-          >
-            {columns.map((col) => (
-              <MenuItem key={col.key}>
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={!!visibleColumns.find((vc) => vc.key === col.key)}
-                      onChange={() => handleColumnVisibilityChange(col.key)}
-                    />
-                  }
-                  label={col.label}
-                />
-              </MenuItem>
-            ))}
-          </Menu>
-        </div>
+      {/* Column Visibility Toggle */}
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem' }}>
+        <Tooltip title="Show/Hide Columns">
+          <IconButton onClick={handleToggleColumnsMenu}>
+            <FilterList />
+          </IconButton>
+        </Tooltip>
+        <Menu
+          anchorEl={anchorEl}
+          open={Boolean(anchorEl)}
+          onClose={handleCloseColumnsMenu}
+        >
+          {columns.map((col) => (
+            <MenuItem key={col.key}>
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={!!visibleColumns.find((vc) => vc.key === col.key)}
+                    onChange={() => handleColumnVisibilityChange(col.key)}
+                  />
+                }
+                label={col.label}
+              />
+            </MenuItem>
+          ))}
+        </Menu>
       </div>
 
       {/* Data Table */}
@@ -233,23 +155,24 @@ function DataTable({
               {visibleColumns.map((header) => (
                 <TableCell
                   key={header.key}
-                  sx={{ fontWeight: 'bold', cursor: 'pointer' }}
-                  onClick={() => handleSort(header.key)}
+                  sx={{ fontWeight: 'bold', cursor: header.sortable ? 'pointer' : 'default' }}
+                  onClick={() => handleSort(header.key, header.sortable)}
                 >
                   {header.label}
-                  {sortColumn === header.key &&
-                    (sortDirection === 'asc' ? (
+                  {header.sortable && sortBy === header.key && (
+                    sortOrder === 'asc' ? (
                       <ArrowUpward fontSize="small" />
                     ) : (
                       <ArrowDownward fontSize="small" />
-                    ))}
+                    )
+                  )}
                 </TableCell>
               ))}
               {actionsColumn && <TableCell>Actions</TableCell>}
             </TableRow>
           </TableHead>
           <TableBody>
-            {currentPageData.map((row, rowIndex) => (
+            {data.map((row, rowIndex) => (
               <TableRow
                 key={rowIndex}
                 hover={!!onRowClick}
@@ -282,5 +205,21 @@ function DataTable({
     </Paper>
   );
 }
+
+DataTable.propTypes = {
+  data: PropTypes.array.isRequired,
+  columns: PropTypes.array.isRequired,
+  loading: PropTypes.bool,
+  error: PropTypes.string,
+  currentPage: PropTypes.number.isRequired,
+  perPage: PropTypes.number,
+  totalRows: PropTypes.number.isRequired,
+  onPageChange: PropTypes.func.isRequired,
+  onSortChange: PropTypes.func,
+  sortBy: PropTypes.string,
+  sortOrder: PropTypes.oneOf(['asc', 'desc']),
+  onRowClick: PropTypes.func,
+  actionsColumn: PropTypes.func,
+};
 
 export default DataTable;
