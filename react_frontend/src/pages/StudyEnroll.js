@@ -1,9 +1,23 @@
+// StudyEnroll.js
+
 import React, { useState } from 'react';
 import { useParams, useLocation } from 'react-router-dom';
 import axios from '../api/axios';
 
-// 1) Import the timezone select component
+// Import Material-UI components
+import {
+  Typography,
+  Box,
+  Button,
+  Alert,
+  CircularProgress,
+} from '@mui/material';
+
+// Import the timezone select component
 import TimezoneSelect from 'react-timezone-select';
+
+// Import styles for TimezoneSelect (optional, if needed)
+// import 'react-timezone-select/dist/react-timezone-select.css';
 
 function StudyEnroll() {
   // ---------------------------------------------
@@ -12,7 +26,7 @@ function StudyEnroll() {
   const { signup_code } = useParams();
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
-  const study_pid = searchParams.get('pid'); 
+  const study_pid = searchParams.get('pid');
 
   // ---------------------------------------------
   // 2. Local state
@@ -21,16 +35,21 @@ function StudyEnroll() {
   const [error, setError] = useState(null);
   const [submitted, setSubmitted] = useState(false);
   const [telegramLinkCode, setTelegramLinkCode] = useState('');
+  const [loading, setLoading] = useState(false);
 
   // ---------------------------------------------
   // Early exit if pid is missing
   // ---------------------------------------------
   if (!study_pid) {
     return (
-      <div style={{ margin: '2rem' }}>
-        <h1>Error</h1>
-        <p>Missing participant ID. Please contact the researcher for assistance.</p>
-      </div>
+      <Box sx={{ margin: '2rem' }}>
+        <Typography variant="h4" gutterBottom>
+          Error
+        </Typography>
+        <Typography variant="body1">
+          Missing participant ID. Please contact the researcher for assistance.
+        </Typography>
+      </Box>
     );
   }
 
@@ -40,7 +59,8 @@ function StudyEnroll() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
-  
+    setLoading(true);
+
     try {
       const response = await axios.post('/signup', {
         signup_code,
@@ -56,45 +76,86 @@ function StudyEnroll() {
       setError(
         err.response?.data?.error || 'An error occurred while submitting the form.'
       );
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div style={{ margin: '2rem' }}>
-      <h1>Study Enroll</h1>
+    <Box sx={{ margin: '2rem' }}>
+      {!submitted ? (
+        <>
+          <Typography variant="h4" gutterBottom>
+            Study Enrollment
+          </Typography>
+          <Typography variant="body1" gutterBottom>
+            Please select your timezone to enroll in the study.
+          </Typography>
 
-      {submitted ? (
-        <div style={{ marginTop: '2rem' }}>
-          <h2>Thank you!</h2>
-          <p>Please download the Telegram app on your phone from your phone's app store.</p>
-          <p>
-            After downloading the app, open a conversation with the user @SurveyPingBot. 
-            You will be asked to provide a code. Enter <strong>{telegramLinkCode || 'ERROR: NO CODE FOUND'}</strong>.
-          </p>
-        </div>
+          <Box
+            component="form"
+            onSubmit={handleSubmit}
+            sx={{ maxWidth: 400, marginTop: '1rem' }}
+            noValidate
+          >
+            <Typography variant="subtitle1" gutterBottom>
+              Select your Timezone:
+            </Typography>
+
+            {/* Style TimezoneSelect to match MUI components */}
+            <Box sx={{ marginBottom: '1rem' }}>
+              <TimezoneSelect
+                value={tz}
+                onChange={(newVal) => setTz(newVal.value ?? newVal)}
+                styles={{
+                  control: (provided) => ({
+                    ...provided,
+                    borderColor: 'rgba(0, 0, 0, 0.23)',
+                    '&:hover': {
+                      borderColor: 'rgba(0, 0, 0, 0.87)',
+                    },
+                    boxShadow: 'none',
+                  }),
+                }}
+              />
+            </Box>
+
+            {error && (
+              <Alert severity="error" sx={{ marginBottom: '1rem' }}>
+                {error}
+              </Alert>
+            )}
+
+            <Button
+              type="submit"
+              variant="contained"
+              color="primary"
+              disabled={loading}
+              fullWidth
+            >
+              {loading ? <CircularProgress size={24} /> : 'Submit'}
+            </Button>
+          </Box>
+        </>
       ) : (
-        <form onSubmit={handleSubmit} style={{ maxWidth: '400px', marginTop: '1rem' }}>
-          <label htmlFor="tz">Select your Timezone:</label>
-          <br />
-          <TimezoneSelect
-            id="tz"
-            value={tz}
-            onChange={(newVal) => setTz(newVal.value ?? newVal)}
-            style={{ width: '100%', marginTop: '0.5rem' }}
-          />
-
-          {error && (
-            <p style={{ color: 'red', marginTop: '1rem' }}>
-              {error}
-            </p>
-          )}
-
-          <button type="submit" style={{ marginTop: '1rem' }}>
-            Submit
-          </button>
-        </form>
+        <Box sx={{ marginTop: '2rem' }}>
+          <Typography variant="h5" gutterBottom>
+            Thank you!
+          </Typography>
+          <Typography variant="body1" paragraph>
+            Please download the Telegram app on your phone from your phone's app store.
+          </Typography>
+          <Typography variant="body1" paragraph>
+            After downloading the app, open a conversation with the user{' '}
+            <strong>@SurveyPingBot</strong>. You will be asked to provide a code.
+          </Typography>
+          <Typography variant="body1">
+            Enter your code:{' '}
+            <strong>{telegramLinkCode || 'ERROR: NO CODE FOUND'}</strong>
+          </Typography>
+        </Box>
       )}
-    </div>
+    </Box>
   );
 }
 

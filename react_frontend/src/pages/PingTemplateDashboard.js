@@ -10,6 +10,7 @@ import PingScheduleForm from '../components/PingScheduleForm';
 import VariableAutoCompleteTextarea from '../components/VariableAutoCompleteTextarea';
 import DataTable from '../components/DataTable';
 import DeleteIcon from '@mui/icons-material/Delete';
+import { format } from 'date-fns';
 import {
   IconButton,
   Tooltip,
@@ -73,7 +74,13 @@ function PingTemplateDashboard() {
       studyLength: 7,
       scheduleMode: 'everyDay',
       everyDayPingsCount: 1,
-      everyDayPings: [{ beginTime: '09:00', endTime: '17:00', nextDay: false }],
+      everyDayPings: [
+        {
+          beginTime: new Date('1970-01-01T09:00:00'),
+          endTime: new Date('1970-01-01T17:00:00'),
+          nextDay: false,
+        },
+      ],
       perDaySchedule: [],
     },
   });
@@ -125,6 +132,8 @@ function PingTemplateDashboard() {
 
   // Build schedule JSON for submission
   const buildScheduleJSON = (data) => {
+    const formatTime = (date) => format(date, 'HH:mm');
+
     if (data.scheduleMode === 'everyDay') {
       const totalDays = parseInt(data.studyLength, 10) + 1;
       const scheduleArray = [];
@@ -133,9 +142,9 @@ function PingTemplateDashboard() {
         data.everyDayPings.forEach((ping) => {
           scheduleArray.push({
             begin_day_num: day,
-            begin_time: ping.beginTime,
+            begin_time: formatTime(ping.beginTime),
             end_day_num: ping.nextDay ? day + 1 : day,
-            end_time: ping.endTime,
+            end_time: formatTime(ping.endTime),
           });
         });
       }
@@ -148,9 +157,9 @@ function PingTemplateDashboard() {
         dayObj.pings.forEach((ping) => {
           result.push({
             begin_day_num: dayObj.day,
-            begin_time: ping.beginTime,
+            begin_time: formatTime(ping.beginTime),
             end_day_num: ping.nextDay ? dayObj.day + 1 : dayObj.day,
-            end_time: ping.endTime,
+            end_time: formatTime(ping.endTime),
           });
         });
       });
