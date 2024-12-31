@@ -289,7 +289,7 @@ def soft_delete_study(
     study_id: int
 ) -> bool:
     """
-    Soft-delete a Study by setting deleted_at.
+    Soft-delete a Study by setting deleted_at. Cascades to delete related enrollments, pings, and ping templates.
 
     Args:
         session (Session): The database session.
@@ -299,10 +299,20 @@ def soft_delete_study(
         bool: True if deletion was successful, False otherwise.
     """
     study = get_study_by_id(session, study_id, include_deleted=True)
+    enrollments = get_enrollments_by_study_id(session, study_id, include_deleted=True)
+    pings = get_pings_by_study_id(session, study_id, include_deleted=True)
+    ping_templates = get_ping_templates_by_study_id(session, study_id, include_deleted=True)
     if not study:
         return False
 
     study.deleted_at = datetime.now(timezone.utc)
+    for enrollment in enrollments:
+        enrollment.deleted_at = datetime.now(timezone.utc)
+    for ping in pings:
+        ping.deleted_at = datetime.now(timezone.utc)
+    for pt in ping_templates:
+        pt.deleted_at = datetime.now(timezone.utc)
+
     return True
 
 
@@ -483,6 +493,29 @@ def get_enrollment_by_id(
     result = session.execute(stmt)
     return result.scalar_one_or_none()
 
+def get_enrollments_by_study_id(
+    session: Session,
+    study_id: int,
+    include_deleted: bool = False
+) -> List[Enrollment]:
+    """
+    Fetch a list of Enrollments by Study ID, optionally including soft-deleted enrollments.
+
+    Args:
+        session (Session): The database session.
+        study_id (int): The ID of the study.
+        include_deleted (bool): Whether to include soft-deleted enrollments.
+
+    Returns:
+        List[Enrollment]: A list of Enrollment objects.
+    """
+    
+    stmt = select(Enrollment).where(Enrollment.study_id == study_id)
+    stmt = include_deleted_records(stmt, Enrollment, include_deleted)
+
+    result = session.execute(stmt)
+    return result.scalars().all()
+
 
 def get_enrollments_by_telegram_id(
     session: Session, 
@@ -572,10 +605,14 @@ def soft_delete_enrollment(session: Session, enrollment_id: int) -> bool:
         bool: True if deletion was successful, False otherwise.
     """
     enrollment = get_enrollment_by_id(session, enrollment_id, include_deleted=True)
+    pings = get_pings_by_enrollment_id(session, enrollment_id, include_deleted=True)
     if not enrollment:
         return False
 
     enrollment.deleted_at = datetime.now(timezone.utc)
+    for ping in pings:
+        ping.deleted_at = datetime.now(timezone.utc)
+        
     return True
 
 
@@ -646,6 +683,29 @@ def get_ping_template_by_id(
     return result.scalar_one_or_none()
 
 
+def get_ping_templates_by_study_id(
+    session: Session,
+    study_id: int,
+    include_deleted: bool = False
+) -> List[PingTemplate]:
+    """
+    Fetch a list of PingTemplates by Study ID, optionally including soft-deleted templates.
+    
+    Args:
+        session (Session): The database session.
+        study_id (int): The ID of the study.
+        include_deleted (bool): Whether to include soft-deleted templates.
+        
+    Returns:
+        List[PingTemplate]: A list of PingTemplate objects.
+    """
+    stmt = select(PingTemplate).where(PingTemplate.study_id == study_id)
+    stmt = include_deleted_records(stmt, PingTemplate, include_deleted)
+
+    result = session.execute(stmt)
+    return result.scalars().all()
+    
+
 def update_ping_template(
     session: Session, 
     template_id: int, 
@@ -672,28 +732,6 @@ def update_ping_template(
     return pt
 
 
-def delete_ping_template(
-    session: Session, 
-    template_id: int
-) -> bool:
-    """
-    Hard-delete (completely remove) a PingTemplate.
-
-    Args:
-        session (Session): The database session.
-        template_id (int): The ID of the ping template to delete.
-
-    Returns:
-        bool: True if deletion was successful, False otherwise.
-    """
-    pt = get_ping_template_by_id(session, template_id, include_deleted=True)
-    if not pt:
-        return False
-
-    session.delete(pt)
-    return True
-
-
 def soft_delete_ping_template(
     session: Session,
     template_id: int
@@ -709,10 +747,15 @@ def soft_delete_ping_template(
         bool: True if deletion was successful, False otherwise.
     """
     pt = get_ping_template_by_id(session, template_id, include_deleted=True)
+    pings = get_pings_by_ping_template_id(session, template_id, include_deleted=True)
     if not pt:
         return False
 
     pt.deleted_at = datetime.now(timezone.utc)
+    
+    for ping in pings:
+        ping.deleted_at = datetime.now(timezone.utc)
+        
     return True
 
 
@@ -819,6 +862,81 @@ def get_pings_for_reminder(
     )
     return session.execute(stmt).scalars().all()
     
+def get_pings_by_ping_template_id(
+    session: Session,
+    ping_template_id: int,
+    include_deleted: bool = False
+) -> List[Ping]:
+    """
+    Fetch a list of Pings by PingTemplate ID, optionally including soft-deleted pings.
+
+    Args:
+        session (Session): The database session.
+        ping_template_id (int): The ID of the ping template.
+        include_deleted (bool): Whether to include soft-deleted pings.
+
+    Returns:
+        List[Ping]: A list of Ping objects.
+    """
+    
+    stmt = (
+        select(Ping)
+        .where(Ping.ping_template_id == ping_template_id)
+    )
+    stmt = include_deleted_records(stmt, Ping, include_deleted)
+    
+    return session.execute(stmt).scalars().all()
+
+def get_pings_by_enrollment_id(
+    session: Session,
+    enrollment_id: int,
+    include_deleted: bool = False
+) -> List[Ping]:
+    """
+    Fetch a list of Pings by Enrollment ID, optionally including soft-deleted pings.
+
+    Args:
+        session (Session): The database session.
+        enrollment_id (int): The ID of the enrollment.
+        include_deleted (bool): Whether to include soft-deleted pings.
+
+    Returns:
+        List[Ping]: A list of Ping objects.
+    """
+    
+    stmt = (
+        select(Ping)
+        .where(Ping.enrollment_id == enrollment_id)
+    )
+    stmt = include_deleted_records(stmt, Ping, include_deleted)
+    
+    return session.execute(stmt).scalars().all()
+    
+def get_pings_by_study_id(
+    session: Session,
+    study_id: int,
+    include_deleted: bool = False
+) -> List[Ping]:
+    """
+    Fetch a list of Pings by Study ID, optionally including soft-deleted pings.
+
+    Args:
+        session (Session): The database session.
+        study_id (int): The ID of the study.
+        include_deleted (bool): Whether to include soft-deleted pings.
+        
+    Returns:
+        List[Ping]: A list of Ping objects.
+    """
+    stmt = (
+        select(Ping)
+        .join(Enrollment, Ping.enrollment_id == Enrollment.id)
+        .where(Enrollment.study_id == study_id)
+    )
+    stmt = include_deleted_records(stmt, Ping, include_deleted)
+    
+    return session.execute(stmt).scalars().all()
+
     
 def update_ping(
     session: Session, 
