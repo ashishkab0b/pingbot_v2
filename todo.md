@@ -1,12 +1,11 @@
 
 REQUIRED FOR BASIC FUNCTION
 
-- cascade deletes 
-    - (finished enrollment -> ping)
-    - study -> ping, enrollment, ping_templates
-    - ping_templates -> ping
 - test ping url forwarding including reminders, expire, completed, and pr completed
 - limit late sending to an acceptable delay
+- feedbackwidget
+- add userstudy to cascading deletes
+- send email on updating support db
 
 MID PRIORITY
 - include scheduled_ts in pings or recommend researchers do that (make sure format is good thougha)

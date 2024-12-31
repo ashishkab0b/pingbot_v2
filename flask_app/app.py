@@ -34,6 +34,7 @@ def create_app(config):
 
     # Register Blueprints
     # from blueprints.admin import admin_bp
+    from blueprints.support import support_bp
     from blueprints.bot import bot_bp
     from blueprints.auth import auth_bp
     from blueprints.studies import studies_bp
@@ -44,6 +45,7 @@ def create_app(config):
 
     # app.register_blueprint(admin_bp, url_prefix='/admin')
     app.register_blueprint(bot_bp, url_prefix='/api/bot')
+    app.register_blueprint(support_bp, url_prefix='/api')
     app.register_blueprint(auth_bp, url_prefix='/api')
     app.register_blueprint(studies_bp, url_prefix='/api')
     app.register_blueprint(ping_templates_bp, url_prefix='/api')

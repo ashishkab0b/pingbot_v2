@@ -265,7 +265,7 @@ class Support(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     email = db.Column(db.String(255), nullable=False)
     # Make a JSONB field for the message
-    messages = db.Column(JSONB, nullable=False)  # e.g., {"message": "I am having trouble logging in.", "attachments": ["screenshot.png"], "sender": "user"}
+    messages = db.Column(JSONB, nullable=False)  # e.g., [{"message": "I am having trouble logging in.", "attachments": ["screenshot.png"], "sender": "user"}]
     is_urgent = db.Column(db.Boolean, default=False, nullable=False)
     query_type = db.Column(db.String(255), nullable=False)
     resolved = db.Column(db.Boolean, default=False, nullable=False)

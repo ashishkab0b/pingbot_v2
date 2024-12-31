@@ -14,6 +14,7 @@ import NavBar from './components/NavBar';
 import { StudyProvider } from './context/StudyContext';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import Footer from './components/Footer';
+import FeedbackWidget from './components/FeedbackWidget';
 
 
 const theme = createTheme({
@@ -121,6 +122,7 @@ function App() {
     <ThemeProvider theme={theme}>
       <Router>
         <Layout />
+        <FeedbackWidget />
       </Router>
 
       <Footer />
