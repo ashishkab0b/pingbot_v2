@@ -30,7 +30,7 @@ def setup_logger():
 
         # Formatters
         file_formatter = logging.Formatter(
-            "%(asctime)s - %(levelname)-8s - %(name)-15s - [%(filename)-15s:%(lineno)4d] - %(message)s"
+            "%(asctime)s - %(levelname)-8s - %(name)-15s - [%(filename)-18s:%(lineno)4d] - %(message)s"
         )
         console_formatter = logging.Formatter("%(levelname)s - %(message)s")
 
