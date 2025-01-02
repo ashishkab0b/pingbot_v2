@@ -144,13 +144,13 @@ function StudyEnroll() {
         </>
       ) : (
         <Box sx={{ marginTop: '2rem' }}>
-          <Typography variant="h5" gutterBottom>
+          {/* <Typography variant="h5" gutterBottom>
             Thank You for Enrolling!
-          </Typography>
+          </Typography> */}
 
           {/* Step 1: Download Telegram Instructions */}
           <Typography variant="body1" paragraph>
-            To receive study notifications and participate fully, you’ll need the Telegram app on your phone. 
+            To receive study notifications, you’ll need the Telegram app <em>on your phone</em>. (Please be sure to use your phone, not a computer, so you can receive notifications while away from your computer.) 
             Below are links to download Telegram for both iOS (iPhone/iPad) and Android:
           </Typography>
 
@@ -187,13 +187,18 @@ function StudyEnroll() {
 
           {/* Step 3: Provide the Enrollment Code */}
           <Typography variant="body1" paragraph>
-            Once inside the conversation with <strong>@SurveyPingBot</strong>, you may be asked for a code. 
+            Once inside the conversation with <strong>@SurveyPingBot</strong>, enter <code>/enroll</code>. You will then be asked to provide an enrollment code. 
             Please provide the following code exactly as shown below:
           </Typography>
 
-          <Typography variant="h6" sx={{ mt: 2 }}>
+          <Typography variant="h1" sx={{ mt: 2 }}>
             {telegramLinkCode || 'ERROR: NO CODE FOUND'}
           </Typography>
+
+          <Typography variant="body1" paragraph>
+            If you have any questions or need assistance, please contact the researcher.
+          </Typography>
+
         </Box>
       )}
     </Box>
