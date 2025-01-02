@@ -251,7 +251,7 @@ function EnrollmentDashboard() {
             { label: 'Time Zone', key: 'timeZone' },
             { label: 'Enrolled', key: 'enrolled' },
             { label: 'Linked Telegram?', key: 'linkedTelegram' },
-            { label: 'Start Date', key: 'startDate' },
+            { label: 'Enrollment Date', key: 'startDate' },
             { label: 'Proportion completed', key: 'prCompleted' },
           ]}
           loading={loading}
