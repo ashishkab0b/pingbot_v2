@@ -4,6 +4,7 @@ from flask import Flask, request, jsonify
 from werkzeug.exceptions import HTTPException
 from logger_setup import setup_logger
 from sqlalchemy.orm import Session
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 # Import extensions
 from extensions import db, migrate, jwt, swagger, cors, redis_client, init_extensions
@@ -16,6 +17,7 @@ def create_app(config):
     # Create and configure the Flask app
     app = Flask(__name__)
     app.config.from_object(config)
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
     # Initialize logger
     logger = setup_logger()
