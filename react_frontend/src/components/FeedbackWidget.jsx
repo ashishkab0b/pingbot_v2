@@ -91,7 +91,7 @@ function FeedbackWidget() {
           sx={{
             position: 'fixed',
             bottom: (theme) => theme.spacing(2),
-            right: (theme) => theme.spacing(2),
+            left: (theme) => theme.spacing(2),
           }}
         >
           <FeedbackIcon />

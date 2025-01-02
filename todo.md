@@ -22,15 +22,14 @@ REQUIRED FOR BASIC FUNCTION
 
 MID PRIORITY
 - show sent message in ping db
-- include scheduled_ts in pings or recommend researchers do that (make sure format is good thougha)
 - include link to ping template and to particpant
 - prevent double enrollment of a study_pid
-- page numbers incorrect sometimes for table
 - when user changes params of study, change upcoming pings (optionally)
 - form validation (esp ping templates)
 - switch from using localstorage to store access tokens to using httponly
 - sanitize all input of javascript.
 - probability completed
+- put captcha on register and login
 
 LOWER PRIORITY
 - account.js
