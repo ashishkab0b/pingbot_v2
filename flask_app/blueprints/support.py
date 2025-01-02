@@ -6,6 +6,8 @@ from models import Support, User
 from extensions import db
 from datetime import datetime
 from crud import create_support_query
+from flask_mail import Mail, Message
+from extensions import mail
 
 support_bp = Blueprint('support', __name__)
 
@@ -37,7 +39,23 @@ def submit_feedback():
         'sender': email,
         'message': message,
     }]
+    
+    # Send email to the support team
+    try:
+        subject = f"New '{query_type}' query from {email}"
+        if is_urgent:
+            subject = f"URGENT: {subject}"
+        msg = Message(subject=subject, recipients=[current_app.config['MAIL_USERNAME']])
+        msg.body = f"From: {email}\n\nMessage: {message}"
+        mail.send(msg)
+    except Exception as e:
+        current_app.logger.error(f'Error sending email for user {user_id} - {email}.')
+        current_app.logger.exception(e)
+        return jsonify({'error': 'An error occurred while sending the email.'}), 500
+    else:
+        current_app.logger.info(f"Email sent for user {user_id} - {email}.")
 
+    # Save the feedback to the database
     try:
         support_query = create_support_query(
             session=db.session,

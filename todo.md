@@ -2,7 +2,6 @@
 REQUIRED FOR BASIC FUNCTION
 
 - test ping url forwarding including reminders, expire, completed, and pr completed
-- limit late sending to an acceptable delay
 - feedbackwidget
 - add userstudy to cascading deletes
 - send email on updating support db

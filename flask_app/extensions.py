@@ -57,6 +57,7 @@ jwt = JWTManager()
 swagger = Swagger()
 cors = CORS()
 redis_client = FlaskRedis()
+mail = Mail()
 
 def init_extensions(app):
     global celery
@@ -64,6 +65,7 @@ def init_extensions(app):
     db.init_app(app)
     migrate.init_app(app, db)
     jwt.init_app(app)
+    mail.init_app(app)
     cors.init_app(app, resources={
         r"/api/*": {
             "origins": [
