@@ -134,6 +134,12 @@ const EMAInstructions = () => {
           researchteam@example.com or call us at (555) 123-4567 between 9am–5pm
           EST.”
         </Paper>
+
+        <Typography paragraph>
+        Please note that certain platforms (e.g. Prolific) have privacy policies that prevent researchers from collecting contact information from participants. 
+        In these cases, your contact message should direct participants to contact you through the platform’s messaging system 
+        in order to prevent exposing the participants' own contact information to you.
+        </Typography>
       </Box>
 
       {/* Step 2 */}
