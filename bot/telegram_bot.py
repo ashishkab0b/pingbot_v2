@@ -111,10 +111,11 @@ async def contact(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     payload = {
         "telegram_id": update.message.from_user.id,
     }
+
     url = f"{config.FLASK_APP_BOT_BASE_URL}/get_contact_msgs"
     
     logger.debug(f"Sending contact message GET request to {url} with telegramID={update.message.from_user.id}")
-    
+
     # Send the request
     resp = requests.get(url=url, json=payload, headers=header)
     
