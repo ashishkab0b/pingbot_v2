@@ -1,6 +1,6 @@
 // FeedbackWidget.js
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   Fab,
   Dialog,
@@ -58,7 +58,6 @@ function FeedbackWidget() {
   const handleSubmit = async () => {
     setSubmitting(true);
     try {
-
       if(!recaptcha.current.getValue()){
         alert('Please Submit Captcha')
       }
