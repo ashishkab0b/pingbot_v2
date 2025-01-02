@@ -19,7 +19,7 @@ FROM nginx:alpine
 COPY ./nginx/nginx.conf /etc/nginx/nginx.conf
 
 # Copy built React files to Nginx's static directory
-COPY --from=react-build /app/build /usr/share/nginx/html
+COPY --from=react-build /app/dist /usr/share/nginx/html
 
 # Expose port 80
 EXPOSE 80

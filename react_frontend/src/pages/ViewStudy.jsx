@@ -49,7 +49,7 @@ function ViewStudy() {
     }
   };
 
-  const enrollmentLinkBase = `${process.env.REACT_APP_BASE_URL}/enroll/${study?.code}?pid=`;
+  const enrollmentLinkBase = import.meta.env.VITE_BASE_URL + '/enroll/' + study?.code + '?pid=';
 
   const handleCopyLink = () => {
     const linkToCopy = `${enrollmentLinkBase}${participantId}`;
