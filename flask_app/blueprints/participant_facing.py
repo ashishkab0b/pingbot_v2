@@ -8,7 +8,7 @@ from datetime import timedelta, datetime, timezone
 from zoneinfo import ZoneInfo
 from utils import generate_non_confusable_code
 from message_constructor import MessageConstructor
-from crud import get_enrollments_by_telegram_id, get_study_by_id
+from crud import get_enrollments_by_telegram_id, get_study_by_id, get_pings_by_enrollment_id
 from telegram_messenger import TelegramMessenger
 
 particpant_facing_bp = Blueprint('particpant_facing', __name__)
@@ -60,6 +60,22 @@ def ping_forwarder(ping_id):
     if hasattr(ping, 'expiry_ts') and ping.expiry_ts < datetime.now(timezone.utc):
         current_app.logger.info(f"Ping {ping.id} has expired.")
         return current_app.config["PING_EXPIRED_MESSAGE"], 200
+    
+    # Recompute probability completed
+    try:
+        all_pings = get_pings_by_enrollment_id(db.session, ping.enrollment_id)
+        already_sent_pings = [p for p in all_pings if p.sent_ts is not None]
+        completed_sent_pings = [p for p in already_sent_pings if p.completed_ts is not None]
+        pr_completed = len(completed_sent_pings) / len(already_sent_pings) if len(already_sent_pings) > 0 else 0.0
+        ping.enrollment.pr_completed = pr_completed
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Failed to update enrollment {ping.enrollment_id} with pr_completed.")
+        current_app.logger.exception(e)
+        return jsonify({"error": "Internal server error."}), 500
+    
+    
 
     # Redirect to survey
     message_constructor = MessageConstructor(ping)
