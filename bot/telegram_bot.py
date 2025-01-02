@@ -117,7 +117,7 @@ async def contact(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     logger.debug(f"Sending contact message GET request to {url} with telegramID={update.message.from_user.id}")
 
     # Send the request
-    resp = requests.get(url=url, json=payload, headers=header)
+    resp = requests.get(url=url, params=payload, headers=header)
     
     # Handle errors
     if resp.status_code != 200:
