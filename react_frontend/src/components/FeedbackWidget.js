@@ -57,7 +57,7 @@ function FeedbackWidget() {
       // Adjust the request payload to match your Flask route expectations
       await axios.post('/support', {
         email: email,
-        type: feedbackType, // The Flask route expects 'type' as 'query_type'
+        type: feedbackType, 
         message: message,
         urgent: isUrgent,
       });

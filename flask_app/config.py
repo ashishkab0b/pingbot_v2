@@ -8,8 +8,9 @@ load_dotenv()
 
 class BaseConfig:
     
+
     MAIL_SERVER = 'live.smtp.mailtrap.io'
-    MAIL_PORT = 587
+    MAIL_PORT = 2525
     MAIL_USERNAME = os.environ['MAIL_USERNAME']
     MAIL_PASSWORD = os.environ['MAIL_PASSWORD']
     MAIL_USE_TLS = True

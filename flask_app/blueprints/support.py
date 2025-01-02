@@ -15,9 +15,10 @@ support_bp = Blueprint('support', __name__)
 @support_bp.route('/support', methods=['POST'])
 @jwt_required(optional=True)
 def submit_feedback():
+    current_app.logger.debug("Entered submit_feedback route.")
     data = request.get_json()
     email = data.get('email')
-    query_type = data.get('type')  # Adjusted to accept 'type'
+    query_type = data.get('type') 
     message = data.get('message')
     is_urgent = data.get('urgent', False)
 
@@ -66,9 +67,11 @@ def submit_feedback():
             is_urgent=is_urgent
         )
         db.session.commit()
-        return jsonify({'message': 'Feedback submitted successfully.'}), 201
     except Exception as e:
         db.session.rollback()
         current_app.logger.error(f'Error saving feedback for user {user_id} - {email}.')
         current_app.logger.exception(e)
         return jsonify({'error': 'An error occurred while saving feedback.'}), 500
+    else:
+        current_app.logger.info(f"Saved support request from user_id={user_id} - {email}.")
+        return jsonify({'message': 'Feedback submitted successfully.'}), 201
