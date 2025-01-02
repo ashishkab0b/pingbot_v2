@@ -32,7 +32,7 @@ COMMAND_DESCRIPTIONS = {
     'enroll': 'Enroll in a new study',
     'contact': 'View instructions for contacting the study team',
     'dashboard': 'View the online dashboard',
-    # 'unenroll': 'Unenroll from a study',
+    'unenroll': 'Unenroll from a study',
     # 'timezone': 'Set your time zone',
 }
 
@@ -156,7 +156,7 @@ def main() -> None:
             CommandHandler('enroll', enroll),
             CommandHandler('contact', contact),
             CommandHandler('dashboard', dashboard),
-            # CommandHandler('unenroll', dashboard),
+            CommandHandler('unenroll', dashboard),
         ],
         states={
             ENTERING_LINK_CODE: [MessageHandler(filters.TEXT & ~filters.COMMAND, entering_link_code)],
