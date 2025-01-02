@@ -344,3 +344,12 @@ def get_contact_msgs():
         })
     
     return jsonify(msgs), 200
+
+
+@bot_bp.post(f"/webhook/{TELEGRAM_TOKEN}")
+def telegram_webhook():
+    # Convert the incoming JSON into an Update object
+    update = Update.de_json(request.json, telegram_app.bot)
+    # Send the Update to the application’s queue
+    telegram_app.update_queue.put(update)
+    return "OK", 200
