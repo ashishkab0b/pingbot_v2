@@ -249,7 +249,7 @@ function EnrollmentDashboard() {
             { label: 'ID', key: 'id' },
             { label: 'Participant ID', key: 'studyPid' },
             { label: 'Time Zone', key: 'timeZone' },
-            { label: 'Enrolled', key: 'enrolled' },
+            { label: 'Enrolled?', key: 'enrolled' },
             { label: 'Linked Telegram?', key: 'linkedTelegram' },
             { label: 'Enrollment Date', key: 'startDate' },
             { label: 'Proportion completed', key: 'prCompleted' },
