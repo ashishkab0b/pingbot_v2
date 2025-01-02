@@ -409,8 +409,17 @@ const EMAInstructions = () => {
             <ListItemText
               primary={
                 <>
-                  <strong>Support:</strong> Keep your contact message up to date
+                  <strong>Participant Support:</strong> Keep your contact message up to date
                   so participants know how to reach you if they have questions.
+                </>
+              }
+            />
+          </ListItem>
+          <ListItem sx={{ display: 'list-item' }}>
+            <ListItemText
+              primary={
+                <>
+                  <strong>Researcher Support and Feedback:</strong> If you run into any issues, you can open a feedback form by clicking in the bottom right corner of the screen. If anything seems off or you run into any bugs, I really appreciate if you would take a second or two to report it via the feedback form. Thank you!
                 </>
               }
             />
