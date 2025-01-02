@@ -161,6 +161,9 @@ def api_participant_dashboard():
             en = {k: v for k, v in enrollment.to_dict().items() if k in enrollment_keys_to_return}
             current_app.logger.debug(f"Valid enrollment found: {en}")
             study_object = get_study_by_id(db.session, en['study_id'])
+            if not study_object:  # can probably be removed after having implemented cascading deletes
+                current_app.logger.warning(f"Study not found for study_id={en['study_id']}")
+                continue
             study = study_object.to_dict()
             for k, v in study.items():
                 if k in study_keys_to_return:
