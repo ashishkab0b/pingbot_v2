@@ -68,6 +68,10 @@ class ProductionConfig(BaseConfig):
     
     DEBUG = False
     
+    PREFERRED_URL_SCHEME = "https"
+    SESSION_COOKIE_SECURE = True
+    REMEMBER_COOKIE_SECURE = True
+    
     REDIS_HOST = "redis"
     REDIS_PASSWORD = os.getenv("REDIS_PASSWORD", None)
     REDIS_URL = f"redis://:{REDIS_PASSWORD}@{REDIS_HOST}:6379/0"
