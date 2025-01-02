@@ -74,7 +74,6 @@ def check_and_send_reminders(session, telegram_messenger, now):
         success = telegram_messenger.send_ping(telegram_id, message)
 
         if success:
-            ping.reminder_sent = True
             ping.reminder_sent_ts = now
             session.commit()
             current_app.logger.info(f"Reminder for ping {ping.id} sent to telegram_id {telegram_id}")
