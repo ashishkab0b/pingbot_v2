@@ -149,7 +149,7 @@ class MessageConstructor:
                     new_val = getattr(self.ping, value['db_column'])
                     
                 # Replace the placeholder with the correct value
-                message = message.replace(key, new_val)
+                message = message.replace(key, str(new_val))
                 
             elif value['db_table'] == 'studies':
                 
@@ -160,7 +160,7 @@ class MessageConstructor:
                     new_val = getattr(self.ping, value['db_column'])
                     
                 # Replace the placeholder with the correct value
-                message = message.replace(key, new_val)
+                message = message.replace(key, str(new_val))
                 
             elif value['db_table'] == 'ping_templates':
                 
@@ -171,7 +171,7 @@ class MessageConstructor:
                     new_val = getattr(self.ping, value['db_column'])
                     
                 # Replace the placeholder with the correct value
-                message = message.replace(key, new_val)
+                message = message.replace(key, str(new_val))
                 
             elif value['db_table'] == 'enrollments':
                 
@@ -182,7 +182,7 @@ class MessageConstructor:
                     new_val = getattr(self.ping, value['db_column'])
                     
                 # Replace the placeholder with the correct value
-                message = message.replace(key, new_val)
+                message = message.replace(key, str(new_val))
                 
         
         self.message = message
