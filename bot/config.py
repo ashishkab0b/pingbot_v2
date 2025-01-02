@@ -22,8 +22,8 @@ class DevelopmentConfig(Config):
 class ProductionConfig(Config):
         
     DEBUG = False
-    FRONTEND_BASE_URL="http://emapingbot.com"
-    FLASK_APP_BOT_BASE_URL="http://emapingbot.com/api/bot"
+    FRONTEND_BASE_URL="https://emapingbot.com"
+    FLASK_APP_BOT_BASE_URL="https://emapingbot.com/api/bot"
         
     
     
