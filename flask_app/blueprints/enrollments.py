@@ -160,6 +160,7 @@ def get_enrollments(study_id):
             'study_pid': Enrollment.study_pid,
             'signup_ts': Enrollment.signup_ts,
             'enrolled': Enrollment.enrolled,
+            'pr_completed': Enrollment.pr_completed,
             # Add more fields if needed
         }
         sort_column = valid_sort_columns.get(sort_by, Enrollment.id)
@@ -180,6 +181,7 @@ def get_enrollments(study_id):
                 "linked_telegram": en.telegram_id is not None,
                 "enrolled": en.enrolled,
                 "signup_ts": convert_dt_to_local(en.signup_ts, en.tz).strftime("%Y-%m-%d"),
+                "pr_completed": en.pr_completed,
             }
             items.append(item)
 

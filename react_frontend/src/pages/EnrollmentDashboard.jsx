@@ -243,6 +243,7 @@ function EnrollmentDashboard() {
             enrolled: participant.enrolled ? 'Yes' : 'No',
             linkedTelegram: participant.linked_telegram ? 'Yes' : 'No',
             startDate: participant.signup_ts,
+            prCompleted: participant.pr_completed,
           }))}
           columns={[
             { label: 'ID', key: 'id' },
@@ -251,6 +252,7 @@ function EnrollmentDashboard() {
             { label: 'Enrolled', key: 'enrolled' },
             { label: 'Linked Telegram?', key: 'linkedTelegram' },
             { label: 'Start Date', key: 'startDate' },
+            { label: 'Proportion completed', key: 'prCompleted' },
           ]}
           loading={loading}
           error={error}
