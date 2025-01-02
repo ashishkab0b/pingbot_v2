@@ -73,8 +73,8 @@ const EMAInstructions = () => {
         <Typography paragraph>
           One major advantage of EMA Pingbot is that it allows you to use the
           survey software of your choice—such as Qualtrics, REDCap, or any other
-          platform—to design and collect your data. This flexibility means you
-          can continue leveraging your existing survey designs and analytics
+          platform to design surveys and collect your data. This flexibility means you
+          can continue leveraging your existing survey design and analytics
           tools while relying on EMA Pingbot to handle the scheduling and
           distribution of surveys to participants.
         </Typography>
