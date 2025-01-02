@@ -24,7 +24,7 @@ function Login() {
       localStorage.setItem('access_token', access_token);
       localStorage.setItem('refresh_token', refresh_token);
       localStorage.setItem('user_email', email);
-      navigate('/studies');
+      navigate('/help');
     } catch (error) {
       console.error(error);
       setError('Invalid credentials. Please try again.');
