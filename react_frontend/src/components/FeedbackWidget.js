@@ -19,7 +19,7 @@ import {
   Tooltip,
 } from '@mui/material';
 import FeedbackIcon from '@mui/icons-material/Feedback';
-import axios from '../api/axios'; // Adjust the import path as needed
+import axios from '../api/axios'; 
 
 function FeedbackWidget() {
   const [open, setOpen] = useState(false);
@@ -28,7 +28,8 @@ function FeedbackWidget() {
   const [isUrgent, setIsUrgent] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
-  const [email, setEmail] = useState('');
+  // Initialize email state with user_email from localStorage
+  const [email, setEmail] = useState(() => localStorage.getItem('user_email') || '');
 
   const feedbackTypes = [
     'Feature request',
@@ -45,7 +46,7 @@ function FeedbackWidget() {
       setFeedbackType('General feedback');
       setMessage('');
       setIsUrgent(false);
-      setEmail('');
+      setEmail(() => localStorage.getItem('user_email') || '');
       setSubmitted(false);
     }
   };
