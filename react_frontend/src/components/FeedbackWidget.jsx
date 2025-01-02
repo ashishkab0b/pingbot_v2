@@ -33,7 +33,6 @@ function FeedbackWidget() {
   const [email, setEmail] = useState(() => localStorage.getItem('user_email') || '');
   
   const recaptcha = useRef(null);
-  <ReCAPTCHA sitekey={import.meta.env.VITE_SITE_KEY} ref={recaptcha}/>
 
   const feedbackTypes = [
     'Feature request',
@@ -58,8 +57,11 @@ function FeedbackWidget() {
   const handleSubmit = async () => {
     setSubmitting(true);
     try {
-      if(!recaptcha.current.getValue()){
-        alert('Please Submit Captcha')
+      const recaptchaValue = recaptcha.current.getValue();
+      if (!recaptchaValue) {
+        alert('Please complete the CAPTCHA');
+        setSubmitting(false);
+        return;
       }
       await axios.post('/support', {
         email: email,
@@ -156,6 +158,10 @@ function FeedbackWidget() {
                 }
                 label="Mark as urgent"
                 sx={{ marginTop: 1 }}
+              />
+              <ReCAPTCHA
+                sitekey={import.meta.env.VITE_SITE_KEY}
+                ref={recaptcha}
               />
             </DialogContent>
             <DialogActions>
