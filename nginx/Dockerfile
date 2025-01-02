@@ -23,6 +23,7 @@ COPY --from=react-build /app/build /usr/share/nginx/html
 
 # Expose port 80
 EXPOSE 80
+EXPOSE 443
 
 # Start Nginx
 CMD ["nginx", "-g", "daemon off;"]

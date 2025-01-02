@@ -87,8 +87,9 @@ services:
       - "443:443"
     volumes:
       - ./logs/nginx:/var/log/nginx
-      - ./nginx/www:/var/www/certbot        # For ACME challenges
-      - ./nginx/certs:/etc/letsencrypt      # For SSL certificates
+      - ./nginx/certs:/etc/letsencrypt
+      - ./nginx/www:/var/www/certbot  # For Certbot challenge
+      - ./nginx/certbot_nginx.conf:/etc/nginx/conf.d/default.conf  # Temporary config
     depends_on:
       - flask-backend
 
