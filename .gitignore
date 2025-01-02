@@ -8,9 +8,9 @@ venv/
 
 # Secrets
 **/.env
-nginx/certs/accounts/
-nginx/certs/archive/
-nginx/certs/live/
+nginx/certs/accounts/**
+nginx/certs/archive/**
+nginx/certs/live/**
 
 # Logs
 **/logs
@@ -54,3 +54,4 @@ Thumbs.db
 form_gpt_queries.ipynb
 gpt_query.txt
 
+nginx/certs/accounts/acme-v02.api.letsencrypt.org
