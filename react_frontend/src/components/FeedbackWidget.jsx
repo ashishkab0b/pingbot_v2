@@ -57,20 +57,19 @@ function FeedbackWidget() {
   const handleSubmit = async () => {
     setSubmitting(true);
     try {
-      // Execute reCAPTCHA v3 and get the token
       const recaptchaToken = await grecaptcha.execute(import.meta.env.VITE_SITE_KEY, { action: 'submit' });
-
       if (!recaptchaToken) {
         alert('reCAPTCHA verification failed. Please try again.');
         setSubmitting(false);
         return;
       }
-      
+
       await axios.post('/support', {
         email: email,
         type: feedbackType, 
         message: message,
         urgent: isUrgent,
+        recaptcha: recaptchaToken, 
       });
       setSubmitted(true);
     } catch (error) {
