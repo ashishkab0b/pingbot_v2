@@ -587,7 +587,7 @@ def get_enrollments_by_telegram_id(
 
     result = session.execute(stmt)
     
-    current_app.logger.debug(f"Found {result.rowcount} enrollments for telegramID={telegram_id}")
+    # current_app.logger.debug(f"Found {len(list(result))} enrollments for telegramID={telegram_id}")
     
     return result.scalars().all()
 

@@ -319,7 +319,7 @@ def get_contact_msgs():
     current_app.logger.debug("Entered get_contact_msgs endpoint.")
     
     # Get the enrollments
-    enrollments = get_enrollments_by_telegram_id(db.session, request.args.get('t'))
+    enrollments = get_enrollments_by_telegram_id(db.session, request.args.get('telegram_id'))
     if not enrollments:
         return jsonify({"error": "Participant not found"}), 404
     
