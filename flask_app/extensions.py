@@ -7,6 +7,7 @@ from flasgger import Swagger
 from flask_cors import CORS
 from sqlalchemy.orm import Query
 from flask_redis import FlaskRedis
+from flask_mail import Mail
 
 
 class SoftDeleteQuery(Query):
