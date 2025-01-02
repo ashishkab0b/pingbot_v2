@@ -69,7 +69,7 @@ def submit_feedback():
         body += f"\n\n"
         body += f"Query Type: {query_type}"
         body += f"\n\n"
-        Body += f"Is urgent: {is_urgent}"
+        body += f"Is urgent: {is_urgent}"
         body += f"\n\n"
         body += f"Message: {message}"
         if is_urgent:
