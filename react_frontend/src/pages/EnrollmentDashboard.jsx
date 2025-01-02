@@ -247,7 +247,7 @@ function EnrollmentDashboard() {
           }))}
           columns={[
             { label: 'ID', key: 'id' },
-            { label: 'Study PID', key: 'studyPid' },
+            { label: 'Participant ID', key: 'studyPid' },
             { label: 'Time Zone', key: 'timeZone' },
             { label: 'Enrolled', key: 'enrolled' },
             { label: 'Linked Telegram?', key: 'linkedTelegram' },
