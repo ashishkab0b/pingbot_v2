@@ -18,8 +18,5 @@ COPY . .
 # Create logs directory
 RUN mkdir -p /app/logs
 
-# Create the cron jobs by running build_schedule.py
-# RUN python build_schedule.py
-
 # Start the bot
 CMD ["python", "telegram_bot.py"]

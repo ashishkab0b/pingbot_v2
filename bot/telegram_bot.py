@@ -16,6 +16,8 @@ from config import CurrentConfig
 # Setup logging
 logger = setup_logger()
 
+logger.debug("Starting Telegram bot.")
+
 # Load environment variables
 load_dotenv()
 
