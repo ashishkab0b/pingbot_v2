@@ -1,11 +1,9 @@
 import random
 import string
-import math
 from math import ceil
 from sqlalchemy import select, func
 from datetime import datetime, timedelta, timezone
-import pytz
-from pytz import UTC
+from zoneinfo import ZoneInfo  # Updated for zoneinfo
 from random import randint
 
 from typing import Dict, Any
@@ -13,8 +11,6 @@ from sqlalchemy.orm import Session
 
 from flask import current_app
 from extensions import db
-
-
 
 def generate_non_confusable_code(length, lowercase, uppercase, digits):
     if not (lowercase or uppercase or digits):
@@ -28,11 +24,6 @@ def generate_non_confusable_code(length, lowercase, uppercase, digits):
     if digits:
         non_confusable_chars += ''.join(ch for ch in string.digits if ch not in {'0', '1'})
     return ''.join(random.choices(non_confusable_chars, k=length))
-
-
-import pytz
-from datetime import datetime, timedelta
-from random import randint
 
 def random_time(
     signup_ts: datetime, 
@@ -56,7 +47,7 @@ def random_time(
     Returns:
         datetime: Random timestamp within the specified interval, adjusted for timezone.
     """
-    timezone = pytz.timezone(tz)
+    timezone = ZoneInfo(tz)  # Updated for zoneinfo
     local_day_0 = signup_ts.astimezone(timezone).date()
     
     # Compute interval start and end dates
@@ -82,33 +73,6 @@ def random_time(
     
     return ping_time
 
-# def convert_dt_to_local(dt_obj, participant_tz):
-#     """
-#     Convert a datetime object to the participant's local time zone.
-#     """
-#     # print(type(dt_obj))
-#     # print(type(participant_tz))
-#     print(dt_obj)
-#     print(participant_tz)
-    
-#     if not dt_obj or not participant_tz:
-#         return None
-#     try:
-#         if dt_obj.tzinfo is None:
-#             dt_obj = dt_obj.replace(tzinfo=UTC)
-        
-
-#         if participant_tz in pytz.all_timezones:
-#             local_tz = pytz.timezone(participant_tz)
-#         else:
-#             local_tz = timezone(participant_tz)
-#         local_dt = dt_obj.astimezone(local_tz)
-#         return local_dt
-#     except Exception as e:
-#         current_app.logger.warning(f"Error converting time with tz={participant_tz}: {e}")
-#         return dt_obj
-       
-
 def convert_dt_to_local(dt_obj, participant_tz):
     """
     Convert a datetime object to the participant's local time zone.
@@ -119,14 +83,11 @@ def convert_dt_to_local(dt_obj, participant_tz):
     try:
         # Ensure the datetime object has UTC timezone if tzinfo is missing
         if dt_obj.tzinfo is None:
-            dt_obj = dt_obj.replace(tzinfo=UTC)
+            dt_obj = dt_obj.replace(tzinfo=timezone.utc)
 
         # Handle participant timezone
         participant_tz = participant_tz.strip()  # Remove extra spaces
-        if participant_tz in pytz.all_timezones:
-            local_tz = pytz.timezone(participant_tz)
-        else:
-            raise ValueError(f"Invalid timezone: {participant_tz}")
+        local_tz = ZoneInfo(participant_tz)  # Updated for zoneinfo
         
         # Convert to local timezone
         local_dt = dt_obj.astimezone(local_tz)

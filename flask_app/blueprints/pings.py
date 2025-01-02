@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import jwt_required
 from datetime import datetime
-from pytz import UTC, timezone
+from zoneinfo import ZoneInfo
 from sqlalchemy import select
 
 from extensions import db
@@ -17,7 +17,6 @@ from utils import convert_dt_to_local, paginate_statement
 from models import Ping, PingTemplate, Enrollment
 
 pings_bp = Blueprint('pings', __name__)
-
 
 
 def prepare_requested_ping(ping):
@@ -73,12 +72,12 @@ def get_pings(study_id):
 
         # Build base query with join
         stmt = (select(Ping)
-            .join(Enrollment, Ping.enrollment_id == Enrollment.id)
-            .join(PingTemplate, Ping.ping_template_id == PingTemplate.id)
-            .where(
-            Ping.study_id == study.id,
-            Ping.deleted_at.is_(None)
-        ))
+                .join(Enrollment, Ping.enrollment_id == Enrollment.id)
+                .join(PingTemplate, Ping.ping_template_id == PingTemplate.id)
+                .where(
+                    Ping.study_id == study.id,
+                    Ping.deleted_at.is_(None)
+                ))
 
         # Apply search filter
         if search_query:
@@ -117,8 +116,8 @@ def get_pings(study_id):
         current_app.logger.error(f"Error fetching pings for study={study_id}: {e}")
         current_app.logger.exception(e)
         return jsonify({"error": "Internal server error"}), 500
-    
-    
+
+
 @pings_bp.route('/studies/<int:study_id>/pings', methods=['POST'])
 @jwt_required()
 def create_ping_route(study_id):

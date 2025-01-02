@@ -6,16 +6,13 @@ from models import Study, Enrollment, Ping, PingTemplate, User
 from extensions import db
 from random import randint
 from datetime import timedelta, datetime, timezone
-import pytz
+from zoneinfo import ZoneInfo
 import secrets
 from functools import wraps
 from telegram_messenger import TelegramMessenger
 from message_constructor import MessageConstructor
 from blueprints.enrollments import make_pings
 from crud import get_enrollments_by_telegram_id, get_enrollment_by_telegram_link_code
-
-
-
 
 bot_bp = Blueprint('bot', __name__)
 
@@ -44,7 +41,7 @@ def assign_telegram_id_to_enrollment(telegram_id: int, enrollment: Enrollment):
         current_app.logger.info(f"Successfully linked Telegram ID {telegram_id} to enrollment ID {enrollment.id}.")
     except Exception as e:
         db.session.rollback()
-        current_app.logger.error(f"Error linking Telegram ID {telegram_id} to enrollment with link code {telegram_link_code}.")
+        current_app.logger.error(f"Error linking Telegram ID {telegram_id} to enrollment with link code {enrollment.telegram_link_code}.")
         current_app.logger.exception(e)
         return jsonify({"error": "Internal server error."}), 500
 
@@ -108,7 +105,6 @@ def link_telegram_id():
         current_app.logger.warning(f"Link code {telegram_link_code} has expired.")
         return jsonify({"error": "Invalid telegram_link_code."}), 400
     
-    
     # Link telegram ID and add to enrollment database
     assign_telegram_id_to_enrollment(telegram_id=telegram_id, 
                                      enrollment=enrollment)
@@ -143,12 +139,14 @@ def unenroll():
     # Unenroll participant
     try:
         current_app.logger.info(f"Attempting to unenroll participant with Telegram ID {telegram_id}.")
-        enrollment = Enrollment.query.filter_by(telegram_id=telegram_id).first() # FIX FIX FIX to get for the correct study or all studies
-        if not enrollment:
-            current_app.logger.warning(f"No enrollment found for Telegram ID {telegram_id}.")
-            return jsonify({"error": "Participant not found."}), 404
+        # Adjusted to filter by enrolled studies
+        enrollments = Enrollment.query.filter_by(telegram_id=telegram_id, enrolled=True).all()
+        if not enrollments:
+            current_app.logger.warning(f"No active enrollment found for Telegram ID {telegram_id}.")
+            return jsonify({"error": "Participant not found or already unenrolled."}), 404
 
-        enrollment.enrolled = False
+        for enrollment in enrollments:
+            enrollment.enrolled = False
         db.session.commit()
         current_app.logger.info(f"Successfully unenrolled participant with Telegram ID {telegram_id}.")
     except Exception as e:
@@ -159,47 +157,41 @@ def unenroll():
 
     return jsonify({"message": "Participant unenrolled successfully."}), 200
 
-
 @bot_bp.route('/get_pings_in_time_interval', methods=['GET'])
 @bot_auth_required
 def get_pings_in_time_interval():
-    ''' Query the database and return the pings in a given time interval '''
-    
-    # Get request data
+    """
+    Query the database and return the pings in a given time interval.
+    """
     data = request.get_json()
     start_ts = data.get('start_ts')
     end_ts = data.get('end_ts')
-    
-    # Log the start of the request
-    current_app.logger.info("Received request to get pings in interval {start_ts} - {end_ts}.")
-    
-    # Check if required parameters are present
+    current_app.logger.info(f"Received request to get pings in interval {start_ts} - {end_ts}.")
+
     if not start_ts or not end_ts:
         current_app.logger.error("Missing start_ts or end_ts parameter.")
         return jsonify({"error": "Missing start_ts or end_ts parameter."}), 400
-    
-    # Convert to datetime objects
+
     try:
         start_dt = datetime.fromisoformat(start_ts)
         end_dt = datetime.fromisoformat(end_ts)
     except ValueError:
         current_app.logger.error("Invalid datetime format.")
         return jsonify({"error": "Invalid datetime format."}), 400
-    
-    # Get pings for the date
+
     try:
         current_app.logger.info(f"Attempting to get pings for interval {start_ts}-{end_ts}.")
         pings = Ping.query.filter(Ping.scheduled_ts >= start_dt, Ping.scheduled_ts <= end_dt).all()
         if not pings:
-            current_app.logger.warning(f"No pings found.")
+            current_app.logger.warning("No pings found.")
         current_app.logger.info(f"Successfully retrieved {len(pings)} pings.")
     except Exception as e:
-        current_app.logger.error(f"Error getting pings.")
+        current_app.logger.error("Error getting pings.")
         current_app.logger.exception(e)
         return jsonify({"error": "Internal server error."}), 500
-    
+
     return jsonify([ping.to_dict() for ping in pings]), 200
-    
+        
 
 @bot_bp.route('/participant_login', methods=['POST'])
 @bot_auth_required
@@ -233,8 +225,6 @@ def participant_login():
         current_app.logger.exception(e)
         return jsonify({"error": "Internal server error"}), 500
     
-    # return jsonify({"message": "OTP generated successfully"}), 200
-    
     # Send the OTP to the participant
     try:
         link = f"{current_app.config['FRONTEND_BASE_URL']}/participant_dash?otp={otp}&t={telegram_id}"
@@ -247,7 +237,6 @@ If you did not request this link, you can ignore this message."""
         current_app.logger.error(f"Error sending OTP to telegramID={telegram_id}")
         current_app.logger.exception(e)
         return jsonify({"error": "Internal server error"}), 500
-    
         
     current_app.logger.info(f"Sent OTP to telegramID={telegram_id}")
     return jsonify({"message": "OTP sent successfully"}), 200
@@ -318,4 +307,3 @@ def send_ping():
         current_app.logger.info(f"Successfully sent ping={ping_id}.")
         
         return jsonify({"message": f"ping_id={ping_id} sent successfully."}), 200
-    
