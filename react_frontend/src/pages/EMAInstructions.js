@@ -244,7 +244,7 @@ const EMAInstructions = () => {
       </section>
 
       <p>
-        We hope this guide helps you set up and manage your EMA study
+        I hope this guide helps you set up and manage your EMA study
         efficiently. Good luck with your research!
       </p>
     </div>

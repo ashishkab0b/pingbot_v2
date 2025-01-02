@@ -11,6 +11,7 @@ import {
   Button,
   Alert,
   CircularProgress,
+  Link,
 } from '@mui/material';
 
 // Import the timezone select component
@@ -81,6 +82,10 @@ function StudyEnroll() {
     }
   };
 
+  // Construct a deep link to Telegram. The "?start=" parameter can be replaced with
+  // any code you want the bot to receive automatically.
+  const telegramDeepLink = `https://t.me/SurveyPingBot?start=${encodeURIComponent('/start')}`;
+
   return (
     <Box sx={{ margin: '2rem' }}>
       {!submitted ? (
@@ -140,18 +145,54 @@ function StudyEnroll() {
       ) : (
         <Box sx={{ marginTop: '2rem' }}>
           <Typography variant="h5" gutterBottom>
-            Thank you!
+            Thank You for Enrolling!
           </Typography>
+
+          {/* Step 1: Download Telegram Instructions */}
           <Typography variant="body1" paragraph>
-            Please download the Telegram app on your phone from your phone's app store.
+            To receive study notifications and participate fully, you’ll need the Telegram app on your phone. 
+            Below are links to download Telegram for both iOS (iPhone/iPad) and Android:
           </Typography>
+
+          <Box sx={{ mb: 2 }}>
+            <Typography variant="body1">
+              • <Link href="https://apps.apple.com/app/telegram-messenger/id686449807" target="_blank" rel="noopener">
+                  Download Telegram for iOS
+                </Link>
+            </Typography>
+            <Typography variant="body1">
+              • <Link href="https://play.google.com/store/apps/details?id=org.telegram.messenger" target="_blank" rel="noopener">
+                  Download Telegram for Android
+                </Link>
+            </Typography>
+          </Box>
+
+          {/* Step 2: Open Bot Conversation */}
           <Typography variant="body1" paragraph>
-            After downloading the app, open a conversation with the user{' '}
-            <strong>@SurveyPingBot</strong>. You will be asked to provide a code.
+            After you’ve installed Telegram, please open a conversation with our study bot, <strong>@SurveyPingBot</strong>.
+            To do this automatically, you can click the link below. It will open Telegram and pre-fill a <code>/start</code> command:
           </Typography>
-          <Typography variant="body1">
-            Enter your code:{' '}
-            <strong>{telegramLinkCode || 'ERROR: NO CODE FOUND'}</strong>
+
+          <Box sx={{ mb: 2 }}>
+            <Link
+              href={telegramDeepLink}
+              target="_blank"
+              rel="noopener"
+              underline="always"
+              sx={{ wordWrap: 'break-word' }}
+            >
+              {telegramDeepLink}
+            </Link>
+          </Box>
+
+          {/* Step 3: Provide the Enrollment Code */}
+          <Typography variant="body1" paragraph>
+            Once inside the conversation with <strong>@SurveyPingBot</strong>, you may be asked for a code. 
+            Please provide the following code exactly as shown below:
+          </Typography>
+
+          <Typography variant="h6" sx={{ mt: 2 }}>
+            {telegramLinkCode || 'ERROR: NO CODE FOUND'}
           </Typography>
         </Box>
       )}

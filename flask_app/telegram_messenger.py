@@ -33,11 +33,11 @@ class TelegramMessenger:
         try:
             asyncio.run(send(telegram_id, message))
         except TelegramError as e:
-            logger.error(f"Failed to send message to chat ID {telegram_id}")
+            logger.error(f"Failed to send message to telegramID={telegram_id}")
             logger.exception(e)
             return False
         else:
-            logger.info(f"Successfully sent message to chat ID {telegram_id}")
+            logger.info(f"Successfully sent message to telegramID={telegram_id}")
             return True
         
         
