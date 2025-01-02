@@ -73,8 +73,8 @@ class ProductionConfig(BaseConfig):
     REDIS_URL = f"redis://:{REDIS_PASSWORD}@{REDIS_HOST}:6379/0"
     
     # TODO: clean this up
-    FRONTEND_BASE_URL = "http://emapingbot.com"
-    BASE_URL = "http://emapingbot.com"
+    FRONTEND_BASE_URL = "https://emapingbot.com"
+    BASE_URL = "https://emapingbot.com"
     
     # Celery
     CELERY_BROKER_URL= f"redis://:{REDIS_PASSWORD}@{REDIS_HOST}:6379/0"
