@@ -13,6 +13,7 @@ class BaseConfig:
     MAIL_PORT = 587
     MAIL_USERNAME = os.environ['MAIL_USERNAME']
     MAIL_PASSWORD = os.environ['MAIL_PASSWORD']
+    MAILTRAP_API_TOKEN = os.environ['MAILTRAP_API_TOKEN']
     MAIL_USE_TLS = True
     MAIL_USE_SSL = False
     MAIL_SUPPORT_RECIPIENT = os.environ['MAIL_SUPPORT_RECIPIENT']

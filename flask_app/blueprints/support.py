@@ -6,6 +6,7 @@ from datetime import datetime
 from crud import create_support_query
 from flask_mail import Message
 import requests
+import mailtrap as mt
 
 support_bp = Blueprint('support', __name__)
 
@@ -74,8 +75,20 @@ def submit_feedback():
         body += f"Message: {message}"
         if is_urgent:
             subject = f"URGENT: {subject}"
-        msg = Message(subject=subject, body=body, recipients=[current_app.config['MAIL_SUPPORT_RECIPIENT']])
-        mail.send(msg)
+        # msg = Message(subject=subject, body=body, recipients=[current_app.config['MAIL_SUPPORT_RECIPIENT']])
+        # mail.send(msg)
+
+        mail = mt.Mail(
+            sender=mt.Address(email="support@emapingbot.com", name="Support request"),
+            to=[mt.Address(email=current_app.config['MAIL_SUPPORT_RECIPIENT'])],
+            subject=subject,
+            text=body,
+            category=query_type,
+        )
+
+        client = mt.MailtrapClient(token=current_app.config['MAILTRAP_API_TOKEN'])
+        response = client.send(mail)
+        current_app.logger.debug(f"Mailtrap response: {response}")
     except Exception as e:
         current_app.logger.error(f'Error sending email for user {user_id} - {email}.')
         current_app.logger.exception(e)
