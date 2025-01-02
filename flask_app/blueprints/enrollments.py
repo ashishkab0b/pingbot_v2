@@ -61,6 +61,7 @@ def make_pings(enrollment_id, study_id):
                     end_time=ping_obj['end_time'], 
                     tz=enrollment.tz
                 )
+                current_app.logger.debug(f"Generated ping with scheduled time: {ping_time}")
             
                 expire_ts = ping_time + pt.expire_latency if pt.expire_latency else None
                 reminder_ts = ping_time + pt.reminder_latency if pt.reminder_latency else None        
