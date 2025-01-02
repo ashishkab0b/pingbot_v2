@@ -8,6 +8,9 @@ venv/
 
 # Secrets
 **/.env
+nginx/certs/accounts/
+nginx/certs/archive/
+nginx/certs/live/
 
 # Logs
 **/logs
@@ -50,3 +53,4 @@ Thumbs.db
 .ipynb_checkpoints/
 form_gpt_queries.ipynb
 gpt_query.txt
+
