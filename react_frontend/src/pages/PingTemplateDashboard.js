@@ -390,6 +390,7 @@ function PingTemplateDashboard() {
 
                 {/* REMINDER CHECKBOX */}
                 <Grid item xs={12}>
+                  <Tooltip title="Send a reminder to participants to complete the ping if they haven't clicked the link">
                   <Controller
                     name="reminderEnabled"
                     control={methods.control}
@@ -400,6 +401,7 @@ function PingTemplateDashboard() {
                       />
                     )}
                   />
+                  </Tooltip>
                 </Grid>
 
                 {methods.watch('reminderEnabled') && (
@@ -427,6 +429,7 @@ function PingTemplateDashboard() {
 
                 {/* EXPIRE CHECKBOX */}
                 <Grid item xs={12}>
+                  <Tooltip title="Expire the ping link after a period of time">
                   <Controller
                     name="expireEnabled"
                     control={methods.control}
@@ -437,6 +440,7 @@ function PingTemplateDashboard() {
                       />
                     )}
                   />
+                  </Tooltip>
                 </Grid>
 
                 {methods.watch('expireEnabled') && (

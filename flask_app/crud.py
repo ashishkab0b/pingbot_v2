@@ -82,6 +82,37 @@ def get_user_by_email(
     return result.scalar_one_or_none()
 
 
+def get_users_for_study(
+    session: Session,
+    study_id: int,
+    include_deleted: bool = False
+) -> List[User]:
+    """
+    Fetch a list of Users linked to a study.
+
+    Args:
+        session (Session): The database session.
+        study_id (int): The ID of the study.
+        include_deleted (bool): Whether to include soft-deleted users.
+
+    Returns:
+        List[User]: A list of User objects.
+    """
+    
+    stmt = (
+        select(User)
+        .join(UserStudy, User.id == UserStudy.user_id)
+        .where(
+            UserStudy.study_id == study_id
+        )
+        .order_by(User.id.asc())
+    )
+    stmt = include_deleted_records(stmt, User, include_deleted)
+
+    results = session.execute(stmt)
+    return results.scalars().all()
+
+
 def create_user(
     session: Session,
     email: str,
@@ -156,8 +187,18 @@ def soft_delete_user(session: Session, user_id: int) -> bool:
     user = get_user_by_id(session, user_id, include_deleted=True)
     if not user:
         return False
-
+    
+    # Soft delete the user
     user.deleted_at = datetime.now(timezone.utc)
+    
+    # Get all studies for user
+    studies = get_studies_for_user(session, user_id, include_deleted=True)
+    
+    # Soft delete the user studies
+    for study in studies:
+        user_study = get_user_study_relation(session, user_id, study.id, include_deleted=True)
+        user_study.deleted_at = datetime.now(timezone.utc)
+
     return True
 
 
@@ -297,10 +338,12 @@ def soft_delete_study(
     Returns:
         bool: True if deletion was successful, False otherwise.
     """
+    # Fetch the study and related records
     study = get_study_by_id(session, study_id, include_deleted=True)
     enrollments = get_enrollments_by_study_id(session, study_id, include_deleted=True)
     pings = get_pings_by_study_id(session, study_id, include_deleted=True)
     ping_templates = get_ping_templates_by_study_id(session, study_id, include_deleted=True)
+    users = get_users_for_study(session, study_id, include_deleted=True)
     if not study:
         return False
 
@@ -311,6 +354,9 @@ def soft_delete_study(
         ping.deleted_at = datetime.now(timezone.utc)
     for pt in ping_templates:
         pt.deleted_at = datetime.now(timezone.utc)
+    for user in users:
+        user_study = get_user_study_relation(session, user.id, study_id, include_deleted=True)
+        user_study.deleted_at = datetime.now(timezone.utc)
 
     return True
 

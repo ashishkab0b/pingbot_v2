@@ -57,11 +57,6 @@ class MessageConstructor:
             "db_table": "studies",
             "db_column": "public_name",
         },
-        "<STUDY_INTERNAL_NAME>": {
-            "description": "The internal name of the study.",
-            "db_table": "studies",
-            "db_column": "internal_name",
-        },
         "<STUDY_CONTACT_MSG>": {
             "description": "The contact message for the study.",
             "db_table": "studies",

@@ -37,7 +37,7 @@ function ParticipantFacingDashboard() {
   useEffect(() => {
     async function fetchEnrollments() {
       try {
-        const response = await axios.get(`${process.env.REACT_APP_API_URL}/participant_dashboard`, {
+        const response = await axios.get('/participant_dashboard', {
           params: {
             t: telegramId,
             otp: otp,

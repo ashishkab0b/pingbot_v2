@@ -14,6 +14,7 @@ import NavBar from './components/NavBar';
 import { StudyProvider } from './context/StudyContext';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import Footer from './components/Footer';
+import EMAInstructions from './pages/EMAInstructions';
 import FeedbackWidget from './components/FeedbackWidget';
 
 
@@ -56,6 +57,7 @@ function Layout() {
           <Route path="/register" element={<Register />} />
           <Route path="/enroll/:signup_code" element={<StudyEnroll />} />
           <Route path="/participant_dash" element={<ParticipantFacingDashboard />} />
+          <Route path="/help" element={<EMAInstructions />} />
 
           {/* Protected routes */}
           <Route

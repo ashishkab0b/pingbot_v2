@@ -57,11 +57,20 @@ const NavBar = () => {
             <Button color="inherit" onClick={handleLogout}>
               Log Out
             </Button>
+            <Button color="inherit" component={RouterLink} to="/help">
+              Help
+            </Button>
           </>
         ) : (
+          <>
+
           <Button color="inherit" component={RouterLink} to="/login">
             Login
           </Button>
+          <Button color="inherit" component={RouterLink} to="/help">
+              Help
+            </Button>
+            </>
         )}
       </Toolbar>
     </AppBar>

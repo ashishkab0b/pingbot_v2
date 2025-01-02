@@ -144,7 +144,7 @@ function PingScheduleForm() {
                 />
               }
               label={
-                <Tooltip title="Apply the same schedule to every day of the study starting on the day after the participant signs up.">
+                <Tooltip title="Apply the same schedule to every day of the study starting on the day AFTER the participant signs up.">
                   <span>Every Day</span>
                 </Tooltip>
               }
@@ -157,7 +157,7 @@ function PingScheduleForm() {
                 />
               }
               label={
-                <Tooltip title="Customize the schedule for each day of the study for more granular control.">
+                <Tooltip title="Customize the schedule for each day of the study independently.">
                   <span>Per Day</span>
                 </Tooltip>
               }
