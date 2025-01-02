@@ -158,6 +158,7 @@ def api_participant_dashboard():
     for enrollment in enrollments:
         if enrollment.dashboard_otp == otp and enrollment.dashboard_otp_expire_ts > datetime.now(timezone.utc):
             en = {k: v for k, v in enrollment.to_dict().items() if k in enrollment_keys_to_return}
+            current_app.logger.debug(f"{len(en.keys())} enrollments found for telegram_id={telegram_id} with OTP={otp}")
             study = get_study_by_id(db.session, enrollment.study_id).to_dict()
             for k, v in study.items():
                 if k in study_keys_to_return:
@@ -171,3 +172,6 @@ def api_participant_dashboard():
         return jsonify({"error": "Invalid OTP"}), 400
 
     return jsonify(valid_enrollments), 200
+
+
+    
