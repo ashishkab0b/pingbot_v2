@@ -311,8 +311,8 @@ const EMAInstructions = () => {
           link in a Qualtrics survey where you might collect some initial
           information from participants. If you take this approach, you can
           create a participant ID variable within Qualtrics and embed that
-          variable in the EMA Pingbot enrollment link. The Qualtrics variable
-          might look something like this, and this is what you would enter into
+          variable in the EMA Pingbot enrollment link that you place within your entry survey. The Qualtrics variable
+          might look something like what is written below, and so that is what you would enter into
           the field for Participant ID within the Pingbot application.
         </Typography>
 
