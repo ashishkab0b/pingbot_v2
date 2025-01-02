@@ -12,7 +12,7 @@ from functools import wraps
 from telegram_messenger import TelegramMessenger
 from message_constructor import MessageConstructor
 from blueprints.enrollments import make_pings
-from crud import get_enrollments_by_telegram_id, get_enrollment_by_telegram_link_code
+from crud import get_enrollments_by_telegram_id, get_enrollment_by_telegram_link_code, get_study_by_id
 
 bot_bp = Blueprint('bot', __name__)
 
@@ -307,3 +307,39 @@ def send_ping():
         current_app.logger.info(f"Successfully sent ping={ping_id}.")
         
         return jsonify({"message": f"ping_id={ping_id} sent successfully."}), 200
+    
+    
+
+@bot_bp.route('/get_contact_msgs', methods=['GET'])
+@bot_auth_required
+def get_contact_msgs():
+    '''
+    This endpoint is used to provide the study contact messages for a participant.
+    '''
+    current_app.logger.debug("Entered get_contact_msgs endpoint.")
+    
+    # Get the enrollments
+    enrollments = get_enrollments_by_telegram_id(db.session, request.args.get('t'))
+    if not enrollments:
+        return jsonify({"error": "Participant not found"}), 404
+    
+    # Get the studies
+    study_ids = [enrollment.study_id for enrollment in enrollments]
+    
+    if not study_ids:
+        return jsonify({"error": "Participant not enrolled in any studies"}), 404
+    
+    # Get the contact messages
+    msgs = []
+    for study_id in study_ids:
+        study = get_study_by_id(db.session, study_id)
+        if not study:
+            current_app.logger.error(f"Study {study_id} not found.")
+            continue
+        msgs.append({
+            "study_id": study_id,
+            "public_name": study.public_name,
+            "contact_message": study.contact_message
+        })
+    
+    return jsonify(msgs), 200

@@ -30,7 +30,8 @@ ENTERING_LINK_CODE = 1
 COMMAND_DESCRIPTIONS = {
     'start': 'Show this message',
     'enroll': 'Enroll in a new study',
-    'dashboard': 'View the online dashboard',
+    'contact': 'Contact the study team',
+    # 'dashboard': 'View the online dashboard',
     # 'unenroll': 'Unenroll from a study',
     # 'timezone': 'Set your time zone',
 }
@@ -99,6 +100,35 @@ async def dashboard(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         await update.message.reply_text(msg)
         return
     
+    
+async def contact(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handles the /contact command."""
+    
+    # Prepare the request
+    header = {
+        "X-Bot-Secret-Key": config.BOT_SECRET_KEY,
+    }
+    payload = {
+        "telegram_id": update.message.from_user.id,
+    }
+    url = f"{config.FLASK_APP_BOT_BASE_URL}/participant_contact"
+    
+    logger.debug(f"Sending contact request to {url} with telegramID={update.message.from_user.id}")
+    
+    # Send the request
+    resp = requests.get(url=url, json=payload, headers=header)
+    
+    # Handle errors
+    if resp.status_code != 200:
+        msg = "An error occurred. Please try again later."
+        logger.error(f"Error with participant_contact endpoint. Status code: {resp.status_code}")
+        await update.message.reply_text(msg)
+        return
+    
+    # Handle success
+    for study in resp.json():
+        msg = f"Study: {study['public_name']}\nContact: {study['contact_message']}"
+        await update.message.reply_text(msg)
 
 
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -123,7 +153,8 @@ def main() -> None:
     conv_handler = ConversationHandler(
         entry_points=[
             CommandHandler('enroll', enroll),
-            CommandHandler('dashboard', dashboard),
+            CommandHandler('contact', contact),
+            # CommandHandler('dashboard', dashboard),
             # CommandHandler('unenroll', dashboard),
         ],
         states={
