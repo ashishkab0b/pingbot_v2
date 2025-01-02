@@ -225,6 +225,7 @@ class Ping(db.Model):
     reminder_sent_ts = db.Column(db.DateTime(timezone=True), nullable=True)
     first_clicked_ts = db.Column(db.DateTime(timezone=True))
     last_clicked_ts = db.Column(db.DateTime(timezone=True))
+    sent_text = db.Column(db.Text)
 
     forwarding_code = db.Column(db.String(255), nullable=False, default=lambda: os.urandom(16).hex())
     created_at = db.Column(db.DateTime(timezone=True), default=func.now(), nullable=False)

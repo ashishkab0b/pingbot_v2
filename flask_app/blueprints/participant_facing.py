@@ -8,7 +8,7 @@ from datetime import timedelta, datetime, timezone
 import pytz
 from utils import generate_non_confusable_code
 import secrets
-from blueprints.enrollments import MessageConstructor
+from message_constructor import MessageConstructor
 from crud import get_enrollments_by_telegram_id, get_study_by_id
 from telegram_messenger import TelegramMessenger
 

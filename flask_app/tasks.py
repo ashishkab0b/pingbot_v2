@@ -7,7 +7,7 @@ from celery_app import celery
 from models import Ping, Enrollment
 from telegram_messenger import TelegramMessenger
 from flask import current_app
-from blueprints.enrollments import MessageConstructor
+from message_constructor import MessageConstructor
 from crud import get_pings_to_send, get_pings_for_reminder
 
 @celery.task

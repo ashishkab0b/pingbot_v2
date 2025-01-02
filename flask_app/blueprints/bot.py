@@ -10,8 +10,11 @@ import pytz
 import secrets
 from functools import wraps
 from telegram_messenger import TelegramMessenger
-from blueprints.enrollments import make_pings, MessageConstructor
+from message_constructor import MessageConstructor
+from blueprints.enrollments import make_pings
 from crud import get_enrollments_by_telegram_id, get_enrollment_by_telegram_link_code
+
+
 
 
 bot_bp = Blueprint('bot', __name__)
@@ -307,8 +310,8 @@ def send_ping():
         current_app.logger.exception(e)
         return jsonify({"error": "Failed to send ping."}), 500
     else:
-        ping.sent = True
-        ping.message = message
+        ping.sent_ts = datetime.now(timezone.utc)
+        ping.sent_text = message
         db.session.commit()
         
         # Log the end of the request
