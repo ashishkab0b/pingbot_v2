@@ -4,7 +4,6 @@ from typing import Optional, List, Any, Dict
 from sqlalchemy import select, func
 from sqlalchemy.orm import Session
 from datetime import datetime, timezone
-
 from sqlalchemy.sql import or_, and_, not_
 
 from models import (
@@ -823,6 +822,7 @@ def get_pings_to_send(
         .where(
             Ping.sent_ts.is_(None),
             Ping.scheduled_ts <= now,
+            Ping.scheduled_ts >= now - func.make_interval(days=0, hours=0, minutes=15),
             or_(Ping.expire_ts.is_(None), Ping.expire_ts > now),
             Ping.deleted_at.is_(None),
             Enrollment.deleted_at.is_(None),
