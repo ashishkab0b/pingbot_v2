@@ -20,6 +20,7 @@ import {
 } from '@mui/material';
 import FeedbackIcon from '@mui/icons-material/Feedback';
 import axios from '../api/axios'; 
+import ReCAPTCHA from "react-google-recaptcha";
 
 function FeedbackWidget() {
   const [open, setOpen] = useState(false);
@@ -30,6 +31,9 @@ function FeedbackWidget() {
   const [submitted, setSubmitted] = useState(false);
   // Initialize email state with user_email from localStorage
   const [email, setEmail] = useState(() => localStorage.getItem('user_email') || '');
+  
+  const recaptcha = useRef(null);
+  <ReCAPTCHA sitekey={import.meta.env.VITE_SITE_KEY} ref={recaptcha}/>
 
   const feedbackTypes = [
     'Feature request',
@@ -54,7 +58,10 @@ function FeedbackWidget() {
   const handleSubmit = async () => {
     setSubmitting(true);
     try {
-      // Adjust the request payload to match your Flask route expectations
+
+      if(!recaptcha.current.getValue()){
+        alert('Please Submit Captcha')
+      }
       await axios.post('/support', {
         email: email,
         type: feedbackType, 
