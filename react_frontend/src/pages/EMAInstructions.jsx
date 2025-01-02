@@ -304,7 +304,7 @@ const EMAInstructions = () => {
           Including a Unique Participant ID
         </Typography>
         <Typography paragraph>
-          You must include a unique ID for each participant in the link. If you
+          In the enrollment link you provide to participants, you must include a unique ID for each participant. If you
           do not include a unique ID for each participant, you would not be able
           to match the survey entries to participants, so it is required by the
           app. A common way to enroll participants is to embed the EMA enrollment
