@@ -5,6 +5,7 @@ from sqlalchemy import select, func
 from sqlalchemy.orm import Session
 from datetime import datetime, timezone, timedelta
 from sqlalchemy.sql import or_, and_, not_
+from flask import current_app
 
 from models import (
     User,
@@ -578,12 +579,16 @@ def get_enrollments_by_telegram_id(
     Returns:
         List[Enrollment]: A list of Enrollment objects.
     """
-    
     telegram_id = str(telegram_id)
+    current_app.logger.debug(f"Fetching enrollments for telegramID={telegram_id}")
+    
     stmt = select(Enrollment).where(Enrollment.telegram_id == telegram_id)
     stmt = include_deleted_records(stmt, Enrollment, include_deleted)
 
     result = session.execute(stmt)
+    
+    current_app.logger.debug(f"Found {result.rowcount} enrollments for telegramID={telegram_id}")
+    
     return result.scalars().all()
 
 
