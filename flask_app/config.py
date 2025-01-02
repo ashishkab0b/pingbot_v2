@@ -10,11 +10,12 @@ class BaseConfig:
     
 
     MAIL_SERVER = 'live.smtp.mailtrap.io'
-    MAIL_PORT = 2525
+    MAIL_PORT = 587
     MAIL_USERNAME = os.environ['MAIL_USERNAME']
     MAIL_PASSWORD = os.environ['MAIL_PASSWORD']
     MAIL_USE_TLS = True
     MAIL_USE_SSL = False
+    MAIL_SUPPORT_RECIPIENT = os.environ['MAIL_SUPPORT_RECIPIENT']
     
     JWT_SECRET_KEY= os.environ['JWT_SECRET_KEY']
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=1)
