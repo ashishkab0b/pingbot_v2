@@ -30,8 +30,8 @@ ENTERING_LINK_CODE = 1
 COMMAND_DESCRIPTIONS = {
     'start': 'Show this message',
     'enroll': 'Enroll in a new study',
-    'contact': 'Contact the study team',
-    # 'dashboard': 'View the online dashboard',
+    'contact': 'View instructions for contacting the study team',
+    'dashboard': 'View the online dashboard',
     # 'unenroll': 'Unenroll from a study',
     # 'timezone': 'Set your time zone',
 }
@@ -155,7 +155,7 @@ def main() -> None:
         entry_points=[
             CommandHandler('enroll', enroll),
             CommandHandler('contact', contact),
-            # CommandHandler('dashboard', dashboard),
+            CommandHandler('dashboard', dashboard),
             # CommandHandler('unenroll', dashboard),
         ],
         states={

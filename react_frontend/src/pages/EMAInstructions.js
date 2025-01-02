@@ -64,7 +64,7 @@ const EMAInstructions = () => {
         <h3>Contact Message</h3>
         <p>
           In the Study Dashboard, you can set a <strong>contact message</strong>{' '}
-          which participants can view if they have any questions or concerns.
+          which participants can access in Telegram if they have any questions or concerns.
           This message might include how to reach you or your support team. 
         </p>
         <blockquote style={{ fontStyle: 'italic', margin: '1rem 0' }}>
