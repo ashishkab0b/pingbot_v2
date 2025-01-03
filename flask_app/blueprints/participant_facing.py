@@ -65,7 +65,7 @@ def ping_forwarder(ping_id):
     try:
         all_pings = get_pings_by_enrollment_id(db.session, ping.enrollment_id)
         already_sent_pings = [p for p in all_pings if p.sent_ts is not None]
-        completed_sent_pings = [p for p in already_sent_pings if p.completed_ts is not None]
+        completed_sent_pings = [p for p in already_sent_pings if p.first_clicked_ts is not None]
         pr_completed = len(completed_sent_pings) / len(already_sent_pings) if len(already_sent_pings) > 0 else 0.0
         ping.enrollment.pr_completed = pr_completed
         db.session.commit()
