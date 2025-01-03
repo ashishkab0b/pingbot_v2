@@ -152,7 +152,7 @@ class MessageConstructor:
                 
                 # Format the timestamp if necessary
                 if "format_ts" in value and value["format_ts"]:
-                    new_val = self.format_ts(getattr(self.ping, value['db_column']), self.ping.enrollment.tz)
+                    new_val = self.format_ts(getattr(self.ping.study, value['db_column']), self.ping.enrollment.tz)
                 else: 
                     new_val = getattr(self.ping, value['db_column'])
                     
@@ -163,9 +163,9 @@ class MessageConstructor:
                 
                 # Format the timestamp if necessary
                 if "format_ts" in value and value["format_ts"]:
-                    new_val = self.format_ts(getattr(self.ping, value['db_column']), self.ping.enrollment.tz)
+                    new_val = self.format_ts(getattr(self.ping.ping_template, value['db_column']), self.ping.enrollment.tz)
                 else: 
-                    new_val = getattr(self.ping, value['db_column'])
+                    new_val = getattr(self.ping.ping_template, value['db_column'])
                     
                 # Replace the placeholder with the correct value
                 message = message.replace(key, str(new_val))
@@ -174,7 +174,7 @@ class MessageConstructor:
                 
                 # Format the timestamp if necessary
                 if "format_ts" in value and value["format_ts"]:
-                    new_val = self.format_ts(getattr(self.ping, value['db_column']), self.ping.enrollment.tz)
+                    new_val = self.format_ts(getattr(self.ping.enrollment, value['db_column']), self.ping.enrollment.tz)
                 else: 
                     new_val = getattr(self.ping, value['db_column'])
                     
