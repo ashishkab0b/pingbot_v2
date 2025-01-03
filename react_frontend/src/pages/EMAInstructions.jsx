@@ -358,22 +358,22 @@ const EMAInstructions = () => {
         <List sx={{ listStyleType: 'decimal', pl: 4 }}>
           <ListItem sx={{ display: 'list-item' }}>
             <ListItemText
-              primary="Provide Link: Share the enrollment link with your participants via email, Qualtrics, etc."
+              primary="Provide Link: Share the enrollment link found in the study overview page with your participants via email, Qualtrics, etc."
             />
           </ListItem>
           <ListItem sx={{ display: 'list-item' }}>
             <ListItemText
-              primary="Time Zone Selection: Participants select their time zone when following the link."
+              primary="Time Zone Selection: Participants follow the link and are prompted to select their time zone."
             />
           </ListItem>
           <ListItem sx={{ display: 'list-item' }}>
             <ListItemText
-              primary="Unique Enrollment Code: After selecting a time zone, participants receive a unique code."
+              primary="Unique Enrollment Code: After selecting a time zone, participants receive a unique code and are instructed on how to download Telegram and submit their code to the bot on Telegram."
             />
           </ListItem>
           <ListItem sx={{ display: 'list-item' }}>
             <ListItemText
-              primary="Telegram Enrollment: Participants use that code to enroll in your study on Telegram."
+              primary="Telegram Enrollment: Participants submit their unique code to the bot on Telegram at which point they are enrolled in the study and will receive the pings designated by your ping templates."
             />
           </ListItem>
         </List>
