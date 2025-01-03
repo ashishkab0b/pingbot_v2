@@ -70,9 +70,13 @@ def init_extensions(app):
     cors.init_app(app, resources={
         r"/api/*": {
             "origins": [
+                "https://js.stripe.com", 
+                "https://m.stripe.network"
                 "http://emapingbot.com",
                 "https://emapingbot.com", 
-                "http://localhost:3000",  # Allow localhost for local testing
+                "http://localhost:3000", 
+                "https://www.google.com",  # For Google reCAPTCHA
+                "https://www.gstatic.com"  # For reCAPTCHA assets
             ],
             "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
             "allow_headers": ["Authorization", "Content-Type"],
@@ -81,3 +85,5 @@ def init_extensions(app):
     })
     swagger.init_app(app)
     redis_client.init_app(app)
+    
+    CORS(app, resources={r"*": {"origins": []}})
