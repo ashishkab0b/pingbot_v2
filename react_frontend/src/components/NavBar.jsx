@@ -52,6 +52,10 @@ const NavBar = () => {
         {/* Navigation Links */}
         {accessToken ? (
           <>
+            {/* Donation Button */}
+            <Button color="inherit" onClick={handleOpenDonation}>
+              Donate
+            </Button>
             <Button color="inherit" component={RouterLink} to="/studies">
               Studies
             </Button>
@@ -67,6 +71,10 @@ const NavBar = () => {
           </>
         ) : (
           <>
+            {/* Donation Button */}
+            <Button color="inherit" onClick={handleOpenDonation}>
+              Donate
+            </Button>
 
             <Button color="inherit" component={RouterLink} to="/login">
               Login
@@ -75,10 +83,6 @@ const NavBar = () => {
               Help
             </Button>
 
-            {/* Donation Button */}
-            <Button color="inherit" onClick={handleOpenDonation}>
-              Donate
-            </Button>
           </>
         )}
       </Toolbar>
