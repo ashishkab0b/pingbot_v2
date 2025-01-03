@@ -25,9 +25,10 @@ def ping_forwarder(ping_id):
     
 
     # Check if the user agent is a bot
-    user_agent = request.headers.get('User-Agent')
-    if user_agent and any(bot_string in user_agent for bot_string in current_app.config["BOT_USER_AGENTS"]):
-        return 
+    # (removing this for now because i disabled previews and i'm not sure if this will break filling out surveys in within app telegram browser)
+    # user_agent = request.headers.get('User-Agent')
+    # if user_agent and any(bot_string in user_agent for bot_string in current_app.config["BOT_USER_AGENTS"]):
+    #     return 
 
     # Get the ping
     ping = Ping.query.get(ping_id)
