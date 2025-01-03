@@ -1,5 +1,6 @@
 
 from flask import current_app
+import zoneinfo
 
 from models import Ping
 
@@ -107,6 +108,7 @@ class MessageConstructor:
         """
         Format a timestamp for display in a message with AM/PM.
         """
+        tz = zoneinfo.ZoneInfo(tz)
         return ts.astimezone(tz).strftime("%Y-%m-%d %I:%M:%S %p %Z")
         
     def construct_ping_link(self):
