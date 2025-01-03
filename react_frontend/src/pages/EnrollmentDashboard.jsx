@@ -161,14 +161,14 @@ function EnrollmentDashboard() {
       </Typography>
       <StudyNav />
 
-      <Button
+      {/* <Button
         variant="contained"
         color={showCreateForm ? 'secondary' : 'primary'}
         onClick={() => setShowCreateForm(!showCreateForm)}
         sx={{ marginBottom: '1rem' }}
       >
         {showCreateForm ? 'Cancel' : 'Create New Participant'}
-      </Button>
+      </Button> */}
 
       {showCreateForm && (
         <Box component="section" sx={{ marginBottom: '2rem' }}>

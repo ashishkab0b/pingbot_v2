@@ -28,8 +28,8 @@ MID PRIORITY
 - form validation (esp ping templates)
 - switch from using localstorage to store access tokens to using httponly
 - sanitize all input of javascript.
-- probability completed
 - put captcha on register and login
+- sorting not working on all pages
 
 LOWER PRIORITY
 - account.js
@@ -38,16 +38,8 @@ LOWER PRIORITY
 
 - add functionality to modify study permissions
 
-- look at gpt conversation called session management to make sure i'm doing this right
-
-- click on ping to show template or participant
-
 - make a route to get a survey link or survey message 
 
-
-- instructions
-    - clarify on ping template page that day 0 is not included in "every day"
-    - add instruction of variables in url and message
 
 - adjust timezone var variables like reminder and expiretime that go in message and url
 
@@ -60,7 +52,6 @@ participants capabilities
 - rotate_keys in cron on server
 - make update interfaces - i.e. edit
 
-- make create ping template interface better
 
 
 prolific integration
@@ -72,6 +63,6 @@ prolific integration
 - approval button on pings sheet
 - generate spreadsheet with all pings and "approve" column. user uploads spreadsheet again to approve participants.
 
-- pings get assigned when telegram is linked
-    - within this process, messages get constructed and vars replaced
-    - enrolled = True
+cloud research integration
+- user selects CR integration when making study
+- When on CR study there is a tab for CR
