@@ -32,6 +32,8 @@ def prepare_requested_ping(ping):
         participant_tz = enrollment.tz
         local_ts = convert_dt_to_local(ping.scheduled_ts, participant_tz).strftime("%Y-%m-%d %H:%M:%S %Z")
         ping_dict['scheduled_ts_local'] = local_ts
+        if ping_dict['first_clicked_ts']:
+            ping_dict['first_clicked_ts'] = convert_dt_to_local(ping.first_clicked_ts, participant_tz).strftime("%Y-%m-%d %H:%M:%S %Z")
 
         # Add study pid
         ping_dict['pid'] = enrollment.study_pid
