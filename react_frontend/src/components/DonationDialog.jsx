@@ -33,7 +33,8 @@ function DonationDialog({ open, onClose }) {
                 </Typography>
                 <Typography paragraph>
                     If this tool has been helpful to you, please consider donating.
-                    Any amount is greatly appreciated, but <strong>a suggested contribution is 1 dollar per participant per study</strong>. However, if you are unable to contribute, please don’t worry! The tool will remain free and accessible to all. Pingbot is and will always be completely free to use.
+                    Any amount is greatly appreciated, but <strong>a suggested contribution is 1 dollar per participant per study</strong>. 
+                    However, if you are unable to contribute, please don’t worry! Pingbot is and will always be completely free to use.
                 </Typography>
                 <Typography paragraph>
                     {/* <strong>Suggested contributions per study are:</strong>
