@@ -12,7 +12,7 @@ import {
 function DonationDialog({ open, onClose }) {
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>Thank you for creating a new study!</DialogTitle>
+      <DialogTitle>Thank you for using Pingbot!</DialogTitle>
       <DialogContent dividers>
         <Typography paragraph>
           As a graduate student, I’ve poured countless hours into designing, 
