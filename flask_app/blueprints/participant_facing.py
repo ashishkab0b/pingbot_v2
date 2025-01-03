@@ -22,6 +22,12 @@ def ping_forwarder(ping_id):
     """
     # Log the start of the request
     current_app.logger.info(f"Received request to forward ping, ping_id={ping_id}.")
+    
+
+    # Check if the user agent is a bot
+    user_agent = request.headers.get('User-Agent')
+    if user_agent and any(bot_string in user_agent for bot_string in current_app.config["BOT_USER_AGENTS"]):
+        return 
 
     # Get the ping
     ping = Ping.query.get(ping_id)

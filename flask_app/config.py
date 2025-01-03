@@ -26,6 +26,7 @@ class BaseConfig:
     TELEGRAM_SECRET_KEY = os.environ['TELEGRAM_SECRET_KEY']
     TELEGRAM_BOT_NAME = "SurveyPingBot"
     MY_TELEGRAM_ID = os.environ['MY_TELEGRAM_ID']
+    BOT_USER_AGENTS = ['TelegramBot']
     
     REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
     REDIS_DB = 0
