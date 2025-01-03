@@ -2,6 +2,7 @@
 import React from 'react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { logoutUser } from '../api/auth';
+import { useDonationDialog } from '../context/DonationDialogContext';
 import {
   AppBar,
   Toolbar,
@@ -15,14 +16,17 @@ import MenuIcon from '@mui/icons-material/Menu';
 const NavBar = () => {
   const navigate = useNavigate();
   const accessToken = localStorage.getItem('access_token');
+  const { openDonationDialog } = useDonationDialog();
 
+  const handleOpenDonation = () => {
+    openDonationDialog();
+  };
   const handleLogout = async () => {
     if (!accessToken) {
       console.warn('No access token found for logout.');
       navigate('/login');
       return;
     }
-
     try {
       await logoutUser(accessToken);
     } catch (error) {
@@ -38,7 +42,7 @@ const NavBar = () => {
     <AppBar position="static" color="primary">
       <Toolbar>
         {/* You can add a logo or icon here */}
- 
+
 
         {/* Application Title */}
         <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
@@ -64,13 +68,18 @@ const NavBar = () => {
         ) : (
           <>
 
-          <Button color="inherit" component={RouterLink} to="/login">
-            Login
-          </Button>
-          <Button color="inherit" component={RouterLink} to="/help">
+            <Button color="inherit" component={RouterLink} to="/login">
+              Login
+            </Button>
+            <Button color="inherit" component={RouterLink} to="/help">
               Help
             </Button>
-            </>
+
+            {/* Donation Button */}
+            <Button color="inherit" onClick={handleOpenDonation}>
+              Donate
+            </Button>
+          </>
         )}
       </Toolbar>
     </AppBar>

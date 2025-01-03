@@ -4,6 +4,8 @@ import DataTable from '../components/DataTable';
 import axios from '../api/axios';
 import DeleteIcon from '@mui/icons-material/Delete';
 import DonationDialog from '../components/DonationDialog';
+import { useDonationDialog } from '../context/DonationDialogContext';
+
 import {
   IconButton,
   Tooltip,
@@ -18,6 +20,7 @@ import {
 
 function StudyDashboard() {
   const navigate = useNavigate();
+  const { openDonationDialog } = useDonationDialog(); // Open donation dialog
 
   const userEmail = localStorage.getItem('user_email');
 
@@ -63,7 +66,7 @@ function StudyDashboard() {
 
 
   // Track whether donation dialog is open
-  const [showDonationDialog, setShowDonationDialog] = useState(false);
+  // const [showDonationDialog, setShowDonationDialog] = useState(false);
 
   // Fetch studies on mount or when page changes
   useEffect(() => {
@@ -118,7 +121,7 @@ function StudyDashboard() {
       fetchStudies(page, perPage);
 
       // SHOW the donation dialog
-      setShowDonationDialog(true);
+      openDonationDialog();
 
     } catch (err) {
       if (err.response && err.response.status === 400) {
@@ -302,26 +305,26 @@ function StudyDashboard() {
           onPageChange={handlePageChange}
           actionsColumn={(row) => (
             <Tooltip title="Delete Study">
-            <IconButton
-              color="error"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleDeleteStudy(row.id);
-              }}
-            >
-              <DeleteIcon />
-            </IconButton>
-          </Tooltip>
+              <IconButton
+                color="error"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDeleteStudy(row.id);
+                }}
+              >
+                <DeleteIcon />
+              </IconButton>
+            </Tooltip>
           )}
           onRowClick={(row) => navigate(`/studies/${row.id}`)}
         />
       </section>
 
       {/* Donation Prompt Dialog */}
-      <DonationDialog
+      {/* <DonationDialog
         open={showDonationDialog}
         onClose={() => setShowDonationDialog(false)}
-      />
+      /> */}
     </div>
   );
 }

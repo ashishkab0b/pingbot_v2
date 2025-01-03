@@ -16,6 +16,8 @@ import { ThemeProvider, createTheme } from '@mui/material/styles';
 import Footer from './components/Footer';
 import EMAInstructions from './pages/EMAInstructions';
 import FeedbackWidget from './components/FeedbackWidget';
+import { DonationDialogProvider } from './context/DonationDialogContext';
+
 
 
 const theme = createTheme({
@@ -121,6 +123,7 @@ function Layout() {
 
 function App() {
   return (
+    <DonationDialogProvider>
     <ThemeProvider theme={theme}>
       <Router>
         <Layout />
@@ -129,6 +132,7 @@ function App() {
 
       <Footer />
     </ThemeProvider>
+    </DonationDialogProvider>
   );
 }
 
