@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import DataTable from '../components/DataTable';
 import axios from '../api/axios';
 import DeleteIcon from '@mui/icons-material/Delete';
+import DonationDialog from '../components/DonationDialog';
 import {
   IconButton,
   Tooltip,
@@ -12,6 +13,8 @@ import {
   Box,
   Grid,
 } from '@mui/material';
+
+
 
 function StudyDashboard() {
   const navigate = useNavigate();
@@ -57,6 +60,10 @@ function StudyDashboard() {
 
   // Toggle whether the "Create Study" form is shown
   const [showCreateForm, setShowCreateForm] = useState(false);
+
+
+  // Track whether donation dialog is open
+  const [showDonationDialog, setShowDonationDialog] = useState(false);
 
   // Fetch studies on mount or when page changes
   useEffect(() => {
@@ -109,6 +116,10 @@ function StudyDashboard() {
 
       // Refresh the studies list
       fetchStudies(page, perPage);
+
+      // SHOW the donation dialog
+      setShowDonationDialog(true);
+
     } catch (err) {
       if (err.response && err.response.status === 400) {
         setErrors(err.response.data.errors || {});
@@ -305,6 +316,12 @@ function StudyDashboard() {
           onRowClick={(row) => navigate(`/studies/${row.id}`)}
         />
       </section>
+
+      {/* Donation Prompt Dialog */}
+      <DonationDialog
+        open={showDonationDialog}
+        onClose={() => setShowDonationDialog(false)}
+      />
     </div>
   );
 }
