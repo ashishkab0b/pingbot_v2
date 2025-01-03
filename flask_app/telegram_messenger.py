@@ -27,7 +27,7 @@ class TelegramMessenger:
         """
         
         async def send(telegram_id, message):
-            await self.bot.send_message(chat_id=telegram_id, text=message, parse_mode=ParseMode.HTML)
+            await self.bot.send_message(chat_id=telegram_id, text=message, parse_mode=ParseMode.HTML, disable_web_page_preview=True)
             return None
         
         try:
