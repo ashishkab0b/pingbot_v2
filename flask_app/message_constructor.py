@@ -138,7 +138,7 @@ class MessageConstructor:
             if value['db_table'] == 'pings':
                 
                 # Format the timestamp if necessary
-                if "format_ts" in value and value["format_ts"]:
+                if "format_ts" in value and value["format_ts"] and getattr(self.ping, value['db_column']):
                     new_val = self.format_ts(getattr(self.ping, value['db_column']), self.ping.enrollment.tz)
                 else: 
                     new_val = getattr(self.ping, value['db_column'])

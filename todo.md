@@ -64,5 +64,14 @@ prolific integration
 - generate spreadsheet with all pings and "approve" column. user uploads spreadsheet again to approve participants.
 
 cloud research integration
-- user selects CR integration when making study
-- When on CR study there is a tab for CR
+- user selects CR integration when making study and adds n participants
+- now, when participants enroll in the study, it sends an api request to cloud research to add them to a participant group
+- when making ping templates, it creates a cloud research project for each ping template ping
+    - including
+- db adjustments
+    - study
+        - cr_integration - boolean
+        - cr_n_participants - integer - num participants
+    - ping templates
+        - survey time (in minutes)
+    
