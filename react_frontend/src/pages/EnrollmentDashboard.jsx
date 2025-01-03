@@ -39,6 +39,10 @@ function EnrollmentDashboard() {
 
   const [showCreateForm, setShowCreateForm] = useState(false);
 
+  // Sorting
+  const [sortBy, setSortBy] = useState('id'); // Default sort column
+  const [sortOrder, setSortOrder] = useState('asc'); // 'asc' or 'desc'
+
   // ------------------------------------------------
   // Fetch participants on mount or page change
   // ------------------------------------------------
@@ -52,18 +56,19 @@ function EnrollmentDashboard() {
   const fetchParticipants = async () => {
     setLoading(true);
     setError(null);
-
+  
     try {
-      // GET /studies/<study_id>/enrollments
       const response = await axios.get(`/studies/${studyId}/enrollments`, {
         params: {
-          page: page,
+          page,
           per_page: perPage,
-          // Add sorting and searching if needed
+          sort_by: sortBy,       // <---- Pass sortBy
+          sort_order: sortOrder, // <---- Pass sortOrder
+          // Add search if you later implement searching for participants
         },
       });
       const { data, meta } = response.data;
-
+  
       setParticipants(data);
       setPage(meta.page);
       setTotalRows(meta.total);
@@ -73,6 +78,20 @@ function EnrollmentDashboard() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // ------------------------------------------------
+  // Sorting Handler
+  // ------------------------------------------------
+  const handleSortChange = (columnKey) => {
+    if (sortBy === columnKey) {
+      // Toggle sort order
+      setSortOrder((prevOrder) => (prevOrder === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortBy(columnKey);
+      setSortOrder('asc');
+    }
+    setPage(1); // Reset to first page when sort changes
   };
 
   // ------------------------------------------------
@@ -246,13 +265,13 @@ function EnrollmentDashboard() {
             prCompleted: participant.pr_completed,
           }))}
           columns={[
-            { label: 'ID', key: 'id' },
-            { label: 'Participant ID', key: 'studyPid' },
-            { label: 'Time Zone', key: 'timeZone' },
-            { label: 'Enrolled?', key: 'enrolled' },
-            { label: 'Linked Telegram?', key: 'linkedTelegram' },
-            { label: 'Enrollment Date', key: 'startDate' },
-            { label: 'Proportion completed', key: 'prCompleted' },
+            { label: 'ID', key: 'id', sortable: true },
+            { label: 'Participant ID', key: 'studyPid', sortable: true  },
+            { label: 'Time Zone', key: 'timeZone', sortable: true  },
+            { label: 'Enrolled?', key: 'enrolled', sortable: true  },
+            { label: 'Linked Telegram?', key: 'linkedTelegram', sortable: true  },
+            { label: 'Enrollment Date', key: 'startDate', sortable: true  },
+            { label: 'Proportion completed', key: 'prCompleted', sortable: true  },
           ]}
           loading={loading}
           error={error}
@@ -260,6 +279,9 @@ function EnrollmentDashboard() {
           perPage={perPage}
           totalRows={totalRows}
           onPageChange={handlePageChange}
+          onSortChange={handleSortChange}
+          sortBy={sortBy}
+          sortOrder={sortOrder}
           actionsColumn={(row) => (
             <Box display="flex">
               {/* Enroll/Unenroll button */}

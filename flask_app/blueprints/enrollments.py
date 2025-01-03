@@ -159,9 +159,12 @@ def get_enrollments(study_id):
             'id': Enrollment.id,
             'study_pid': Enrollment.study_pid,
             'signup_ts': Enrollment.signup_ts,
+            'tz': Enrollment.tz,
             'enrolled': Enrollment.enrolled,
             'pr_completed': Enrollment.pr_completed,
-            # Add more fields if needed
+            'linked_telegram': Enrollment.telegram_id.isnot(None),
+            'signup_ts': Enrollment.signup_ts
+            
         }
         sort_column = valid_sort_columns.get(sort_by, Enrollment.id)
 
