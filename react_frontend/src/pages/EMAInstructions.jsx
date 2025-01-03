@@ -161,12 +161,12 @@ const EMAInstructions = () => {
         <List sx={{ listStyleType: 'disc', pl: 4 }}>
           <ListItem sx={{ display: 'list-item' }}>
             <ListItemText
-              primary="Four daily EMA pings (prompting participants to report their
+              primary="A ping template defining four daily EMA pings (prompting participants to report their
               current mood or behavior)"
             />
           </ListItem>
           <ListItem sx={{ display: 'list-item' }}>
-            <ListItemText primary="One evening diary ping (to summarize the entire day)" />
+            <ListItemText primary="A ping template defining one evening diary ping (to summarize the entire day)" />
           </ListItem>
         </List>
 
