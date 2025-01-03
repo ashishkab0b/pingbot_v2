@@ -143,8 +143,9 @@ function PingDashboard() {
             templateName: ping.ping_template_name,
             dayNum: ping.day_num,
             scheduled: ping.scheduled_ts_local,
-            pingSent: ping.ping_sent_ts ? 'Yes' : 'No',
+            pingSent: ping.sent_ts ? 'Yes' : 'No',
             reminderSent: ping.reminder_sent_ts ? 'Yes' : 'No',
+            firstClicked: ping.first_clicked_ts,
           }))}
           columns={[
             { label: 'ID', key: 'id', sortable: true },
@@ -153,8 +154,9 @@ function PingDashboard() {
             { label: 'Template Name', key: 'templateName', sortable: true },
             { label: 'Day #', key: 'dayNum', sortable: true },
             { label: 'Scheduled', key: 'scheduled', sortable: true },
-            { label: 'Ping Sent?', key: 'pingSent' },
-            { label: 'Reminder Sent?', key: 'reminderSent' },
+            { label: 'Ping Sent?', key: 'pingSent', sortable: true },  
+            { label: 'Reminder Sent?', key: 'reminderSent', sortable: true },
+            { label: 'First Clicked', key: 'firstClicked', sortable: true },
           ]}
           loading={loading}
           error={error}
