@@ -1,6 +1,6 @@
 # EMA Pingbot
 
-EMA Pingbot is a web application for scheduling and implementing EMA survey studies. EMA Pingbot (or Pingbot) runs on a React/Flask/PostGres stack containerized in Docker. In addition the Pingbot application, you need a survey software (e.g. Qualtrics) and your participants will need to download Telegram to receive their pings.
+EMA Pingbot is a web application for scheduling and implementing EMA survey studies. The application (also known as Pingbot) runs on a React/Flask/PostgreSQL stack for the researcher interface and uses Celery to schedule ping delivery. Pings are sent to participants on Telegram via the Telegram API and the python-telegram-bot library.
 
 Please visit https://emapingbot.com to use the application.
 
@@ -20,4 +20,4 @@ Telegram is a widely used messaging platform offering secure communication acros
 
 One major advantage of EMA Pingbot is that it allows you to use the survey software of your choice—such as Qualtrics, REDCap, or any other platform to design surveys and collect your data. This flexibility means you can continue leveraging your existing survey design and analytics tools while relying on EMA Pingbot to handle the scheduling and distribution of surveys to participants.
 
-<strong>Please visit https://emapingbot.com/help for more information.</strong>
+<strong>Please visit https://emapingbot.com/help for more instruction on creating studies with EMA Pingbot.</strong>
