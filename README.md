@@ -1,6 +1,8 @@
 # EMA Pingbot
 
-EMA Pingbot is a web application for scheduling and implementing EMA survey studies. EMA Pingbot (or Pingbot) runs on a React/Flask/PostGres stack containerized in Docker. For regular use, please visit https://emapingbot.com to use the application.
+EMA Pingbot is a web application for scheduling and implementing EMA survey studies. EMA Pingbot (or Pingbot) runs on a React/Flask/PostGres stack containerized in Docker. In addition the Pingbot application, you need a survey software (e.g. Qualtrics) and your participants will need to download Telegram to receive their pings.
+
+Please visit https://emapingbot.com to use the application.
 
 ## What is EMA? 
 EMA stands for Ecological Momentary Assessment (also sometimes called experience sampling methodology or ESM). It is a research method that involves collecting real-time data from participants as they go about their everyday lives. By sending prompts (or “pings”) at various times during the day, EMA helps researchers capture in-the-moment experiences, behaviors, or feelings. This real-time approach reduces recall bias, provides richer data, and offers a more accurate picture of how participants think and act in their natural environments. A few common uses of EMA include:
