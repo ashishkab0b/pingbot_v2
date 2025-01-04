@@ -33,22 +33,18 @@ function DonationDialog({ open, onClose }) {
                 </Typography>
                 <Typography paragraph>
                     If this tool has been helpful to you, please consider donating. <u>Any amount is greatly appreciated</u>, but <strong>a suggested contribution is 1 dollar per participant per study</strong>. 
-                </Typography>
-                <Typography paragraph>
-                    However, if you are unable to contribute, please don’t worry! Pingbot is and will always be completely free to use.
                     {/* <strong>Suggested contributions per study are:</strong>
                     <ul>
                         <li>$20 per study for individuals</li>
                         <li>$50-$200 per study for groups with research funding</li>
                     </ul> */}
+                </Typography>
+                <Typography paragraph>
+                    However, if you are unable to contribute, please don’t worry! Pingbot is and will always be completely free to use.
+  
                     Thank you for your support!
                 </Typography>
 
-                {/*
-          The <stripe-buy-button> is inserted here. Since we already included
-          <script async src="https://js.stripe.com/v3/buy-button.js"></script>
-          in the index.html, this tag should work automatically.
-        */}
                 <Box
                     mt={2}
                     display="flex"

@@ -95,6 +95,17 @@ const EMAInstructions = () => {
           ready to collect data. Let’s get started!
         </Typography>
 
+
+        {/* Step 0 */}
+        <Typography variant="h5" gutterBottom>
+          0. Prerequisites
+        </Typography>
+        <Typography paragraph>
+
+          Before you begin, you will need to register an account with EMA Pingbot by visiting <RouterLink to="/register">the registration page</RouterLink>. 
+          You should also register an account on Telegram in order to be able to test your study before deploying.
+        </Typography>
+
         {/* Step 1 */}
         <Typography variant="h5" gutterBottom>
           1. Create a Study Using the{' '}
