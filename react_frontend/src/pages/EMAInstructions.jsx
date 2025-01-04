@@ -98,12 +98,11 @@ const EMAInstructions = () => {
 
         {/* Step 0 */}
         <Typography variant="h5" gutterBottom>
-          0. Prerequisites
+          0. Prerequisites: Register an Account
         </Typography>
         <Typography paragraph>
-
-          Before you begin, you will need to register an account with EMA Pingbot by visiting <RouterLink to="/register">the registration page</RouterLink>. 
-          You should also register an account on Telegram in order to be able to test your study before deploying.
+          Before you begin, you will need to register an account with EMA Pingbot by visiting the <RouterLink to="/register">registration page</RouterLink>. 
+          You should also register an account on Telegram so you can test your study before deploying.
         </Typography>
 
         {/* Step 1 */}

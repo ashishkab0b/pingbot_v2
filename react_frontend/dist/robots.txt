@@ -1,3 +1,15 @@
 # https://www.robotstxt.org/robotstxt.html
+
 User-agent: *
-Disallow:
+Disallow: /admin/
+Disallow: /api/
+Disallow: /studies/
+Disallow: /enroll/
+Disallow: /static/private/
+
+# Allow specific public directories
+Allow: /static/public/
+Allow: /public/
+
+# Sitemap location
+# Sitemap: https://yourdomain.com/sitemap.xml
