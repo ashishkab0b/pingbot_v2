@@ -53,7 +53,7 @@ def check_and_send_pings():
                 # Log failure
                 current_app.logger.error(f"Failed to send ping {ping.id} to telegram_id {telegram_id}")
                 
-                # Recompute probability completed
+            # Recompute probability completed
             try:
                 all_pings = get_pings_by_enrollment_id(db.session, ping.enrollment_id)
                 already_sent_pings = [p for p in all_pings if p.sent_ts is not None]
