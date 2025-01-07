@@ -94,7 +94,7 @@ def ping_forwarder(ping_id):
     message_constructor = MessageConstructor(ping)
     survey_url = message_constructor.construct_survey_url()
 
-    return redirect(survey_url, code=301)
+    return redirect(survey_url, code=307)
 
 
 @particpant_facing_bp.route('/signup', methods=['POST'])
