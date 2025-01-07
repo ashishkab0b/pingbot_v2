@@ -46,11 +46,11 @@ def ping_forwarder(ping_id):
         return jsonify({"error": "Invalid code."}), 400
 
     # Update the ping with click timestamps
+    ping_already_clicked = False
     try:
         # First clicked timestamp
         if not hasattr(ping, 'first_clicked_ts') or not ping.first_clicked_ts:
             ping.first_clicked_ts = datetime.now(timezone.utc)
-            ping_already_clicked = False
         else:
             ping_already_clicked = True
 
