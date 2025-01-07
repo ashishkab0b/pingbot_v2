@@ -57,6 +57,7 @@ class BaseConfig:
     
     PING_DEFAULT_URL_TEXT = "Click here to take the survey."
     PING_EXPIRED_MESSAGE = "This ping has expired. Please be sure to take the survey as soon as possible after receiving."
+    PING_ALREADY_CLICKED_MESSAGE = "This ping link has already been clicked. Thank you for taking the survey!"
     RECAPTCHA_SECRET_KEY = os.environ['RECAPTCHA_SECRET_KEY']
 
 class DevelopmentConfig(BaseConfig):

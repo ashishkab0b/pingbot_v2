@@ -22,7 +22,6 @@ def ping_forwarder(ping_id):
     """
     # Log the start of the request
     current_app.logger.info(f"Received request to forward ping, ping_id={ping_id}.")
-    
 
     # Check if the user agent is a bot
     # (removing this for now because i disabled previews and i'm not sure if this will break filling out surveys in within app telegram browser)
@@ -51,6 +50,9 @@ def ping_forwarder(ping_id):
         # First clicked timestamp
         if not hasattr(ping, 'first_clicked_ts') or not ping.first_clicked_ts:
             ping.first_clicked_ts = datetime.now(timezone.utc)
+            ping_already_clicked = False
+        else:
+            ping_already_clicked = True
 
         # Last clicked timestamp
         ping.last_clicked_ts = datetime.now(timezone.utc)
@@ -63,6 +65,11 @@ def ping_forwarder(ping_id):
         current_app.logger.exception(e)
         return jsonify({"error": "Internal server error."}), 500
 
+    # If ping is already clicked, return message
+    if ping_already_clicked:
+        current_app.logger.info(f"Ping {ping.id} has already been clicked.")
+        return current_app.config["PING_ALREADY_CLICKED_MESSAGE"], 200
+    
     # Check if expired and return message if so
     if hasattr(ping, 'expiry_ts') and ping.expiry_ts < datetime.now(timezone.utc):
         current_app.logger.info(f"Ping {ping.id} has expired.")
@@ -81,7 +88,6 @@ def ping_forwarder(ping_id):
         current_app.logger.error(f"Failed to update enrollment {ping.enrollment_id} with pr_completed.")
         current_app.logger.exception(e)
         return jsonify({"error": "Internal server error."}), 500
-    
     
 
     # Redirect to survey
