@@ -262,7 +262,7 @@ function EnrollmentDashboard() {
             enrolled: participant.enrolled ? 'Yes' : 'No',
             linkedTelegram: participant.linked_telegram ? 'Yes' : 'No',
             startDate: participant.signup_ts,
-            prCompleted: participant.pr_completed,
+            prCompleted: participant.pr_completed ? participant.pr_completed.toFixed(3) : '0.000',
           }))}
           columns={[
             { label: 'ID', key: 'id', sortable: true },
