@@ -40,7 +40,9 @@ function StudyDashboard() {
   // Fields for creating a new study
   const [publicName, setPublicName] = useState('');
   const [internalName, setInternalName] = useState('');
-  const [contactMessage, setContactMessage] = useState('');
+  const [contactMessage, setContactMessage] = useState(
+    `For questions or concerns about the study, please email the researchers at ${userEmail || 'your-email@example.com'}.`
+  );
   const [errors, setErrors] = useState({}); // For validation errors
 
   // Track whether `internalName` was manually edited
@@ -224,7 +226,7 @@ function StudyDashboard() {
                   label="Contact Message"
                   value={contactMessage}
                   onChange={(e) => setContactMessage(e.target.value)}
-                  placeholder={`For questions or concerns about the study, please email the researchers at ${userEmail || '...'}`}
+                  // placeholder={`For questions or concerns about the study, please email the researchers at ${userEmail || '...'}`}
                   multiline
                   rows={4}
                   helperText={
