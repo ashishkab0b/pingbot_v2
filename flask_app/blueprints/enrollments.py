@@ -11,7 +11,8 @@ from crud import (
     update_enrollment,
     soft_delete_enrollment,
     get_user_study_relation,
-    soft_delete_all_pings_for_enrollment
+    soft_delete_all_pings_for_enrollment,
+    get_ping_templates_by_study_id
 )
 from permissions import get_current_user, user_has_study_permission
 from utils import paginate_statement, random_time, convert_dt_to_local
@@ -42,7 +43,7 @@ def make_pings(enrollment_id, study_id):
             return
         
         # Get ping templates
-        ping_templates = study.ping_templates
+        ping_templates = get_ping_templates_by_study_id(db.session, study_id)
         if not ping_templates:
             current_app.logger.error(
                 f"No ping templates found for study={study_id}. Aborting ping creation for enrollment={enrollment_id}."
