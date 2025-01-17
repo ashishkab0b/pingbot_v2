@@ -877,6 +877,7 @@ def get_pings_to_send(
             Ping.scheduled_ts >= acceptable_delay_ts,
             or_(Ping.expire_ts.is_(None), Ping.expire_ts > now),
             Ping.deleted_at.is_(None),
+            PingTemplate.deleted_at.is_(None),
             Enrollment.deleted_at.is_(None),
             Study.deleted_at.is_(None)
         )
