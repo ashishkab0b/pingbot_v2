@@ -76,7 +76,7 @@ function AddUserDialog({ open, onClose, studyId, onUserAdded }) {
           >
             <MenuItem value="viewer">Viewer</MenuItem>
             <MenuItem value="editor">Editor</MenuItem>
-            <MenuItem value="owner">Owner</MenuItem>
+            <MenuItem value="owner">Owner (can share)</MenuItem>
           </Select>
         </FormControl>
       </DialogContent>
