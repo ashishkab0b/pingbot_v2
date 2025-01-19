@@ -197,7 +197,7 @@ def soft_delete_user(session: Session, user_id: int) -> bool:
     
     # Soft delete the user studies
     for study in studies:
-        user_study = get_user_study_relation(session, user_id, study.id, include_deleted=True)
+        user_study = get_user_study(session, user_id, study.id, include_deleted=True)
         user_study.deleted_at = datetime.now(timezone.utc)
 
     return True
@@ -356,7 +356,7 @@ def soft_delete_study(
     for pt in ping_templates:
         pt.deleted_at = datetime.now(timezone.utc)
     for user in users:
-        user_study = get_user_study_relation(session, user.id, study_id, include_deleted=True)
+        user_study = get_user_study(session, user.id, study_id, include_deleted=True)
         user_study.deleted_at = datetime.now(timezone.utc)
 
     return True
@@ -394,7 +394,7 @@ def get_studies_for_user(
 
 
 # ========== USER-STUDY RELATION (UserStudy) ==========
-def add_user_to_study(
+def add_user_study(
     session: Session,
     user_id: int,
     study_id: int,
@@ -412,6 +412,11 @@ def add_user_to_study(
     Returns:
         UserStudy: The newly created UserStudy object.
     """
+    # if existing soft-deleted record exists, hard delete it first
+    existing = get_user_study(session, user_id, study_id, include_deleted=True)
+    if existing:
+        session.delete(existing)
+    
     user_study = UserStudy(
         user_id=user_id,
         study_id=study_id,
@@ -475,7 +480,7 @@ def get_users_for_study(
     results = session.execute(stmt)
     return results.scalars().all()
 
-def get_user_study_relation(
+def get_user_study(
     session: Session, 
     user_id: int, 
     study_id: int,
@@ -525,7 +530,7 @@ def update_user_study_role(
     Returns:
         Optional[UserStudy]: The updated UserStudy object if found, else None.
     """
-    user_study = get_user_study_relation(session, user_id, study_id, include_deleted=True)
+    user_study = get_user_study(session, user_id, study_id, include_deleted=True)
     if not user_study:
         return None
 
@@ -543,7 +548,7 @@ def soft_delete_user_study(
     
     Returns True if successful, False if the relationship wasn't found.
     """
-    user_study = get_user_study_relation(session, user_id, study_id, include_deleted=False)
+    user_study = get_user_study(session, user_id, study_id, include_deleted=False)
     if not user_study:
         return False
 

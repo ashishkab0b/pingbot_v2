@@ -14,8 +14,8 @@ from crud import (
     get_studies_for_user,
     is_study_code_taken,
     create_study,
-    add_user_to_study,
-    get_user_study_relation,
+    add_user_study,
+    get_user_study,
     get_study_by_id,
     update_study,
     soft_delete_study,
@@ -79,6 +79,7 @@ def get_studies_route():
             .join(UserStudy, UserStudy.study_id == Study.id)
             .where(
                 UserStudy.user_id == user.id,
+                UserStudy.deleted_at.is_(None),
                 Study.deleted_at.is_(None)
             )
         )
@@ -176,7 +177,7 @@ def create_study_route():
         db.session.flush()  # Ensure new_study.id is available
 
         # Add the user as the study owner
-        add_user_to_study(
+        add_user_study(
             db.session,
             user_id=user.id,
             study_id=new_study.id,
@@ -360,14 +361,14 @@ def add_user_to_study_route(study_id):
             return jsonify({"error": f"Study with id={study_id} not found"}), 404
 
         # 6. See if there's an existing user_study row
-        user_study_rel = get_user_study_relation(session, user_to_add.id, study_id, include_deleted=True)
+        user_study_rel = get_user_study(session, user_to_add.id, study_id, include_deleted=True)
         if user_study_rel:
             # If the relation exists (even if soft-deleted), update the role and un-delete
             user_study_rel.role = role
             user_study_rel.deleted_at = None  # un-delete if it was soft-deleted
         else:
             # Create a new user_study link
-            add_user_to_study(session, user_to_add.id, study_id, role)
+            add_user_study(session, user_to_add.id, study_id, role)
 
         session.commit()
         current_app.logger.info(

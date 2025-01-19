@@ -10,7 +10,7 @@ from crud import (
     get_enrollment_by_id,
     update_enrollment,
     soft_delete_enrollment,
-    get_user_study_relation,
+    get_user_study,
     soft_delete_all_pings_for_enrollment,
     get_ping_templates_by_study_id
 )
