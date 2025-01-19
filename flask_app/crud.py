@@ -420,6 +420,60 @@ def add_user_to_study(
     session.add(user_study)
     return user_study
 
+def get_user_studies_for_study(
+    session: Session,
+    study_id: int,
+    include_deleted: bool = False
+) -> List[UserStudy]:
+    """
+    Fetch a list of UserStudy records for a study.
+
+    Args:
+        session (Session): The database session.
+        study_id (int): The
+        include_deleted (bool): Whether to include soft-deleted records.
+        
+    Returns:
+        List[UserStudy]: A list of UserStudy objects.
+
+    """
+    stmt = (
+        select(UserStudy)
+        .where(UserStudy.study_id == study_id)
+    )
+    stmt = include_deleted_records(stmt, UserStudy, include_deleted)
+    
+    return session.execute(stmt).scalars().all()
+
+def get_users_for_study(
+    session: Session,
+    study_id: int,
+    include_deleted: bool = False
+) -> List[User]:
+    """
+    Fetch a list of Users linked to a study.
+
+    Args:
+        session (Session): The database session.
+        study_id (int): The ID of the study.
+        include_deleted (bool): Whether to include soft-deleted users.
+
+    Returns:
+        List[User]: A list of User objects.
+    """
+    
+    stmt = (
+        select(User)
+        .join(UserStudy, User.id == UserStudy.user_id)
+        .where(
+            UserStudy.study_id == study_id
+        )
+        .order_by(User.id.asc())
+    )
+    stmt = include_deleted_records(stmt, User, include_deleted)
+
+    results = session.execute(stmt)
+    return results.scalars().all()
 
 def get_user_study_relation(
     session: Session, 
@@ -477,6 +531,24 @@ def update_user_study_role(
 
     user_study.role = new_role
     return user_study
+
+def soft_delete_user_study(
+    session: Session,
+    user_id: int,
+    study_id: int
+) -> bool:
+    """
+    Soft-delete a user-study link by setting deleted_at on the UserStudy record,
+    thus removing the user from the study, but not deleting the user entirely.
+    
+    Returns True if successful, False if the relationship wasn't found.
+    """
+    user_study = get_user_study_relation(session, user_id, study_id, include_deleted=False)
+    if not user_study:
+        return False
+
+    user_study.deleted_at = datetime.now(timezone.utc)
+    return True
 
 
 # ======================= ENROLLMENTS =======================

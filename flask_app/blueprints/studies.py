@@ -21,7 +21,12 @@ from crud import (
     soft_delete_study,
     soft_delete_enrollment,
     soft_delete_ping,
-    soft_delete_ping_template
+    soft_delete_ping_template,
+    get_user_by_email,
+    update_user_study_role,
+    soft_delete_user_study,
+    get_user_studies_for_study,
+    
     
 )
 from permissions import get_current_user, user_has_study_permission
@@ -244,6 +249,14 @@ def update_study_route(study_id):
         return jsonify({"error": f"Study={study_id} not found or no access"}), 404
 
     data = request.get_json()
+    
+    # Sanitize update fields
+    valid_fields = ['public_name', 'internal_name', 'contact_message']
+    invalid_data_keys = [k for k in data.keys() if k not in valid_fields]
+    if invalid_data_keys:
+        current_app.logger.warning(f"User={user.email} attempted to update study={study_id} with invalid fields: {invalid_data_keys}")
+    data = {k: v for k, v in data.items() if k in valid_fields}
+    
     try:
         updated_study = update_study(db.session, study_id=study.id, **data)
         db.session.commit()
@@ -300,4 +313,179 @@ def delete_study_route(study_id):
     db.session.commit()
     current_app.logger.info(f"User={user.email} deleted study={study_id}.")
     return jsonify({"message": f"Study {study_id} deleted successfully."}), 200
+
+@studies_bp.route('/studies/<int:study_id>/add_user', methods=['POST'])
+@jwt_required()
+def add_user_to_study_route(study_id):
+    """
+    Add (or re-add) an existing user (by their email) to a study, assigning them a given role.
+    Only 'owner' or 'editor' of the study is allowed to do this.
+    """
+    current_app.logger.debug(f"Entered add_user_to_study route for study={study_id}.")
+
+    # 1. Ensure the current user is logged in
+    current_user = get_current_user()
+    if not current_user:
+        return jsonify({"error": "Current user not found"}), 404
+
+    # 2. Check if current user has at least 'owner' or 'editor' permissions
+    #    Adjust this as needed (some orgs allow 'editor' to add users, others only 'owner').
+    study_with_permissions = user_has_study_permission(
+        user_id=current_user.id,
+        study_id=study_id,
+        minimum_role="editor"
+    )
+    if not study_with_permissions:
+        return jsonify({"error": "You do not have permission to add users to this study."}), 403
+
+    # 3. Get JSON body
+    data = request.get_json()
+    user_email = data.get('email')
+    role = data.get('role', 'viewer')  # default role is 'viewer' if none provided
+
+    if not user_email:
+        return jsonify({"error": "Email is required"}), 400
+
+    # 4. Find user in DB
+    session = db.session
+    try:
+        user_to_add = get_user_by_email(session, user_email)
+        if not user_to_add:
+            # user doesn't exist
+            return jsonify({"error": f"No user with email '{user_email}' exists."}), 404
+
+        # 5. Check that study also exists
+        study_obj = get_study_by_id(session, study_id)
+        if not study_obj:
+            return jsonify({"error": f"Study with id={study_id} not found"}), 404
+
+        # 6. See if there's an existing user_study row
+        user_study_rel = get_user_study_relation(session, user_to_add.id, study_id, include_deleted=True)
+        if user_study_rel:
+            # If the relation exists (even if soft-deleted), update the role and un-delete
+            user_study_rel.role = role
+            user_study_rel.deleted_at = None  # un-delete if it was soft-deleted
+        else:
+            # Create a new user_study link
+            add_user_to_study(session, user_to_add.id, study_id, role)
+
+        session.commit()
+        current_app.logger.info(
+            f"User with email={user_email} has been added to study={study_id} with role={role}."
+        )
+        return jsonify({"message": f"User {user_email} added to study {study_id} with role {role}."}), 200
+
+    except Exception as e:
+        current_app.logger.error(f"Error adding user with email={user_email} to study={study_id}: {str(e)}")
+        session.rollback()
+        return jsonify({"error": "Internal server error"}), 500
+
+@studies_bp.route('/studies/<int:study_id>/users', methods=['GET'])
+@jwt_required()
+def get_study_users_route(study_id):
+    """
+    Return the list of users (and their roles) associated with this study.
+    Only users with 'owner' permission on the study can view and manage.
+    """
+    current_app.logger.debug(f"Entered get_study_users_route for study={study_id}.")
+    current_user = get_current_user()
+    if not current_user:
+        return jsonify({"error": "Current user not found"}), 404
+
+    # Only a user with 'owner' role on this study can list/manipulate users:
+    study_with_permissions = user_has_study_permission(
+        user_id=current_user.id,
+        study_id=study_id,
+        minimum_role="owner"  # NOTE: Only owners can manage study users
+    )
+    if not study_with_permissions:
+        return jsonify({"error": "You do not have permission to manage users for this study."}), 403
+
+    try:
+        # Query the UserStudy table to get user-role pairs, joined with User
+        user_studies = get_user_studies_for_study(db.session, study_id)
+
+        data = []
+        for us in user_studies:
+            data.append({
+                "user_id": us.user.id,
+                "email": us.user.email,
+                "first_name": us.user.first_name,
+                "last_name": us.user.last_name,
+                "role": us.role,
+            })
+
+        return jsonify(data), 200
+    except Exception as e:
+        current_app.logger.exception(e)
+        return jsonify({"error": "Internal server error"}), 500
+
+@studies_bp.route('/studies/<int:study_id>/users/<int:user_id>', methods=['PUT'])
+@jwt_required()
+def update_study_user_role(study_id, user_id):
+    """
+    Allows the 'owner' of a study to update another user's role in that study
+    """
+    current_app.logger.debug(f"Entered update_study_user_role for study={study_id}, user_id={user_id}.")
+    current_user = get_current_user()
+    if not current_user:
+        return jsonify({"error": "Current user not found"}), 404
+
+    # Must be an 'owner' to manage user roles
+    study_with_permissions = user_has_study_permission(
+        user_id=current_user.id,
+        study_id=study_id,
+        minimum_role="owner"
+    )
+    if not study_with_permissions:
+        return jsonify({"error": "You do not have permission to manage users for this study."}), 403
+
+    data = request.get_json()
+    new_role = data.get('role')
+    if not new_role:
+        return jsonify({"error": "Missing 'role' in request"}), 400
+
+    session = db.session
+    try:
+        updated_user_study = update_user_study_role(session, user_id, study_id, new_role)
+        if not updated_user_study:
+            return jsonify({"error": "User-study relation not found or user is not in this study"}), 404
+        
+        session.commit()
+        return jsonify({"message": "User's role updated successfully", "role": new_role}), 200
+    except Exception as e:
+        current_app.logger.error(f"Error updating user role: {e}")
+        session.rollback()
+        return jsonify({"error": "Internal server error"}), 500
     
+@studies_bp.route('/studies/<int:study_id>/users/<int:user_id>', methods=['DELETE'])
+@jwt_required()
+def remove_user_from_study_route(study_id, user_id):
+    """
+    Allows the 'owner' of a study to remove a user from the study (soft-deleting the UserStudy link).
+    """
+    current_app.logger.debug(f"Entered remove_user_from_study_route for study={study_id}, user_id={user_id}.")
+    current_user = get_current_user()
+    if not current_user:
+        return jsonify({"error": "Current user not found"}), 404
+
+    # Must be an 'owner' to remove a user
+    study_with_permissions = user_has_study_permission(
+        user_id=current_user.id,
+        study_id=study_id,
+        minimum_role="owner"
+    )
+    if not study_with_permissions:
+        return jsonify({"error": "You do not have permission to remove users for this study."}), 403
+
+    session = db.session
+    try:
+        success = soft_delete_user_study(session, user_id, study_id)
+        if not success:
+            return jsonify({"error": "Could not remove user. Relation not found."}), 404
+        session.commit()
+        return jsonify({"message": "User removed from study successfully"}), 200
+    except Exception as e:
+        current_app.logger.error(f"Error removing user from study: {e}")
+        session.rollback()
+        return jsonify({"error": "Internal server error"}), 500

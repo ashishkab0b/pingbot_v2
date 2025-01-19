@@ -12,6 +12,7 @@ function StudyNav() {
     { label: 'Ping Templates', path: `/studies/${studyId}/ping_templates` },
     { label: 'Pings', path: `/studies/${studyId}/pings` },
     { label: 'Participants', path: `/studies/${studyId}/participants` },
+    { label: 'Users', path: `/studies/${studyId}/users` },  
   ];
 
   // Use useMatch to check for route matches
@@ -19,6 +20,7 @@ function StudyNav() {
   const matchPingTemplates = useMatch({ path: `/studies/${studyId}/ping_templates/*` });
   const matchPings = useMatch({ path: `/studies/${studyId}/pings/*` });
   const matchParticipants = useMatch({ path: `/studies/${studyId}/participants/*` });
+  const matchUsers = useMatch({ path: `/studies/${studyId}/users/*` });
 
   // Determine the current active tab index
   let currentTab = false; // Default to no tab selected
@@ -31,7 +33,10 @@ function StudyNav() {
     currentTab = 2;
   } else if (matchParticipants) {
     currentTab = 3;
+  } else if (matchUsers) {
+    currentTab = 4;
   }
+
 
   return (
     <Tabs

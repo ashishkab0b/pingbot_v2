@@ -46,4 +46,9 @@ cloud research integration
         - cr_n_participants - integer - num participants
     - ping templates
         - survey time (in minutes)
-    
+
+cloud research integration
+- user creates an enrollment project. they can do this on their own manually
+- when you make a ping template, it makes a CR project for each ping
+- when participants enroll, they get added to a scheduler such that when their ping block time comes, they are added to included participants for the appropriate project. when ping expires, they are removed
+- when participants click ema link, they get a telegram message with a link that asks if they completed the ping. when they click that they get credited (optional feature)

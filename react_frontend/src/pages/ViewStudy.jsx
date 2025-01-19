@@ -1,4 +1,4 @@
-// ViewStudy.js
+// ViewStudy.jsx
 
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
@@ -15,8 +15,12 @@ import {
   IconButton,
   Tooltip,
   InputAdornment,
+  Button,
 } from '@mui/material';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+
+// Make sure this component file exists in your project.
+// import AddUserDialog from '../components/AddUserDialog';
 
 function ViewStudy() {
   const { studyId } = useParams();
@@ -24,6 +28,9 @@ function ViewStudy() {
   const [study, setStudy] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // For the "Add User" dialog
+  // const [showAddUserDialog, setShowAddUserDialog] = useState(false);
 
   // For copying enrollment link
   const [participantId, setParticipantId] = useState('');
@@ -49,12 +56,15 @@ function ViewStudy() {
     }
   };
 
-  const enrollmentLinkBase = import.meta.env.VITE_BASE_URL + '/enroll/' + study?.code + '?pid=';
+  // Base URL for enrollment
+  const enrollmentLinkBase =
+    import.meta.env.VITE_BASE_URL + '/enroll/' + study?.code + '?pid=';
 
+  // Handle link copying
   const handleCopyLink = () => {
     const linkToCopy = `${enrollmentLinkBase}${participantId}`;
 
-    if (navigator.clipboard && navigator.clipboard.writeText) {
+    if (navigator.clipboard?.writeText) {
       navigator.clipboard.writeText(linkToCopy).then(
         () => {
           setCopied(true);
@@ -70,6 +80,7 @@ function ViewStudy() {
     }
   };
 
+  // Fallback if `navigator.clipboard` not available
   const fallbackCopyTextToClipboard = (text) => {
     const textArea = document.createElement('textarea');
     textArea.value = text;
@@ -106,18 +117,27 @@ function ViewStudy() {
     document.body.removeChild(textArea);
   };
 
+  // Handler when a user is added in the AddUserDialog
+  const handleUserAdded = () => {
+    // For now, you can simply log or refresh study details if needed:
+    console.log('User was added to the study!');
+    // If you have a user list to display, call a function here to re-fetch that data.
+  };
+
   if (loading)
     return (
       <Box sx={{ padding: '2rem' }}>
         <LinearProgress />
       </Box>
     );
+
   if (error)
     return (
       <Box sx={{ padding: '2rem' }}>
         <Alert severity="error">{error}</Alert>
       </Box>
     );
+
   if (!study)
     return (
       <Box sx={{ padding: '2rem' }}>
@@ -132,6 +152,8 @@ function ViewStudy() {
       <Typography variant="h4" gutterBottom>
         Study: {study.internal_name}
       </Typography>
+
+      {/* Navigation Tabs (Overview, Enrollments, etc.) */}
       <StudyNav studyId={studyId} />
 
       {/* Display study details */}
@@ -207,13 +229,35 @@ function ViewStudy() {
                 sx={{ display: 'block', marginTop: '0.5rem' }}
               >
                 Send this link to participants to enroll them in the study.
-                Remember to replace the{' '}
-                <em>Participant ID</em> with the actual participant's ID.
+                Remember to replace the <em>Participant ID</em> with the actual
+                participant's ID.
               </Typography>
             </Box>
           </Grid>
         </Grid>
       </Paper>
+
+      {/* =================== Add User to Study Section =================== */}
+      {/* <Paper sx={{ padding: '2rem', marginBottom: '2rem' }}>
+        <Typography variant="h5" gutterBottom>
+          Add Users to Study
+        </Typography>
+        <Button
+          variant="contained"
+          onClick={() => setShowAddUserDialog(true)}
+          sx={{ marginTop: '1rem' }}
+        >
+          Add User
+        </Button>
+      </Paper> */}
+
+      {/* The AddUserDialog. It only appears if showAddUserDialog = true */}
+      {/* <AddUserDialog
+        open={showAddUserDialog}
+        onClose={() => setShowAddUserDialog(false)}
+        studyId={studyId}
+        onUserAdded={handleUserAdded} // callback after success
+      /> */}
     </Box>
   );
 }

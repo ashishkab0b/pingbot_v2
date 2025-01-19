@@ -17,6 +17,7 @@ import Footer from './components/Footer';
 import EMAInstructions from './pages/EMAInstructions';
 import FeedbackWidget from './components/FeedbackWidget';
 import { DonationDialogProvider } from './context/DonationDialogContext';
+import StudyUsers from './pages/StudyUsers';
 
 
 
@@ -108,6 +109,16 @@ function Layout() {
               <PrivateRoute>
                 <StudyWrapper>
                   <EnrollmentDashboard />
+                </StudyWrapper>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/studies/:studyId/users"
+            element={
+              <PrivateRoute>
+                <StudyWrapper>
+                  <StudyUsers />
                 </StudyWrapper>
               </PrivateRoute>
             }
