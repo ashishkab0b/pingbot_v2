@@ -56,5 +56,7 @@ cloud research integration
 
 
 add users to study
-- prevent no owner - (can't change own privileges)
-- deleting person not working
+- make it so that people can't change their own privilege (i.e. owners can't make themselves non-owners), both on the front end and on the backend
+- make it so that the dropdown says what "owner" means i.e. "Owner (sharing privilege)"
+- where viewing the users on a study, combine the first and last name into a single field
+- in the studynav, make it so that you can only see the users tab if you are an owner. this may involve editing the study context to include role

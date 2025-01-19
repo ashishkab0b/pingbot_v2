@@ -221,6 +221,9 @@ def get_single_study_route(study_id):
             f"User {user.id} tried accessing study {study_id} without permissions."
         )
         return jsonify({"error": f"Study {study_id} not found or no access"}), 404
+    
+    # Retrieve the attached role (if any)
+    user_role = getattr(study, '_user_role', None)
 
     current_app.logger.info(f"User={user.email} accessed study {study_id}.")
     return jsonify({
@@ -228,7 +231,8 @@ def get_single_study_route(study_id):
         "public_name": study.public_name, 
         "internal_name": study.internal_name,
         "contact_message": study.contact_message,
-        "code": study.code
+        "code": study.code,
+        "role": user_role  
     }), 200
 
 
@@ -441,22 +445,30 @@ def update_study_user_role(study_id, user_id):
     if not study_with_permissions:
         return jsonify({"error": "You do not have permission to manage users for this study."}), 403
 
+    # Get the new role from the request body
     data = request.get_json()
     new_role = data.get('role')
     if not new_role:
         return jsonify({"error": "Missing 'role' in request"}), 400
+    
+    # Prevent owner from demoting self
+    if current_user.id == user_id:
+        # Check the user's current role in this study
+        user_study_self = get_user_study(db.session, current_user.id, study_id, include_deleted=False)
+        if user_study_self and user_study_self.role == "owner" and new_role != "owner":
+            return jsonify({"error": "Owners cannot change their own role from owner."}), 403
 
-    session = db.session
+    # Update the user's role
     try:
-        updated_user_study = update_user_study_role(session, user_id, study_id, new_role)
+        updated_user_study = update_user_study_role(db.session, user_id, study_id, new_role)
         if not updated_user_study:
             return jsonify({"error": "User-study relation not found or user is not in this study"}), 404
         
-        session.commit()
+        db.session.commit()
         return jsonify({"message": "User's role updated successfully", "role": new_role}), 200
     except Exception as e:
         current_app.logger.error(f"Error updating user role: {e}")
-        session.rollback()
+        db.session.rollback()
         return jsonify({"error": "Internal server error"}), 500
     
 @studies_bp.route('/studies/<int:study_id>/users/<int:user_id>', methods=['DELETE'])

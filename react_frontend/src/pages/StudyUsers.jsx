@@ -7,6 +7,7 @@ import axios from '../api/axios';
 import DataTable from '../components/DataTable';
 import AddUserDialog from '../components/AddUserDialog';
 import { useStudy } from '../context/StudyContext';
+// import { useAuth } from '../context/AuthContext';
 import {
   Typography,
   IconButton,
@@ -26,6 +27,8 @@ import DeleteIcon from '@mui/icons-material/Delete';
 
 function StudyUsers() {
   const { studyId } = useParams();
+  // const { currentUser } = useAuth() || {};
+  const [email, setEmail] = useState(() => localStorage.getItem('user_email') || '');
   const study = useStudy();
 
   const [users, setUsers] = useState([]);
@@ -65,14 +68,26 @@ function StudyUsers() {
 
   // ========== Update user role ========== 
   const handleRoleChange = async (userId, newRole) => {
-    // Optionally keep local state so user sees the role right away
+    // Find the user row in `users`
+    const row = users.find((u) => u.user_id === userId);
+    if (!row) return;
+  
+    // Determine what the user’s *current* (old) role is
+    // (it might be in updatedRoles if the user previously changed it)
+    const oldRole = updatedRoles[userId] || row.role;
+  
+    // If this row belongs to the logged-in user, and they’re currently owner,
+    // and are attempting to switch to anything besides 'owner' → block
+    if (row.email === email && oldRole === 'owner' && newRole !== 'owner') {
+      setError('You cannot change your own role from owner.');
+      return;
+    }
+  
+    // Otherwise proceed with PUT request
     setUpdatedRoles((prev) => ({ ...prev, [userId]: newRole }));
-
+  
     try {
-      await axios.put(`/studies/${studyId}/users/${userId}`, {
-        role: newRole,
-      });
-      // Refresh after success
+      await axios.put(`/studies/${studyId}/users/${userId}`, { role: newRole });
       fetchStudyUsers();
     } catch (err) {
       console.error(err);
@@ -127,30 +142,32 @@ function StudyUsers() {
       key: 'email',
     },
     {
-      label: 'First Name',
-      key: 'first_name',
-    },
-    {
-      label: 'Last Name',
-      key: 'last_name',
+      label: 'Name',
+      key: 'name',
+      renderCell: (row) => {
+        const fullName = `${row.first_name || ''} ${row.last_name || ''}`.trim();
+        return fullName || '—'; // fallback if missing
+      }
     },
     {
       label: 'Role',
       key: 'role',
-      renderCell: (row) => (
-        <FormControl size="small">
-          <Select
-            value={updatedRoles[row.user_id] || row.role}
-            onChange={(e) => handleRoleChange(row.user_id, e.target.value)}
-            // Only if you want immediate calls:
-            // onChange={e => setUpdatedRoles({...updatedRoles, [row.user_id]: e.target.value})}
-          >
-            <MenuItem value="viewer">Viewer</MenuItem>
-            <MenuItem value="editor">Editor</MenuItem>
-            <MenuItem value="owner">Owner</MenuItem>
-          </Select>
-        </FormControl>
-      ),
+      renderCell: (row) => {
+        const isMe = row.email === email; // If this row is the currently logged-in user
+        return (
+          <FormControl size="small">
+            <Select
+              value={updatedRoles[row.user_id] || row.role}
+              onChange={(e) => handleRoleChange(row.user_id, e.target.value)}
+              disabled={isMe} // Disable the dropdown if it's your own row
+            >
+              <MenuItem value="viewer">Viewer</MenuItem>
+              <MenuItem value="editor">Editor</MenuItem>
+              <MenuItem value="owner">Owner (can share)</MenuItem>
+            </Select>
+          </FormControl>
+        );
+      },
     },
   ];
 

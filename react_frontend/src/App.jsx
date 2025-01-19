@@ -35,7 +35,9 @@ const theme = createTheme({
 
 function StudyWrapper({ children }) {
   const { studyId } = useParams();
-  return <StudyProvider studyId={studyId}>{children}</StudyProvider>;
+  return (
+    <StudyProvider studyId={studyId}>{children}</StudyProvider>
+    );
 }
 
 function Layout() {

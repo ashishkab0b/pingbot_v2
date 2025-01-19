@@ -2,9 +2,12 @@
 import React from 'react';
 import { Link as RouterLink, useParams, useMatch } from 'react-router-dom';
 import { Tabs, Tab } from '@mui/material';
+import { useStudy } from '../context/StudyContext';
 
 function StudyNav() {
   const { studyId } = useParams();
+  const study = useStudy();            // The study context object
+  const isOwner = study?.role === 'owner'; // Check if user is owner
 
   // Define your navigation items
   const navItems = [
@@ -12,7 +15,12 @@ function StudyNav() {
     { label: 'Ping Templates', path: `/studies/${studyId}/ping_templates` },
     { label: 'Pings', path: `/studies/${studyId}/pings` },
     { label: 'Participants', path: `/studies/${studyId}/participants` },
-    { label: 'Users', path: `/studies/${studyId}/users` },  
+    // { label: 'Users', path: `/studies/${studyId}/users` },  
+    // Only show "Users" tab if the user has the owner role
+    ...(isOwner 
+      ? [{ label: 'Users', path: `/studies/${studyId}/users` }] 
+      : []
+    ),
   ];
 
   // Use useMatch to check for route matches

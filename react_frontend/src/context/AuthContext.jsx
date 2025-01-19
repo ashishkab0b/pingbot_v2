@@ -1,5 +1,7 @@
 // AuthContext.js
 
+// NOT CURRENTLY USED
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
 const AuthContext = createContext();

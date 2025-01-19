@@ -41,7 +41,8 @@ def get_studies_for_user(user_id: int, minimum_role: str = "owner") -> List[Stud
         select(UserStudy)
         .where(
             UserStudy.user_id == user_id,
-            UserStudy.role.in_(accepted_roles)
+            UserStudy.role.in_(accepted_roles),
+            UserStudy.deleted_at.is_(None)
         )
     )
     results = db.session.execute(stmt)
@@ -60,7 +61,6 @@ def get_current_user() -> User:
         current_app.logger.warning("JWT identity is missing.")
         return None
     
-    # db.session.get(...) is acceptable 2.x usage for a single primary-key fetch
     user = db.session.get(User, user_id)
     if not user:
         current_app.logger.warning(f"User with id {user_id} not found.")
@@ -83,7 +83,8 @@ def user_has_study_permission(
         .where(
             UserStudy.user_id == user_id,
             UserStudy.study_id == study_id,
-            UserStudy.role.in_(accepted_roles)
+            UserStudy.role.in_(accepted_roles),
+            UserStudy.deleted_at.is_(None)
         )
     )
 
@@ -92,6 +93,9 @@ def user_has_study_permission(
 
     # Return the associated Study if found
     if user_study:
-        return user_study.study
+        study = user_study.study
+        # Attach the user's role as a temporary attribute on the study
+        study._user_role = user_study.role
+        return study
     
     return None
