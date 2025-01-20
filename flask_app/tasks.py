@@ -29,6 +29,7 @@ def check_and_send_pings():
             # Mark pings as in progress
             for ping in pings_to_send:
                 ping.sending_in_progress = True
+            session.commit()
 
         # Initialize Telegram Messenger
         bot_token = current_app.config['TELEGRAM_SECRET_KEY']
