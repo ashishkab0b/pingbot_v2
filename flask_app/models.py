@@ -218,7 +218,7 @@ class Ping(db.Model):
     enrollment_id = db.Column(db.Integer, db.ForeignKey('enrollments.id'), nullable=False)
     
     day_num = db.Column(db.Integer, nullable=False)
-    sending_in_progress = db.Column(db.Boolean, default=False, nullable=False)
+    # sending_in_progress = db.Column(db.Boolean, default=False, nullable=False)
     scheduled_ts = db.Column(db.DateTime(timezone=True), nullable=False)
     expire_ts = db.Column(db.DateTime(timezone=True))
     reminder_ts = db.Column(db.DateTime(timezone=True))
