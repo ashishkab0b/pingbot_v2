@@ -31,7 +31,7 @@ services:
       args:
         UID: ${APP_UID}
         GID: ${APP_GID}
-    command: celery -A celery_app.celery worker --loglevel=debug
+    command: celery -A celery_app.celery worker --loglevel=debug --concurrency=1
     volumes:
       - ./logs/celery:/app/logs
     env_file:
@@ -51,7 +51,7 @@ services:
       args:
         UID: ${APP_UID}
         GID: ${APP_GID}
-    command: celery -A celery_app.celery beat --loglevel=debug
+    command: celery -A celery_app.celery beat --loglevel=debug --concurrency=1
     volumes:
       - ./logs/celery:/app/logs
     env_file:
