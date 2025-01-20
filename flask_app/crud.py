@@ -947,7 +947,8 @@ def get_pings_to_send(
     stmt = (
         select(Ping)
         .join(Enrollment, Ping.enrollment_id == Enrollment.id)  
-        .join(Study, Enrollment.study_id == Study.id) 
+        .join(Study, Ping.study_id == Study.id) 
+        .join(PingTemplate, Ping.ping_template_id == PingTemplate.id)
         .where(
             Ping.sent_ts.is_(None),
             Ping.scheduled_ts <= now,
@@ -979,7 +980,8 @@ def get_pings_for_reminder(
     stmt = (
         select(Ping)
         .join(Enrollment, Ping.enrollment_id == Enrollment.id) 
-        .join(Study, Enrollment.study_id == Study.id) 
+        .join(Study, Ping.study_id == Study.id) 
+        .join(PingTemplate, Ping.ping_template_id == PingTemplate.id)
         .where(
             Ping.sent_ts.isnot(None),
             Ping.reminder_sent_ts.is_(None),
