@@ -66,9 +66,9 @@ def ping_forwarder(ping_id):
         return jsonify({"error": "Internal server error."}), 500
 
     # If ping is already clicked, return message
-    if ping_already_clicked:
-        current_app.logger.info(f"Ping {ping.id} has already been clicked.")
-        return current_app.config["PING_ALREADY_CLICKED_MESSAGE"], 200
+    # if ping_already_clicked:
+    #     current_app.logger.info(f"Ping {ping.id} has already been clicked.")
+    #     return current_app.config["PING_ALREADY_CLICKED_MESSAGE"], 200
     
     # Check if expired and return message if so
     if hasattr(ping, 'expiry_ts') and ping.expiry_ts < datetime.now(timezone.utc):
