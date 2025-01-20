@@ -957,6 +957,7 @@ def get_pings_to_send(
             Ping.deleted_at.is_(None),
             PingTemplate.deleted_at.is_(None),
             Enrollment.deleted_at.is_(None),
+            Enrollment.enrolled.is_(True),
             Study.deleted_at.is_(None)
         ).with_for_update(skip_locked=True)
     )
@@ -990,6 +991,7 @@ def get_pings_for_reminder(
             Ping.deleted_at.is_(None),
             PingTemplate.deleted_at.is_(None),
             Enrollment.deleted_at.is_(None),
+            Enrollment.enrolled.is_(True),
             Study.deleted_at.is_(None)
         ).with_for_update(skip_locked=True)
     )
