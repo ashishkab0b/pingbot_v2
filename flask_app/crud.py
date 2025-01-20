@@ -946,8 +946,8 @@ def get_pings_to_send(
     acceptable_delay_ts = now - timedelta(minutes=15)
     stmt = (
         select(Ping)
-        .join(Enrollment, Ping.enrollment_id == Enrollment.id)  # Explicit join condition
-        .join(Study, Enrollment.study_id == Study.id)  # Explicit join condition
+        .join(Enrollment, Ping.enrollment_id == Enrollment.id)  
+        .join(Study, Enrollment.study_id == Study.id) 
         .where(
             Ping.sent_ts.is_(None),
             Ping.scheduled_ts <= now,
