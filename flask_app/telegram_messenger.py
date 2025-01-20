@@ -91,3 +91,29 @@ if __name__ == "__main__":
     msg = telegram_messenger.send_ping(telegram_id, message)
     print(msg)
     
+
+
+'''
+# in celery_app.py
+
+from celery import Celery, signals
+import asyncio
+
+app = Celery('my_app')
+app.config_from_object('your_celery_config_module')
+
+# store loop in a global variable so it's accessible
+my_loop = None
+
+@signals.worker_process_init.connect
+def init_worker(**kwargs):
+    global my_loop
+    my_loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(my_loop)
+
+# in telegram_messenger.py
+from celery_app import my_loop
+
+def send_ping(...):
+    my_loop.run_until_complete(self._send_async(...))
+'''
