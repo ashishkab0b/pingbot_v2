@@ -16,7 +16,6 @@ logger = setup_logger()
 class TelegramMessenger:
     
     def __init__(self, bot_token):
-        self.bot = Bot(token=bot_token)
         self.bot_token = bot_token
     
     def send_ping(self, telegram_id, message):
@@ -54,7 +53,12 @@ class TelegramMessenger:
             logger.error(f"Failed to send message to telegramID={telegram_id}")
             logger.exception(e)
             return False
-        
+
+# class TelegramMessenger:
+    
+#     def __init__(self, bot_token):
+#         self.bot = Bot(token=bot_token)
+            
     # def send_ping(self, telegram_id, message):
     #     """
     #     Send a message to a user.

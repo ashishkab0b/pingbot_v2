@@ -1,6 +1,6 @@
 
 REQUIRED FOR BASIC FUNCTION
-- 
+- check if participant blocked bot and record in DB
 
 MID PRIORITY
 - show sent message in ping db
