@@ -5,6 +5,7 @@ from werkzeug.exceptions import HTTPException
 from logger_setup import setup_logger
 from sqlalchemy.orm import Session
 from werkzeug.middleware.proxy_fix import ProxyFix
+from flask import render_template_string
 
 # Import extensions
 from extensions import db, migrate, jwt, swagger, cors, redis_client, init_extensions
@@ -93,5 +94,73 @@ def create_app(config):
     def handle_exception(e):
         logger.exception(f"Unhandled Exception at {request.method} {request.url}")
         return {'error': 'Internal server error'}, 500
+    
+    @app.route("/smash_matchups", )
+    def smash_matchups():
+        matchups = [
+            {"character": "Ike", "best_matchup": "Bowser", "worst_matchup": "Jigglypuff"},
+            {"character": "Ike", "best_matchup": "King Dedede", "worst_matchup": "Kirby"},
+        ]
+
+        html_template = """
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Smash Ultimate Matchups</title>
+            <style>
+                body {
+                    font-family: Arial, sans-serif;
+                    margin: 20px;
+                    padding: 20px;
+                    background-color: #f4f4f9;
+                }
+                table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    margin: 20px 0;
+                    background: white;
+                    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+                }
+                th, td {
+                    border: 1px solid #ddd;
+                    padding: 8px;
+                    text-align: center;
+                }
+                th {
+                    background-color: #6c757d;
+                    color: white;
+                }
+                tr:nth-child(even) {
+                    background-color: #f9f9f9;
+                }
+            </style>
+        </head>
+        <body>
+            <h1>Super Smash Bros. Ultimate: Ike Matchups</h1>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Character</th>
+                        <th>Best Matchup</th>
+                        <th>Worst Matchup</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for matchup in matchups %}
+                    <tr>
+                        <td>{{ matchup.character }}</td>
+                        <td>{{ matchup.best_matchup }}</td>
+                        <td>{{ matchup.worst_matchup }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </body>
+        </html>
+        """
+
+        return render_template_string(html_template, matchups=matchups)
 
     return app
