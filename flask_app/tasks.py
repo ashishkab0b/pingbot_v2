@@ -28,7 +28,10 @@ def check_and_send_pings():
             pings_to_send = get_pings_to_send(session, now)
             for ping in pings_to_send:
                 ping.sent_ts = now
-                
+        
+        # End if no pings to send
+        if len(pings_to_send) == 0:
+            return
             
         current_app.logger.info(f"Found {len(pings_to_send)} pings to send.")
         current_app.logger.debug(f"Found {len(pings_to_send)} pings to send: {[ping.id for ping in pings_to_send]}")
@@ -87,7 +90,11 @@ def check_and_send_reminders(session, telegram_messenger, now):
         pings_for_reminder = get_pings_for_reminder(session, now)
         for ping in pings_for_reminder:
             ping.reminder_sent_ts = now
-            
+    
+    # End if no pings to send
+    if len(pings_for_reminder) == 0:
+        return
+    
     current_app.logger.info(f"Found {len(pings_for_reminder)} pings to send reminders for.")
     current_app.logger.debug(f"Found {len(pings_for_reminder)} pings to send reminders for: {[ping.id for ping in pings_for_reminder]}")
 

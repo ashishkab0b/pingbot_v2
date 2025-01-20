@@ -957,8 +957,7 @@ def get_pings_to_send(
             Ping.deleted_at.is_(None),
             PingTemplate.deleted_at.is_(None),
             Enrollment.deleted_at.is_(None),
-            Study.deleted_at.is_(None),
-            Ping.sending_in_progress.is_(False)
+            Study.deleted_at.is_(None)
         ).with_for_update(skip_locked=True)
     )
     return session.execute(stmt).scalars().all()
