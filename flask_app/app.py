@@ -11,7 +11,7 @@ from flask import render_template_string
 from extensions import db, migrate, jwt, swagger, cors, redis_client, init_extensions
 from config import CurrentConfig
 
-def create_app(config):
+def create_app(config=CurrentConfig):
     # Load environment variables
     load_dotenv()
 

@@ -16,13 +16,19 @@ from flask import jsonify
 def check_and_send_pings():
     """
     Periodic task to check and send pings that are scheduled to be sent.
+    
+    TODO: to handle higher loads, we should consider batching pings to send.
     """
     with current_app.app_context():
         session = db.session
         now = datetime.now(timezone.utc)
 
         # Query for pings that need to be sent
-        pings_to_send = get_pings_to_send(session, now)
+        with session.begin():  # Start a transaction that will be committed at the end of the block
+            pings_to_send = get_pings_to_send(session, now)
+            # Mark pings as in progress
+            for ping in pings_to_send:
+                ping.sending_in_progress = True
 
         # Initialize Telegram Messenger
         bot_token = current_app.config['TELEGRAM_SECRET_KEY']
@@ -47,6 +53,7 @@ def check_and_send_pings():
             if success:
                 # Update sent_ts to now
                 ping.sent_ts = now
+                ping.sending_in_progress = False
                 session.commit()
                 current_app.logger.info(f"Ping {ping.id} sent to telegram_id {telegram_id}")
             else:
@@ -60,9 +67,9 @@ def check_and_send_pings():
                 completed_sent_pings = [p for p in already_sent_pings if p.first_clicked_ts is not None]
                 pr_completed = len(completed_sent_pings) / len(already_sent_pings) if len(already_sent_pings) > 0 else 0.0
                 ping.enrollment.pr_completed = pr_completed
-                db.session.commit()
+                session.commit()
             except Exception as e:
-                db.session.rollback()
+                session.rollback()
                 current_app.logger.error(f"Failed to update enrollment {ping.enrollment_id} with pr_completed.")
                 current_app.logger.exception(e)
                 return jsonify({"error": "Internal server error."}), 500
