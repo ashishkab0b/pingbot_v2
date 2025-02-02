@@ -93,6 +93,7 @@ def ping_forwarder(ping_id):
     # Redirect to survey
     message_constructor = MessageConstructor(ping)
     survey_url = message_constructor.construct_survey_url()
+    current_app.logger.debug(f"Redirecting ping_id={ping_id} to survey URL: {survey_url}")
 
     return redirect(survey_url, code=307)
 

@@ -205,7 +205,7 @@ class MessageConstructor:
         self.url = url
         
         # remove any newline characters
-        url = url.replace('\n', '')
+        url = url.strip().replace('\n', '')
         
         return url
     
