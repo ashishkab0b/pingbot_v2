@@ -9,6 +9,7 @@ from flask import request, jsonify, Blueprint, current_app
 from extensions import db
 from models import Ping, PingTemplate, Study, Enrollment
 import requests
+from crud import update_enrollment, get_enrollments_by_telegram_id
 
 logger = setup_logger()
 
@@ -52,6 +53,15 @@ class TelegramMessenger:
         except requests.RequestException as e:
             logger.error(f"Failed to send message to telegramID={telegram_id}")
             logger.exception(e)
+            
+            # If bot was blocked by user, unenroll participant from all studies
+            if "Forbidden: bot was blocked by the user" in str(e):
+                enrollments = get_enrollments_by_telegram_id(db.session, telegram_id)
+                for enrollment in enrollments:
+                    update_enrollment(db.session, enrollment.id, {"telegram_id": None})
+                    db.session.commit()
+                    logger.info(f"Unenrolled enrollment {enrollment.id} from all studies due to blocked bot.")
+                
             return False
 
 # class TelegramMessenger:
