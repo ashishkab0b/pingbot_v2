@@ -203,6 +203,10 @@ class MessageConstructor:
                 url = url.replace(key, str(getattr(self.ping.enrollment, value['db_column'])))
         
         self.url = url
+        
+        # remove any newline characters
+        url = url.replace('\n', '')
+        
         return url
     
     def construct_reminder(self):
