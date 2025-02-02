@@ -1,19 +1,19 @@
 
-REQUIRED FOR BASIC FUNCTION
+HIGH PRIORITY
 - check if participant blocked bot and record in DB
+- add "limit" parameter to url for viewing data tables
+- sorting not working on all pages
+- updating functionality (e.g. pings etc)
+    - when user changes params of study, change upcoming pings (optionally)
+- make page so that when they open a survey for a second time they are alerted
 
 MID PRIORITY
 - show sent message in ping db
-- include link to ping template and to particpant
+- include link to ping template and to particpant with ping
 - prevent double enrollment of a study_pid
-- when user changes params of study, change upcoming pings (optionally)
 - form validation (esp ping templates)
 - switch from using localstorage to store access tokens to using httponly
-- check sanitizization all input of javascript.
 - put captcha on register and login
-- sorting not working on all pages
-- add functionality to modify study permissions
-- make a route to get a survey link or survey message 
 - add testing functionality - add researcher telegram ID to account - send pings to self
 - account.js
 - forgot your password
@@ -23,6 +23,9 @@ LOWER PRIORITY
 participants capabilities
 - change timezone (and then update pings)
 - unenroll
+
+
+
 - rotate_keys in cron on server
 
 

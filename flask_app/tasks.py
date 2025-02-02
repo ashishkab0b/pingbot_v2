@@ -24,10 +24,9 @@ def check_and_send_pings():
         now = datetime.now(timezone.utc)
 
         # Query for pings that need to be sent and adjust sent_ts
-        with session.begin():  # Start a transaction that will be committed at the end of the block
-            pings_to_send = get_pings_to_send(session, now)
-            for ping in pings_to_send:
-                ping.sent_ts = now
+        pings_to_send = get_pings_to_send(session, now)
+        for ping in pings_to_send:
+            ping.sent_ts = now
         
         # End if no pings to send
         if len(pings_to_send) == 0:
@@ -67,13 +66,13 @@ def check_and_send_pings():
         
         # Recompute probability completed for all pings in the batch
         try:
-            with session.begin():  # Automatically manages commit/rollback
-                for ping in pings_to_send:
-                    all_pings = get_pings_by_enrollment_id(session, ping.enrollment_id)
-                    already_sent_pings = [p for p in all_pings if p.sent_ts is not None]
-                    completed_sent_pings = [p for p in already_sent_pings if p.first_clicked_ts is not None]
-                    pr_completed = len(completed_sent_pings) / len(already_sent_pings) if len(already_sent_pings) > 0 else 0.0
-                    ping.enrollment.pr_completed = pr_completed
+            for ping in pings_to_send:
+                all_pings = get_pings_by_enrollment_id(session, ping.enrollment_id)
+                already_sent_pings = [p for p in all_pings if p.sent_ts is not None]
+                completed_sent_pings = [p for p in already_sent_pings if p.first_clicked_ts is not None]
+                pr_completed = len(completed_sent_pings) / len(already_sent_pings) if len(already_sent_pings) > 0 else 0.0
+                ping.enrollment.pr_completed = pr_completed
+            session.commit()
         except Exception as e:
             current_app.logger.error("Failed to update pr completed in batch of enrollments.")
             current_app.logger.exception(e)
@@ -86,10 +85,10 @@ def check_and_send_reminders(session, telegram_messenger, now):
     
     
     # Query for pings that need a reminder sent
-    with session.begin():
-        pings_for_reminder = get_pings_for_reminder(session, now)
-        for ping in pings_for_reminder:
-            ping.reminder_sent_ts = now
+    pings_for_reminder = get_pings_for_reminder(session, now)
+    for ping in pings_for_reminder:
+        ping.reminder_sent_ts = now
+    session.commit()
     
     # End if no pings to send
     if len(pings_for_reminder) == 0:
