@@ -101,14 +101,7 @@ services:
     volumes: 
       - ./nginx/certs:/etc/letsencrypt
       - ./nginx/www:/var/www/certbot 
-    command: certonly --webroot \
-      -w /var/www/certbot \
-      --force-renewal \
-      --email kabob120-certbot@yahoo.com \
-      --cert-name emapingbot.com \
-      -d emapingbot.com \
-      --agree-tos \
-      -v
+    command: certonly --webroot -w /var/www/certbot --force-renewal --email kabob120-certbot@yahoo.com --cert-name emapingbot.com -d emapingbot.com --agree-tos --verbose
     depends_on:
       - nginx
 
