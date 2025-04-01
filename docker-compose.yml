@@ -99,11 +99,11 @@ services:
     image: certbot/certbot
     container_name: certbot
     volumes: 
-      # - ./certbot/conf:/etc/letsencrypt
-      # - ./certbot/www:/var/www/certbot
       - ./nginx/certs:/etc/letsencrypt
       - ./nginx/www:/var/www/certbot 
-    command: certonly --webroot -w /var/www/certbot --force-renewal --email kabob120-certbot@yahoo.com -d emapingbot.com --agree-tos
+    command: certonly --webroot -w /var/www/certbot --force-renewal --email kabob120-certbot@yahoo.com -d emapingbot.com --agree-tos -v
+    depends_on:
+      - nginx
 
 
 volumes:
