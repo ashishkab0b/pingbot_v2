@@ -61,9 +61,6 @@ const NavBar = () => {
             <Button color="inherit" onClick={handleOpenDonation}>
               Donate
             </Button>
-            {/* <Button color="inherit" component={RouterLink} to="/account">
-              Account
-            </Button> */}
             <Button color="inherit" onClick={handleLogout}>
               Log Out
             </Button>

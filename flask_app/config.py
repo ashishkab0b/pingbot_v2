@@ -36,7 +36,14 @@ class BaseConfig:
     BOT_ACCOUNT_PASSWORD = os.environ['BOT_ACCOUNT_PASSWORD']
     
     SQLALCHEMY_DATABASE_URI = os.environ['SQLALCHEMY_DATABASE_URI']
-    SQLALCHEMY_ENGINE_OPTIONS = {'connect_args': {'options': '-csearch_path=public'}}
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        'connect_args': {'options': '-csearch_path=public'},
+        'pool_pre_ping': True,
+        'pool_recycle': 300,
+        'pool_size': 2,
+        'max_overflow': 0,
+        'pool_timeout': 30,
+    }
     
     CELERY_BEAT_SCHEDULE = {
         'check_and_send_pings': {

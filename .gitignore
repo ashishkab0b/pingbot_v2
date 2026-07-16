@@ -54,3 +54,4 @@ Thumbs.db
 form_gpt_queries.ipynb
 gpt_query.txt
 
+nginx/certs/*

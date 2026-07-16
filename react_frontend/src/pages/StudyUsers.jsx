@@ -7,7 +7,6 @@ import axios from '../api/axios';
 import DataTable from '../components/DataTable';
 import AddUserDialog from '../components/AddUserDialog';
 import { useStudy } from '../context/StudyContext';
-// import { useAuth } from '../context/AuthContext';
 import {
   Typography,
   IconButton,
@@ -27,7 +26,6 @@ import DeleteIcon from '@mui/icons-material/Delete';
 
 function StudyUsers() {
   const { studyId } = useParams();
-  // const { currentUser } = useAuth() || {};
   const [email, setEmail] = useState(() => localStorage.getItem('user_email') || '');
   const study = useStudy();
 
