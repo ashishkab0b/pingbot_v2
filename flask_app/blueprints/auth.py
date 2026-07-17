@@ -122,6 +122,6 @@ def logout():
         expires = timedelta(hours=1)  # Default to 1 hour if type is unknown
 
     # Add to Redis with an expiration time. 
-    current_app.redis.setex(f"blacklisted_{jti}", expires, "true")
+    redis_client.setex(f"blacklisted_{jti}", expires, "true")
 
     return jsonify({"message": "Successfully logged out"}), 200
