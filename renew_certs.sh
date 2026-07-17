@@ -18,6 +18,7 @@ certbot_command=(
   --webroot
   --webroot-path=/var/www/certbot
   --non-interactive
+  --no-random-sleep-on-renew
 )
 certbot_command+=("$@")
 

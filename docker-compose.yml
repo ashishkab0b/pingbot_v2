@@ -150,7 +150,7 @@ services:
     volumes:
       - ./nginx/certs:/etc/letsencrypt
       - ./nginx/www:/var/www/certbot
-    command: ["renew", "--webroot", "--webroot-path=/var/www/certbot", "--non-interactive"]
+    command: ["renew", "--webroot", "--webroot-path=/var/www/certbot", "--non-interactive", "--no-random-sleep-on-renew"]
     logging: *default-logging
 
 
