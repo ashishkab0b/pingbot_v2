@@ -1,0 +1,11 @@
+[Unit]
+Description=Daily EMA Pingbot TLS renewal check
+
+[Timer]
+OnCalendar=daily
+RandomizedDelaySec=30m
+Persistent=true
+Unit=pingbot-cert-renew.service
+
+[Install]
+WantedBy=timers.target

@@ -4,6 +4,7 @@ from flask import Flask, request, jsonify
 from werkzeug.exceptions import HTTPException
 from logger_setup import setup_logger
 from sqlalchemy.orm import Session
+from sqlalchemy import text
 from werkzeug.middleware.proxy_fix import ProxyFix
 from flask import render_template_string
 
@@ -60,6 +61,35 @@ def create_app(config=CurrentConfig):
     @app.route('/health', methods=['GET'])
     def health():
         return {'status': 'healthy'}, 200
+
+    @app.route('/health/ready', methods=['GET'])
+    def readiness():
+        components = {
+            'database': 'ok',
+            'redis': 'ok',
+        }
+
+        try:
+            db.session.execute(text('SELECT 1'))
+        except Exception:
+            components['database'] = 'error'
+            logger.exception('Readiness check failed for database')
+            try:
+                db.session.rollback()
+            except Exception:
+                logger.exception('Failed to reset database session after readiness check')
+
+        try:
+            redis_client.ping()
+        except Exception:
+            components['redis'] = 'error'
+            logger.exception('Readiness check failed for Redis')
+
+        ready = all(status == 'ok' for status in components.values())
+        return {
+            'status': 'ready' if ready else 'unready',
+            **components,
+        }, 200 if ready else 503
     
     # Log all requests
     # @app.before_request

@@ -1,0 +1,14 @@
+[Unit]
+Description=Renew EMA Pingbot TLS certificate
+Wants=network-online.target
+After=network-online.target docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/ashish/pingbot_v2
+ExecStart=/home/ashish/pingbot_v2/renew_certs.sh
+Nice=10
+
+[Install]
+WantedBy=multi-user.target

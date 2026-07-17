@@ -1,20 +1,37 @@
+x-logging: &default-logging
+  driver: local
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
 
   redis:
     image: redis:latest
     container_name: "redis_db"
-    ports:
-      - "6379:6379"
+    restart: unless-stopped
+    expose:
+      - "6379"
     volumes:
       - redis_data:/data
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
     command: ["redis-server", "--requirepass", "${REDIS_PASSWORD}"]
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli --no-auth-warning -a \"$$REDIS_PASSWORD\" ping | grep -q PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    logging: *default-logging
 
   flask-backend:
     build:
       context: ./flask_app
       dockerfile: Dockerfile
-    ports:
-      - "8000:8000"
+    restart: unless-stopped
+    expose:
+      - "8000"
     volumes:
       - ./logs/flask:/app/logs
     env_file:
@@ -22,7 +39,15 @@ services:
     environment:
       - FLASK_ENV=production
     depends_on:
-      - redis
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=5).read()"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    logging: *default-logging
 
   celery-worker:
     build:
@@ -31,7 +56,8 @@ services:
       args:
         UID: ${APP_UID}
         GID: ${APP_GID}
-    command: celery -A celery_app.celery worker --loglevel=debug
+    command: celery -A celery_app.celery worker --loglevel=info
+    restart: unless-stopped
     volumes:
       - ./logs/celery:/app/logs
     env_file:
@@ -41,8 +67,17 @@ services:
       - PYTHONPATH=/app
     working_dir: /app
     depends_on:
-      - redis
-      - flask-backend
+      redis:
+        condition: service_healthy
+      flask-backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A celery_app.celery inspect ping -d celery@$$HOSTNAME --timeout=5 | grep -q pong"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    logging: *default-logging
 
   celery-beat:
     build:
@@ -51,7 +86,8 @@ services:
       args:
         UID: ${APP_UID}
         GID: ${APP_GID}
-    command: celery -A celery_app.celery beat --loglevel=debug
+    command: celery -A celery_app.celery beat --loglevel=info
+    restart: unless-stopped
     volumes:
       - ./logs/celery:/app/logs
     env_file:
@@ -61,13 +97,17 @@ services:
       - PYTHONPATH=/app
     working_dir: /app
     depends_on:
-      - redis
-      - flask-backend
+      redis:
+        condition: service_healthy
+      flask-backend:
+        condition: service_healthy
+    logging: *default-logging
 
   telegram-bot:
     build:
       context: ./bot
       dockerfile: Dockerfile
+    restart: unless-stopped
     volumes:
       - ./logs/bot:/app/logs
     env_file:
@@ -75,35 +115,43 @@ services:
     environment:
       - ENV_TYPE=production
     depends_on:
-      - flask-backend
-      - nginx
+      flask-backend:
+        condition: service_healthy
+      nginx:
+        condition: service_started
+    logging: *default-logging
 
   nginx:
     build:
       context: .
       dockerfile: ./nginx/Dockerfile
+    restart: unless-stopped
     ports:
       - "80:80"
       - "443:443"
     volumes:
-      - ./logs/nginx:/var/log/nginx
       - ./nginx/certs:/etc/letsencrypt
       - ./nginx/www:/var/www/certbot  # For Certbot challenge
-      # - ./nginx/certbot_nginx.conf:/etc/nginx/conf.d/default.conf  # Temporary config
-      - ./nginx/logs/error.log:/var/log/nginx/error.log
-      - ./nginx/logs/access.log:/var/log/nginx/access.log
     depends_on:
-      - flask-backend
+      flask-backend:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider --no-check-certificate --header='Host: emapingbot.com' https://127.0.0.1/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    logging: *default-logging
 
   certbot:
     image: certbot/certbot
-    container_name: certbot
-    volumes: 
+    profiles:
+      - maintenance
+    volumes:
       - ./nginx/certs:/etc/letsencrypt
-      - ./nginx/www:/var/www/certbot 
-    command: certonly --webroot -w /var/www/certbot --force-renewal --email kabob120-certbot@yahoo.com --cert-name emapingbot.com -d emapingbot.com --agree-tos --verbose
-    depends_on:
-      - nginx
+      - ./nginx/www:/var/www/certbot
+    command: ["renew", "--webroot", "--webroot-path=/var/www/certbot", "--non-interactive"]
+    logging: *default-logging
 
 
 volumes:

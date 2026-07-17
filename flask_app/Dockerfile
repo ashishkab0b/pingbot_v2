@@ -32,4 +32,4 @@ USER appuser
 EXPOSE 8000
 
 # Command to run the application
-CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:8000", "run:app"]
+CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:8000", "--timeout", "30", "--graceful-timeout", "30", "--keep-alive", "5", "--access-logfile", "-", "--error-logfile", "-", "run:app"]
