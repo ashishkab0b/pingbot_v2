@@ -10,6 +10,8 @@ The production host runs the Compose project from `/home/ashish/pingbot_v2`.
 - Install `fail2ban/sshd.local` as `/etc/fail2ban/jail.d/sshd.local`.
 - Install the certificate renewal service and timer from `systemd/` in
   `/etc/systemd/system/`, then enable `pingbot-cert-renew.timer`.
+- Install `tmpfiles/pingbot-log-archive.conf` in `/etc/tmpfiles.d/` so archived
+  pre-hardening nginx logs are removed after 14 days.
 
 The host firewall permits TCP 80 and 443 and rate-limits TCP 22. Redis and
 Gunicorn are intentionally available only on the private Compose network.
