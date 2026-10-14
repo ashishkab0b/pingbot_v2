@@ -54,8 +54,8 @@ Thumbs.db
 form_gpt_queries.ipynb
 gpt_query.txt
 
-
-# Keep runtime secrets, study data, and model artifacts outside Git backups.
+# Private backups, runtime secrets, study data, and model artifacts.
+db_backup/
 **/.env*
 nginx/certs/
 certbot/
@@ -67,6 +67,7 @@ outputs/
 *.rda
 *.Rda
 *.RData
+*.Rproj
 *.csv
 *.tsv
 *.parquet
