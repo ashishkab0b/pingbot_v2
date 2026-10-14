@@ -1,0 +1,5 @@
+to initialize new certs:
+- change conf file in dockerfile to be the temporary init conf file
+
+to renew certs:
+- restart certbot container
